@@ -1,2 +1,2 @@
 # Orchid-Git
-OrchidGit
+Orchid Git is a git UI system.
