@@ -1,6 +1,8 @@
-import { app, BrowserWindow } from 'electron';
-import path from 'node:path';
-import started from 'electron-squirrel-startup';
+import { app, BrowserWindow } from "electron";
+import path from "node:path";
+import started from "electron-squirrel-startup";
+const ipcMain = require("electron").ipcMain;
+let win = null;
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (started) {
@@ -15,7 +17,7 @@ const createWindow = () => {
     webPreferences: {
       preload: MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY,
     },
-    autoHideMenuBar:true,
+    autoHideMenuBar: true,
   });
 
   // and load the index.html of the app.
@@ -23,6 +25,7 @@ const createWindow = () => {
 
   // Open the DevTools.
   mainWindow.webContents.openDevTools();
+  win = mainWindow;
 };
 
 // This method will be called when Electron has finished
@@ -33,7 +36,7 @@ app.whenReady().then(() => {
 
   // On OS X it's common to re-create a window in the app when the
   // dock icon is clicked and there are no other windows open.
-  app.on('activate', () => {
+  app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) {
       createWindow();
     }
@@ -43,11 +46,25 @@ app.whenReady().then(() => {
 // Quit when all windows are closed, except on macOS. There, it's common
 // for applications and their menu bar to stay active until the user quits
 // explicitly with Cmd + Q.
-app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') {
+app.on("window-all-closed", () => {
+  if (process.platform !== "darwin") {
     app.quit();
   }
 });
 
 // In this file you can include the rest of your app's specific main process
 // code. You can also put them in separate files and import them here.
+
+ipcMain.handle("test-invoke", function (event, arg) {
+  return { blink: 182 };
+});
+
+ipcMain.on("test-send", function (event, arg) {
+  console.log(event, arg);
+});
+
+setInterval(() => {
+  if (win) {
+    win.webContents.send("test-receive", { information: "The information has been sended!" });
+  }
+}, 1000);
