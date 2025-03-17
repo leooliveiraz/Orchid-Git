@@ -6,14 +6,24 @@ import { OrchidContext } from "../OrchidContext.jsx";
 export default function LeftMenu() {
   const { directory, setDirectory } = useContext(OrchidContext);
   useEffect(() => {
-    window.api.testReceive((e) => console.log(e));
+    //test receiving
+    window.api.testReceive((e) => console.debug(e));
   }, []);
 
   function searchDirectory() {
+    //test
     window.api.testSend("sending");
     window.api.testInvoke("invoking").then((res) => {
-      console.log(res);
+      console.debug(res);
     });
+
+
+    window.api.selectDirectory("").then((data) => {
+      if(!data.canceled){
+        const path = data.filePaths[0];
+        setDirectory(path)
+      }
+    })
   }
 
   return (

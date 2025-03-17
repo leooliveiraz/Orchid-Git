@@ -5,6 +5,8 @@ const { ipcRenderer, contextBridge } = require("electron");
 contextBridge.exposeInMainWorld("api", {
   // Invoke Methods
   testInvoke: (args) => ipcRenderer.invoke("test-invoke", args),
+  selectDirectory: (args) => ipcRenderer.invoke("select-directory", args),
+  getRepositoryCommits: (repositoryDirectory) => ipcRenderer.invoke("get-repository-commits", repositoryDirectory),
   // Send Methods
   testSend: (args) => ipcRenderer.send("test-send", args),
   // Receive Methods

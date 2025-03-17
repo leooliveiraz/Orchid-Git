@@ -1,0 +1,47 @@
+import {
+  AppBar,
+  Box,
+  Button,
+  IconButton,
+  Toolbar,
+  Typography,
+} from "@mui/material";
+import MenuIcon from "@mui/icons-material/Menu";
+import React, { useContext } from "react";
+import { OrchidContext } from "../OrchidContext.jsx";
+import "./AppMenu.css"
+
+export default function AppMenu() {
+  const { directory, setDirectory } = useContext(OrchidContext);
+  
+  function selectDirectory() {
+    window.api.selectDirectory("").then((data) => {
+      if(!data.canceled){
+        const path = data.filePaths[0];
+        setDirectory(path)
+      }
+    })
+  }
+  
+  return (
+    <Box sx={{ flexGrow: 1 }} className="app-menu">
+      <AppBar position="relative" >
+        <Toolbar>
+          <IconButton
+            size="large"
+            edge="start"
+            color="inherit"
+            aria-label="menu"
+            sx={{ mr: 2 }}
+          >
+            <MenuIcon />
+          </IconButton>
+          <Typography variant="h5" component="div" sx={{ flexGrow: 1 }}>
+            Orchid
+          </Typography>
+          <Button color="inherit" onClick={() => {selectDirectory()}}>Open Project</Button>
+        </Toolbar>
+      </AppBar>
+    </Box>
+  );
+}

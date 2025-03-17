@@ -1,6 +1,14 @@
-import React from "react";
-export default function MainArea({children}){
-    return <div id="main-area" className="main-area">
-        {children}
+import React, { useContext } from "react";
+import NoDirectory from "./NoDirectory.jsx";
+import { OrchidContext } from "../OrchidContext.jsx";
+import Repository from "./Repository.jsx";
+
+export default function MainArea({ children }) {
+  const { directory, setDirectory } = useContext(OrchidContext);
+  return (
+    <div id="main-area" className="main-area">
+      {!directory && <NoDirectory />}
+      {directory && <Repository repositoryDirectory={directory} />}
     </div>
+  );
 }

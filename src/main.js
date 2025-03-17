@@ -1,7 +1,9 @@
 import { app, BrowserWindow } from "electron";
+const { dialog } = require("electron");
 import path from "node:path";
 import started from "electron-squirrel-startup";
 const ipcMain = require("electron").ipcMain;
+const childProcess = require("child_process");
 let win = null;
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
@@ -63,8 +65,20 @@ ipcMain.on("test-send", function (event, arg) {
   console.log(event, arg);
 });
 
-setInterval(() => {
-  if (win) {
-    win.webContents.send("test-receive", { information: "The information has been sended!" });
-  }
-}, 1000);
+// setInterval(() => {
+//   if (win) {
+//     win.webContents.send("test-receive", { information: "The information has been sended!" });
+//   }
+// }, 1000);
+
+ipcMain.handle("select-directory", function (event, arg) {
+  return dialog.showOpenDialog({ properties: ["openDirectory"] });
+});
+
+ipcMain.handle("get-repository-commits", function (event, directory) {
+  const comando = `cd ${directory}; git log --all --pretty=format:'{%n  "commit": "%h",%n  "parent": "%p",%n  "author": "%an",%n  "date": "%ad",%n  "message": "*()*()*()%s"*()*()*(),%n  "decoration":"%d"%n}!@#!@#!@#' --topo-order `;
+  console.log(comando)
+  return childProcess.execSync(comando, {
+    encoding: "utf8",
+  });
+});

@@ -1,0 +1,101 @@
+:root {
+  --commit-line-height: 24px;
+  --commit-circle-height: 10px;
+  --commit-lines: 1;
+  --commit-depth: 0;
+  --commit-depth-width: 14px;
+  --max-commit-depth: 5;
+  --adjustment: 0px;
+}
+
+.table-header-title {
+  text-align: left;
+  white-space: nowrap;
+}
+/*Linha 32 px*/
+.table-row-commit {
+  height: var(--commit-line-height);
+  line-height: var(--commit-line-height);
+  white-space: nowrap;
+  border: solid 0px black;
+  border-spacing: 0px;
+  width: calc(var(--max-commit-depth) * var(--commit-depth-width));
+}
+.table-collumn-graph {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
+  height: var(--commit-line-height);
+  width: 200px;
+}
+
+/*Circulo 8 px*/
+.circle {
+  position: relative;
+  height: var(--commit-circle-height);
+  width: var(--commit-circle-height);
+  background-color: #524;
+  border-radius: 50%;
+  display: inline-block;
+  z-index: 10;
+  left: calc(1px + var(--commit-depth) * var(--commit-depth-width));
+}
+
+.vertical-line {
+  position: relative;
+  display: inline-block;
+  align-self: baseline;
+  height: calc((var(--commit-line-height) + 4px) * var(--commit-lines));
+  width: 2px;
+  background-color: red;
+  z-index: 11;
+  top: calc(var(--commit-line-height) / 2);
+  left: calc(
+    (var(--commit-circle-height) / 2 * -1) +
+      (var(--commit-depth) * var(--commit-depth-width))
+  );
+}
+
+.horizontal-line {
+  position: relative;
+  display: inline-block;
+  height: 0px;
+  width: 16px;
+  z-index: 11;
+  border: solid red 1px;
+}
+
+.opening-branch {
+  position: relative;
+  display: inline-block;
+  z-index: 12;
+  border: solid red 2px;
+  border-bottom-right-radius: 10px;
+  border-left: 0px;
+  border-top: 0px;
+  top: calc(4px + var(--commit-line-height) / 2);
+  height: var(--commit-line-height);
+  width: calc(var(--commit-depth-width) - 2px + var(--adjustment));
+  left: calc(
+    (var(--commit-circle-height) / 2 * -1) +
+      (var(--commit-depth) * var(--commit-depth-width))
+  );
+}
+
+.closing-branch {
+  position: relative;
+  display: inline-block;
+  z-index: 13;
+  border: solid red 2px;
+  border-top-right-radius: 10px;
+  border-left: 0px;
+  border-bottom: 0px;
+  top: calc(var(--commit-line-height) / 2);
+  left: calc(
+    (var(--commit-circle-height) / 2 * -1) +
+      (var(--commit-depth) * var(--commit-depth-width))
+  );
+  width: calc(var(--commit-depth-width) - 2px);
+  height: var(--commit-line-height);
+}

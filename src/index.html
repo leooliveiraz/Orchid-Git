@@ -3,7 +3,35 @@
   <head>
     <meta charset="UTF-8" />
     <title>Hello World!</title>
+    <script>
+      function createFindNextIndex() {
+        if (!Array.prototype.findNextIndex) {
+          Array.prototype.findNextIndex = function (predicate, startIndex) {
+            if (this === null) {
+              throw new TypeError(
+                "Array.prototype.findIndex called on null or undefined"
+              );
+            }
+            if (typeof predicate !== "function") {
+              throw new TypeError("predicate must be a function");
+            }
+            var list = Object(this);
+            var length = list.length >>> 0;
+            var thisArg = arguments[1];
+            var value;
 
+            for (var i = startIndex; i < length; i++) {
+              value = list[i];
+              if (predicate.call(thisArg, value, i, list)) {
+                return i;
+              }
+            }
+            return -1;
+          };
+        }
+      }
+      createFindNextIndex();
+    </script>
   </head>
   <body>
     <h1>💖 Hello World!</h1>
