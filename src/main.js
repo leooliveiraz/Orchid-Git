@@ -76,7 +76,7 @@ ipcMain.handle("select-directory", function (event, arg) {
 });
 
 ipcMain.handle("get-repository-commits", function (event, directory) {
-  const comando = `cd ${directory}; git log --all --pretty=format:'{%n  "commit": "%h",%n  "parent": "%p",%n  "author": "%an",%n  "date": "%ad",%n  "message": "*()*()*()%s"*()*()*(),%n  "decoration":"%d"%n}!@#!@#!@#' --topo-order `;
+  const comando = `cd ${directory}; git log --all --pretty=format:'{%n  "commit": "%h",%n  "parent": "%p",%n  "author": "%an",%n  "date": "%ad",%n  "message": "*()*()*()%s"*()*()*(),%n  "decoration":"%d"%n}!@#!@#!@#' #--topo-order `;
   console.log(comando)
   return childProcess.execSync(comando, {
     encoding: "utf8",

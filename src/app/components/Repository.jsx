@@ -1,13 +1,18 @@
 import React, { useEffect, useState } from "react";
 import "./Repository.css";
 import CommitTable from "./CommitTable.jsx";
+import SearchText from "./SearchText.jsx";
+
+const COLOR_LIST = ["#2D3AC9","#B041FD","#FD63CE","#FD3C2F", "#FC9E25","#FAFF90","#3B8C33"];
 
 export default function Repository({ repositoryDirectory }) {
   const [commitList, setCommitList] = useState([]);
   const [longestDepth, setLongestDepth] = useState(1);
 
+
   useEffect(() => {
     window.api.getRepositoryCommits(repositoryDirectory).then((result) => {
+      console.log('found a repostory')
       const commits = configureCommitList(result);
       let longestDepthCommit = 0;
       let maxDepth = 0;
@@ -238,6 +243,7 @@ export default function Repository({ repositoryDirectory }) {
   return (
     <>
       <h1>{repositoryDirectory}</h1>
+      <SearchText></SearchText>
       <CommitTable
         commitList={commitList}
         longestDepth={longestDepth}
