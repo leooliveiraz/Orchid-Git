@@ -6,7 +6,7 @@ contextBridge.exposeInMainWorld("api", {
   // Invoke Methods
   testInvoke: (args) => ipcRenderer.invoke("test-invoke", args),
   selectDirectory: (args) => ipcRenderer.invoke("select-directory", args),
-  getRepositoryCommits: (repositoryDirectory) => ipcRenderer.invoke("get-repository-commits", repositoryDirectory),
+  getRepositoryCommits: (repositoryDirectory, useTopoOrder, showAllBranches, commitLimit) => ipcRenderer.invoke("get-repository-commits", repositoryDirectory, useTopoOrder, showAllBranches, commitLimit),
   // Send Methods
   testSend: (args) => ipcRenderer.send("test-send", args),
   // Receive Methods

@@ -75,8 +75,11 @@ ipcMain.handle("select-directory", function (event, arg) {
   return dialog.showOpenDialog({ properties: ["openDirectory"] });
 });
 
-ipcMain.handle("get-repository-commits", function (event, directory) {
-  const comando = `cd ${directory}; git log --all --pretty=format:'{%n  "commit": "%h",%n  "parent": "%p",%n  "author": "%an",%n  "date": "%ad",%n  "message": "*()*()*()%s"*()*()*(),%n  "decoration":"%d"%n}!@#!@#!@#' #--topo-order `;
+ipcMain.handle("get-repository-commits", function (event, directory, topoOrder, allCommits, limit) {
+  console.log(event, directory)
+  if (!topoOrder ) topoOrder = false;
+  if (!allCommits ) topoOrder = false;
+  const comando = `cd ${directory}; git log ${allCommits ? "--all" : ""} ${topoOrder ? "--topo-order" : ""} ${limit ? "-n "+limit : ""} --pretty=format:'{%n  "commit": "%h",%n  "parent": "%p",%n  "author": "%an",%n  "date": "%ad",%n  "message": "*()*()*()%s"*()*()*(),%n  "decoration":"%d"%n}!@#!@#!@#'   `;
   console.log(comando)
   return childProcess.execSync(comando, {
     encoding: "utf8",

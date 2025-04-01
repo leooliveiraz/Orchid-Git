@@ -1,9 +1,12 @@
 :root {
   --commit-line-height: 24px;
+  --commit-line-half-height: calc(var(--commit-line-height) / 2);
   --commit-circle-height: 10px;
+  --commit-circle-half-height: calc(var(--commit-circle-height) / 2);
   --commit-lines: 1;
   --commit-depth: 0;
   --commit-depth-width: 14px;
+  --commit-line-depth-width: 13px;
   --max-commit-depth: 5;
   --adjustment: 0px;
 }
@@ -28,6 +31,8 @@
   justify-content: flex-start;
   height: var(--commit-line-height);
   width: 200px;
+  background-color: white;
+  position: relative;
 }
 
 /*Circulo 8 px*/
@@ -35,10 +40,10 @@
   position: relative;
   height: var(--commit-circle-height);
   width: var(--commit-circle-height);
-  background-color: #524;
+  background-color: blue;
   border-radius: 50%;
   display: inline-block;
-  z-index: 10;
+  z-index: 99;
   left: calc(1px + var(--commit-depth) * var(--commit-depth-width));
 }
 
@@ -46,46 +51,49 @@
   position: relative;
   display: inline-block;
   align-self: baseline;
-  height: calc((var(--commit-line-height) + 4px) * var(--commit-lines));
+  height: calc(((var(--commit-line-height) + var(--commit-circle-half-height) ) * var(--commit-lines)) - var(--commit-circle-half-height) - 2px);
   width: 2px;
   background-color: red;
   z-index: 11;
-  top: calc(var(--commit-line-height) / 2);
+  top: var(--commit-line-half-height);
   left: calc(
-    (var(--commit-circle-height) / 2 * -1) +
+    (var(--commit-circle-half-height) * -1) +
       (var(--commit-depth) * var(--commit-depth-width))
   );
 }
 
 .horizontal-line {
-  position: relative;
-  display: inline-block;
+  position: absolute;
+  float: left;
   height: 0px;
-  width: 16px;
+  width: calc((var(--commit-line-depth-width) * var(--commit-depth-distance)) - var(--commit-circle-half-height));
   z-index: 11;
   border: solid red 1px;
+  left: calc(
+    (var(--commit-depth) * var(--commit-depth-width)) +
+      (var(--commit-circle-half-height))
+  );
+  top: var(--commit-line-half-height);
 }
 
 .opening-branch {
-  position: relative;
-  display: inline-block;
-  z-index: 12;
+  position: absolute;
+  float: left;
+  z-index: 1999;
   border: solid red 2px;
   border-bottom-right-radius: 10px;
   border-left: 0px;
   border-top: 0px;
-  top: calc(4px + var(--commit-line-height) / 2);
+  bottom: calc(var(--commit-line-height) / 2);
   height: var(--commit-line-height);
   width: calc(var(--commit-depth-width) - 2px + var(--adjustment));
-  left: calc(
-    (var(--commit-circle-height) / 2 * -1) +
-      (var(--commit-depth) * var(--commit-depth-width))
-  );
+  left: calc( 3px + (var(--commit-circle-half-height)) +  (var(--commit-depth) * var(--commit-depth-width)))
 }
 
 .closing-branch {
   position: relative;
   display: inline-block;
+  align-self: normal;
   z-index: 13;
   border: solid red 2px;
   border-top-right-radius: 10px;
@@ -97,5 +105,5 @@
       (var(--commit-depth) * var(--commit-depth-width))
   );
   width: calc(var(--commit-depth-width) - 2px);
-  height: var(--commit-line-height);
+  height: calc((var(--commit-line-height) * var(--commit-lines)));
 }

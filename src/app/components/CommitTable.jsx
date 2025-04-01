@@ -25,7 +25,7 @@ export default function CommitTable({ commitList, longestDepth }) {
           {commitList.map((commit, index) => {
             return (
               <tr
-                key={commit.commit}
+                key={'tr'+commit.commit}
                 className="table-row-commit"
                 style={{
                   "--max-commit-depth": longestDepth ? longestDepth : "",
@@ -42,8 +42,8 @@ export default function CommitTable({ commitList, longestDepth }) {
                   {commit.merge ? ` - ${commit.merge?.parentDistance}` : ""}
                 </td>
                 <td>{commit.depth + ""}</td>
-                <td>{commit.sons?.length}</td>
-                <td>{commit.maxDepth}</td>
+                <td>{commit.sonsNumber} {commit.sonsMergeNumber ? `- ${commit.sonsMergeNumber}` : ""}</td>
+                <td>{!isNaN(commit.maxDepth) ? commit.maxDepth + 1 :""}</td>
                 <td>{commit.commit}</td>
                 <td>{commit.parent}</td>
                 <td>{commit.decoration}</td>
