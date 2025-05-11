@@ -21,43 +21,50 @@ export default function Repository({ repositoryDirectory }) {
     const useTopoOrder = true;
     const allBranches = true;
     const commitLimit = 10000;
-    window.api
-      .getRepositoryCommits(
-        repositoryDirectory,
-        useTopoOrder,
-        allBranches,
-        commitLimit
-      )
-      .then((result) => {
-        const commits = configureCommitList(result);
-        let longestDepthCommit = 0;
-        let maxDepth = 0;
+    if (window.api)
+      window.api
+        .getRepositoryCommits(
+          repositoryDirectory,
+          useTopoOrder,
+          allBranches,
+          commitLimit
+        )
+        .then((result) => {
+          const commits = configureCommitList(result);
+          let longestDepthCommit = 0;
+          let maxDepth = 0;
 
-        commits.forEach((commit, index) => {
-          commit.branchQuantity = 0;
-          commit.index = index;
-          if (commit.sonsNumber === undefined) commit.sonsNumber = 0;
-          if (commit.sons === undefined) commit.sons = [];
-          defineDadIndexAndDistance(commit, index, commits);
+          commits.forEach((commit, index) => {
+            commit.branchQuantity = 0;
+            commit.index = index;
+            if (commit.sonsNumber === undefined) commit.sonsNumber = 0;
+            if (commit.sons === undefined) commit.sons = [];
+            defineDadIndexAndDistance(commit, index, commits);
+          });
+          const branchMap = {};
+
+          commits.forEach((element, index) => {
+            //   defineBranch(element, index, commits);
+            //   defineParentBranch(element, index, commits);
+            //   if (element.merge) defineMergeBranch(element, index, commits);
+            maxDepth = defineDepth(
+              element,
+              index,
+              commits,
+              maxDepth,
+              branchMap
+            );
+            //   if (maxDepth > longestDepth) {
+            //     longestDepthCommit = maxDepth;
+            //   }
+          });
+          // commits.forEach((element, index) => {
+          //   defineMerge(element, index, commits);
+          // });
+
+          setCommitList(commits);
+          setLongestDepth(longestDepthCommit);
         });
-        const branchMap = {};
-
-        commits.forEach((element, index) => {
-          //   defineBranch(element, index, commits);
-          //   defineParentBranch(element, index, commits);
-          //   if (element.merge) defineMergeBranch(element, index, commits);
-          maxDepth = defineDepth(element, index, commits, maxDepth, branchMap);
-          //   if (maxDepth > longestDepth) {
-          //     longestDepthCommit = maxDepth;
-          //   }
-        });
-        // commits.forEach((element, index) => {
-        //   defineMerge(element, index, commits);
-        // });
-
-        setCommitList(commits);
-        setLongestDepth(longestDepthCommit);
-      });
   }, [repositoryDirectory]);
 
   useEffect(() => {
@@ -203,6 +210,7 @@ export default function Repository({ repositoryDirectory }) {
         }
       }
     }
+    console.log([branchMap[commit.index]]);
     return maxDepth;
   }
 
@@ -419,7 +427,7 @@ export default function Repository({ repositoryDirectory }) {
 
     commit.merge = {
       hash: parentList[1],
-      parent:list[mergeParentIndex],
+      parent: list[mergeParentIndex],
       parentIndex: mergeParentIndex,
       parentDistance: mergeParentIndex - index,
     };

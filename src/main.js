@@ -65,6 +65,10 @@ ipcMain.on("test-send", function (event, arg) {
   console.log(event, arg);
 });
 
+ipcMain.on("open-dev-tools", function (event,arg){
+  win.webContents.openDevTools();
+});
+
 // setInterval(() => {
 //   if (win) {
 //     win.webContents.send("test-receive", { information: "The information has been sended!" });

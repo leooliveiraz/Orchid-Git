@@ -9,6 +9,7 @@ contextBridge.exposeInMainWorld("api", {
   getRepositoryCommits: (repositoryDirectory, useTopoOrder, showAllBranches, commitLimit) => ipcRenderer.invoke("get-repository-commits", repositoryDirectory, useTopoOrder, showAllBranches, commitLimit),
   // Send Methods
   testSend: (args) => ipcRenderer.send("test-send", args),
+  openDevTools: (args) => ipcRenderer.send("open-dev-tools", args),
   // Receive Methods
   testReceive: (callback) => {
     ipcRenderer.on("test-receive", (event, data) => {

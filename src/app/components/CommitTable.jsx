@@ -8,13 +8,13 @@ export default function CommitTable({ commitList, longestDepth }) {
           <tr>
             <th>Index</th>
             <th>Graph</th>
+            <th>Hash</th>
+            <th>Parent</th>
             <th>DI</th>
             <th>DD</th>
             <th>De</th>
             <th>Sons</th> 
             <th>MD</th>
-            <th>Hash</th>
-            <th>Parent</th>
             <th>Decoration</th>
             <th>Author</th>
             <th>Date</th>
@@ -33,6 +33,8 @@ export default function CommitTable({ commitList, longestDepth }) {
               >
                 <td>{index}</td>
                 <Graphline commit={commit} index={index} ></Graphline>
+                <td>{commit.commit}</td>
+                <td>{commit.parent}</td>
                 <td>
                   {commit.parentIndex}
                   {commit.merge ? `-${commit.merge?.parentIndex}` : ""}
@@ -44,8 +46,6 @@ export default function CommitTable({ commitList, longestDepth }) {
                 <td>{commit.depth + ""}</td>
                 <td>{commit.sonsNumber} {commit.sonsMergeNumber ? `- ${commit.sonsMergeNumber}` : ""}</td>
                 <td>{!isNaN(commit.maxDepth) ? commit.maxDepth + 1 :""}</td>
-                <td>{commit.commit}</td>
-                <td>{commit.parent}</td>
                 <td>{commit.decoration}</td>
                 <td>{commit.author}</td>
                 <td>{commit.date}</td>
