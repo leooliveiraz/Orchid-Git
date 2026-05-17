@@ -4,6 +4,13 @@ import path from "node:path";
 import started from "electron-squirrel-startup";
 const ipcMain = require("electron").ipcMain;
 const childProcess = require("child_process");
+const isWindows = process.platform === "win32";
+
+function runGit(args, cwd) {
+  const result = childProcess.spawnSync("git", args, { cwd, encoding: "utf8" });
+  return result.stdout;
+}
+
 let win = null;
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
@@ -81,11 +88,14 @@ ipcMain.handle("select-directory", function (event, arg) {
 
 ipcMain.handle("get-repository-commits", function (event, directory, topoOrder, allCommits, limit) {
   console.log(event, directory)
-  if (!topoOrder ) topoOrder = false;
-  if (!allCommits ) topoOrder = false;
-  const comando = `cd ${directory}; git log ${allCommits ? "--all" : ""} ${topoOrder ? "--topo-order" : ""} ${limit ? "-n "+limit : ""} --pretty=format:'{%n  "commit": "%h",%n  "parent": "%p",%n  "author": "%an",%n  "date": "%ad",%n  "message": "*()*()*()%s"*()*()*(),%n  "decoration":"%d"%n}!@#!@#!@#'   `;
-  console.log(comando)
-  return childProcess.execSync(comando, {
-    encoding: "utf8",
-  });
+  if (!topoOrder) topoOrder = false;
+  if (!allCommits) allCommits = false;
+  const args = [
+    "log",
+    ...(allCommits ? ["--all"] : []),
+    ...(topoOrder ? ["--topo-order"] : []),
+    ...(limit ? ["-n", String(limit)] : []),
+    `--pretty=format:{%n  "commit": "%h",%n  "parent": "%p",%n  "author": "%an",%n  "date": "%ad",%n  "message": "*()*()*()%s"*()*()*(),%n  "decoration":"%d"%n}!@#!@#!@#`,
+  ];
+  return runGit(args, directory);
 });
