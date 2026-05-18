@@ -7,10 +7,9 @@ export default function SearchText(){
 
     function findByText(key){
         if(key === "Enter"){
-            window.find(text)
+            window.find(text, false, false, true)
         }
     }
-
 
     return <TextField id="outlined-basic" label="Search and press enter" variant="outlined" onChange={(e)=>{setText(e.target.value)}}  onKeyDown={(e)=>{findByText(e.key)}} />
 }

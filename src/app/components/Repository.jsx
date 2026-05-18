@@ -44,9 +44,9 @@ export default function Repository({ repositoryDirectory }) {
           const branchMap = {};
 
           commits.forEach((element, index) => {
-            //   defineBranch(element, index, commits);
-            //   defineParentBranch(element, index, commits);
-            //   if (element.merge) defineMergeBranch(element, index, commits);
+            //defineBranch(element, index, commits);
+            // defineParentBranch(element, index, commits);
+            if (element.merge) defineMergeBranch(element, index, commits);
             maxDepth = defineDepth(
               element,
               index,
@@ -180,7 +180,7 @@ export default function Repository({ repositoryDirectory }) {
       initializeBranchMap(index, branchMap);
       for (
         let countToDad = 0;
-        countToDad < commit.parentDistance;
+        countToDad < (commit.dad?.parentDistance ?? 0);
         countToDad++
       ) {
         initializeBranchMap(index + countToDad, branchMap);
@@ -288,7 +288,7 @@ export default function Repository({ repositoryDirectory }) {
   }
 
   function getParentElement(element, commitList) {
-    return commitList[element.parentIndex];
+    return element.dad ? commitList[element.dad.parentIndex] : null;
   }
 
   function getMergeParentElement(commit, commitList) {
@@ -374,6 +374,7 @@ export default function Repository({ repositoryDirectory }) {
     }
     const parent = getParentElement(commit, commitList);
     const mergeParent = getMergeParentElement(commit, commitList);
+
     if (parent) {
       addSonToCommit(parent, commit);
     }
@@ -405,8 +406,11 @@ export default function Repository({ repositoryDirectory }) {
   function defineDad(commit, index, list) {
     const parentEquals = (item) => item.commit === commit.parent;
     const dadIndex = list.findNextIndex(parentEquals, index);
-    commit.parentIndex = dadIndex;
-    commit.parentDistance = dadIndex - index;
+    commit.dad = {
+      dad: list[dadIndex],
+      parentIndex: dadIndex,
+      parentDistance: dadIndex - index,
+    };
   }
 
   function defineDadInMerge(commit, index, list) {
@@ -422,14 +426,20 @@ export default function Repository({ repositoryDirectory }) {
       parentIndex: mergeParentIndex,
       parentDistance: mergeParentIndex - index,
     };
-    commit.parentIndex = parentIndex;
-    commit.parentDistance = parentIndex - index;
+    commit.dad = {
+      dad: list[parentIndex],
+      parentIndex: parentIndex,
+      parentDistance: parentIndex - index,
+    };
   }
 
   return (
     <>
-      <h1>{repositoryDirectory}</h1>
-      <SearchText></SearchText>
+      <h1>{repositoryDirectory.split(/[/\\]/).pop()}</h1>
+      <small style={{ opacity: 0.6 }}>{repositoryDirectory}</small><br></br>
+      <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, background: "var(--bg-primary, white)", padding: "8px 16px", zIndex: 100, borderTop: "1px solid var(--border-color, #ccc)" }}>
+        <SearchText></SearchText>
+      </div>
       <CommitTable
         commitList={commitList}
         longestDepth={longestDepth}

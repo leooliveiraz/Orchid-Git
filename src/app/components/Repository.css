@@ -1,4 +1,5 @@
 :root {
+  --commit-line-color: red;
   --commit-line-height: 24px;
   --commit-line-half-height: calc(var(--commit-line-height) / 2);
   --commit-circle-height: 10px;
@@ -6,15 +7,25 @@
   --commit-lines: 1;
   --commit-depth: 0;
   --commit-depth-width: 14px;
-  --commit-line-depth-width: 13px;
+  --commit-line-depth-width: 14px;
   --max-commit-depth: 5;
   --adjustment: 0px;
+  --adjustment-vertical: 0px;
 }
 
 .table-header-title {
   text-align: left;
   white-space: nowrap;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background-color: var(--bg-primary, white);
 }
+
+.table-header-title th {
+  background-color: inherit;
+}
+
 /*Linha 32 px*/
 .table-row-commit {
   height: var(--commit-line-height);
@@ -24,6 +35,7 @@
   border-spacing: 0px;
   width: calc(var(--max-commit-depth) * var(--commit-depth-width));
 }
+
 .table-collumn-graph {
   display: flex;
   flex-direction: row;
@@ -51,43 +63,37 @@
   position: relative;
   display: inline-block;
   align-self: baseline;
-  height: calc(((var(--commit-line-height) + var(--commit-circle-half-height) ) * var(--commit-lines)) - var(--commit-circle-half-height) - 2px);
+  height: calc(((var(--commit-line-height) + var(--commit-circle-half-height)) * var(--commit-lines)) - var(--commit-circle-half-height) - 2px);
   width: 2px;
-  background-color: red;
+  background-color: var(--commit-line-color);
   z-index: 11;
   top: var(--commit-line-half-height);
-  left: calc(
-    (var(--commit-circle-half-height) * -1) +
-      (var(--commit-depth) * var(--commit-depth-width))
-  );
+  left: calc((var(--commit-circle-half-height) * -1) + (var(--commit-depth) * var(--commit-depth-width)));
 }
 
 .horizontal-line {
   position: absolute;
   float: left;
-  height: 0px;
+  height: 1.5px;
   width: calc((var(--commit-line-depth-width) * var(--commit-depth-distance)) - var(--commit-circle-half-height));
   z-index: 11;
-  border: solid red 1px;
-  left: calc(
-    (var(--commit-depth) * var(--commit-depth-width)) +
-      (var(--commit-circle-half-height))
-  );
+  background-color: var(--commit-line-color);
+  left: calc((var(--commit-depth) * var(--commit-depth-width)) + (var(--commit-circle-half-height)));
   top: var(--commit-line-half-height);
 }
 
 .opening-branch {
   position: absolute;
   float: left;
-  z-index: 1999;
-  border: solid red 2px;
+  z-index: 19;
+  border: solid var(--commit-line-color) 2px;
   border-bottom-right-radius: 10px;
   border-left: 0px;
   border-top: 0px;
   bottom: calc(var(--commit-line-height) / 2);
-  height: var(--commit-line-height);
+  height: calc(var(--commit-line-height) + var(--adjustment-vertical));
   width: calc(var(--commit-depth-width) - 2px + var(--adjustment));
-  left: calc( 3px + (var(--commit-circle-half-height)) +  (var(--commit-depth) * var(--commit-depth-width)))
+  left: calc(3px + (var(--commit-circle-half-height)) + (var(--commit-depth) * var(--commit-depth-width)))
 }
 
 .closing-branch {
@@ -95,15 +101,12 @@
   display: inline-block;
   align-self: normal;
   z-index: 13;
-  border: solid red 2px;
+  border: solid var(--commit-line-color) 2px;
   border-top-right-radius: 10px;
   border-left: 0px;
   border-bottom: 0px;
   top: calc(var(--commit-line-height) / 2);
-  left: calc(
-    (var(--commit-circle-height) / 2 * -1) +
-      (var(--commit-depth) * var(--commit-depth-width))
-  );
+  left: calc((var(--commit-circle-height) / 2 * -1) + (var(--commit-depth) * var(--commit-depth-width)));
   width: calc(var(--commit-depth-width) - 2px);
-  height: calc((var(--commit-line-height) * var(--commit-lines)));
+  height: calc((var(--commit-line-height) * var(--commit-lines) + var(--adjustment)));
 }

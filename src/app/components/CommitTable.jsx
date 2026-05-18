@@ -13,43 +13,43 @@ export default function CommitTable({ commitList, longestDepth }) {
             <th title="DAD INDEX">DI</th>
             <th title="DAD DISTANCE">DD</th>
             <th title="DEPTH">De</th>
-            <th title="NUMBER OF SONS">Sons</th> 
+            <th title="NUMBER OF SONS">Sons</th>
             <th title="MAX DEPTH">MD</th>
+            <th>Message</th>
             <th>Decoration</th>
             <th>Author</th>
             <th>Date</th>
-            <th>Message</th>
           </tr>
         </thead>
         <tbody>
           {commitList.map((commit, index) => {
             return (
               <tr
-                key={'tr'+commit.commit}
+                key={'tr' + commit.commit}
                 className="table-row-commit"
                 style={{
                   "--max-commit-depth": longestDepth ? longestDepth : "",
                 }}
               >
-                <td>{index}</td>
+                <td style={{ color: commit.merge ? "red" : "inherit", fontWeight: commit.merge ? "bold" : "inherit"}}>{index}</td>
                 <Graphline commit={commit} index={index} ></Graphline>
                 <td>{commit.commit}</td>
                 <td>{commit.parent}</td>
                 <td>
-                  {commit.parentIndex}
+                  {commit.dad?.parentIndex}
                   {commit.merge ? `-${commit.merge?.parentIndex}` : ""}
                 </td>
                 <td>
-                  {commit.parentDistance}
+                  {commit.dad?.parentDistance}
                   {commit.merge ? ` - ${commit.merge?.parentDistance}` : ""}
                 </td>
                 <td>{commit.depth + ""}</td>
                 <td>{commit.sonsNumber} {commit.sonsMergeNumber ? `- ${commit.sonsMergeNumber}` : ""}</td>
-                <td>{!isNaN(commit.maxDepth) ? commit.maxDepth + 1 :""}</td>
+                <td>{!isNaN(commit.maxDepth) ? commit.maxDepth + 1 : ""}</td>
+                <td>{commit.message}</td>
                 <td>{commit.decoration}</td>
                 <td>{commit.author}</td>
                 <td>{commit.date}</td>
-                <td>{commit.message}</td>
               </tr>
             );
           })}
