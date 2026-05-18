@@ -15,12 +15,11 @@ const COLOR_LIST = [
 
 export default function Repository({ repositoryDirectory }) {
   const [commitList, setCommitList] = useState([]);
-  const [longestDepth, setLongestDepth] = useState(1);
+  const [allBranches, setAllBranches] = useState(true);
+  const [useTopoOrder, setUseTopoOrder] = useState(true);
+  const [commitLimit, setCommitLimit] = useState(10000);
 
   useEffect(() => {
-    const useTopoOrder = true;
-    const allBranches = true;
-    const commitLimit = 10000;
     if (window.api)
       window.api
         .getRepositoryCommits(
@@ -31,8 +30,6 @@ export default function Repository({ repositoryDirectory }) {
         )
         .then((result) => {
           const commits = configureCommitList(result);
-          let longestDepthCommit = 0;
-          let maxDepth = 0;
 
           commits.forEach((commit, index) => {
             commit.branchQuantity = 0;
@@ -41,32 +38,20 @@ export default function Repository({ repositoryDirectory }) {
             if (commit.sons === undefined) commit.sons = [];
             defineDadIndexAndDistance(commit, index, commits);
           });
-          const branchMap = {};
 
           commits.forEach((element, index) => {
-            //defineBranch(element, index, commits);
+            // defineBranch(element, index, commits);
             // defineParentBranch(element, index, commits);
             if (element.merge) defineMergeBranch(element, index, commits);
-            maxDepth = defineDepth(
-              element,
-              index,
-              commits,
-              maxDepth,
-              branchMap
-            );
-            //   if (maxDepth > longestDepth) {
-            //     longestDepthCommit = maxDepth;
-            //   }
           });
 
           setCommitList(commits);
-          setLongestDepth(longestDepthCommit);
         });
-  }, [repositoryDirectory]);
+    }, [repositoryDirectory, useTopoOrder, allBranches, commitLimit]);
 
   useEffect(() => {
-    if (commitList) {
-      console.log("commitList", commitList);
+    if (commitList.length) {
+      console.log("commitList", commitList[0]);
     }
   }, [commitList]);
 
@@ -85,167 +70,6 @@ export default function Repository({ repositoryDirectory }) {
       });
     });
     return commitList;
-  }
-
-  function defineMerge(commit, index, commitList) {
-    if (commit.merge) {
-      const mergeParent = getMergeParentElement(commit, commitList);
-      if (commit.depth < mergeParent.depth) {
-        commit.merge.depthDistance = mergeParent.depth - commit.depth;
-      }
-      if (commit.depth > mergeParent.depth) {
-        commit.merge.depthDistance = mergeParent.depth - commit.depth;
-      }
-    } else {
-      const parent = getParentElement(commit, commitList);
-
-      if (parent) {
-        if (commit.depth < parent.depth) {
-          commit.depthDistance = parent.depth - commit.depth;
-        }
-        if (commit.depth > parent.depth) {
-          commit.depthDistance = parent.depth - commit.depth;
-        }
-      }
-    }
-  }
-
-  function defineDepth(commit, index, commitList, maxDepth, branchMap) {
-    const shouldPrint = ["c252374"].includes(commit.commit);
-    if (index === 0) {
-      commit.depth = 0;
-      initializeBranchMap(index, branchMap);
-      branchMap[`${index}`][`${commit.depth}`] = commit.commit;
-    } else {
-      const prevCommit = commitList[index - 1];
-      const parent = getParentElement(commit, commitList);
-      const mergeParent = getMergeParentElement(commit, commitList);
-
-      //define commit depth
-      if (prevCommit.parent === commit.commit) {
-        if (commit.depth === undefined) {
-          commit.depth = prevCommit.depth;
-        }
-        if (commit.sonsNumber > 1 || commit.sonsMergeNumber > 0) {
-          const minDepthSon = getMinDepthAllSons(commit);
-          if (minDepthSon !== null) {
-            commit.depth = minDepthSon;
-          }
-        }
-      } else {
-        if (commit.sonsNumber === 0) {
-          if (commit.sonsMergeNumber > 0) {
-            const sonMerge = commit.sonsMerge[0];
-            if (maxDepth - sonMerge.depth > 1) {
-              for (
-                let tryDepth = sonMerge.depth;
-                tryDepth < maxDepth;
-                tryDepth++
-              ) {
-                if (!branchMap[`${index}`][`${tryDepth}`]) {
-                  commit.depth = tryDepth;
-                  break;
-                }
-              }
-            } else {
-              commit.depth = maxDepth;
-            }
-          } else {
-            maxDepth++;
-            commit.depth = maxDepth;
-          }
-        } else if (commit.sonsNumber === 1) {
-          commit.depth = commit.sons[0].depth;
-        } else if (commit.sonsNumber > 1) {
-          const minDepthSon = getMinDepthAllSons(commit);
-          if (minDepthSon !== null) {
-            commit.depth = minDepthSon;
-          }
-          //alert(commit.commit)
-        }
-      }
-      if (commit.sonsNumber > 1) {
-        maxDepth = Math.max(0, maxDepth - (commit.sons.length - 1));
-      }
-      if (commit.sonsMergeNumber > 0) {
-        for (const son of commit.sonsMerge) {
-          if (son.depth > commit.depth) {
-            maxDepth = Math.max(0, maxDepth - 1);
-          }
-        }
-        // maxDepth = maxDepth - commit.sonsMergeNumber;
-      }
-      commit.maxDepth = maxDepth;
-
-      initializeBranchMap(index, branchMap);
-      for (
-        let countToDad = 0;
-        countToDad < (commit.dad?.parentDistance ?? 0);
-        countToDad++
-      ) {
-        initializeBranchMap(index + countToDad, branchMap);
-        branchMap[`${index + countToDad}`][`${commit.depth}`] = commit.commit;
-      }
-
-      if (commit.merge !== undefined) {
-        if (mergeParent.sonsNumber === 0) {
-          maxDepth++;
-        } else if (mergeParent.sonsNumber > 0) {
-          //verifica se existe filho com index mais baixo que o commit atual
-          const sonsWithLowerIndex = mergeParent.sons.filter(
-            (son) => son.index < commit.index
-          );
-          if (sonsWithLowerIndex.length > 0) {
-          } else {
-            maxDepth++;
-          }
-        }
-      }
-    }
-    return maxDepth;
-  }
-
-  function getDepthOfSonWithBiggestDistance(commit) {
-    let biggestDistance = 0;
-    let sonD = null;
-    let isMerge = false;
-    if (commit.sonsNumber > 0) {
-      for (const son of commit.sons) {
-        if (son.dadDistance > biggestDistance) {
-          biggestDistance = son.dadDistance;
-          sonD = son;
-          isMerge = false;
-        }
-      }
-    }
-    if (commit.sonsMergeNumber > 0) {
-      for (const son of commit.sonsMerge) {
-        if (son.merge.parentDistance > biggestDistance) {
-          biggestDistance = son.merge.parentDistance;
-          sonD = son;
-          isMerge = true;
-        }
-      }
-    }
-    if (isMerge) {
-      return sonD.depth + 1;
-    } else {
-      return sonD.depth;
-    }
-  }
-
-  function initializeBranchMap(index, branchMap) {
-    if (branchMap && !branchMap[`${index}`]) {
-      branchMap[`${index}`] = {};
-    }
-  }
-  function printIf(shouldPrint) {
-    if (shouldPrint) {
-      for (let index = 1; index < arguments.length; index++) {
-        const argument = arguments[index];
-        console.log(argument);
-      }
-    }
   }
 
   function defineBranch(commit, index, commitList) {
@@ -297,73 +121,6 @@ export default function Repository({ repositoryDirectory }) {
     } else {
       return null;
     }
-  }
-
-  function getMinDepthSon(commit) {
-    if (commit?.sons) {
-      let depth = Number.MAX_SAFE_INTEGER;
-      for (const son of commit.sons) {
-        const sonDepth = son.depth;
-        if (depth === null && sonDepth !== undefined && sonDepth !== null) {
-          depth = son.depth;
-        }
-        if (sonDepth !== undefined && sonDepth !== null && sonDepth < depth) {
-          depth = sonDepth;
-        }
-      }
-      return depth;
-    }
-    return null;
-  }
-  function getMinDepthMergeSon(commit) {
-    if (commit?.sonsMerge) {
-      let depth = Number.MAX_SAFE_INTEGER;
-      for (const son of commit.sonsMerge) {
-        const sonDepth = son.depth;
-        if (depth === null && sonDepth !== undefined && sonDepth !== null) {
-          depth = son.depth;
-        }
-        if (sonDepth !== undefined && sonDepth !== null && sonDepth < depth) {
-          depth = sonDepth;
-        }
-      }
-      return depth;
-    }
-    return null;
-  }
-
-  function getMinDepthAllSons(commit) {
-    const minDepthSon = getMinDepthSon(commit);
-    const minDepthMergeSon = getMinDepthMergeSon(commit);
-    if (minDepthSon !== null) {
-      if (minDepthMergeSon !== null) {
-        if (minDepthSon <= minDepthMergeSon) {
-          return minDepthSon;
-        } else {
-          return minDepthMergeSon + 1;
-        }
-      } else {
-        return minDepthSon;
-      }
-    } else if (minDepthMergeSon !== null) {
-      return minDepthMergeSon + 1;
-    } else {
-      return null;
-    }
-  }
-
-  function getMaxDepthSon(commit) {
-    if (commit?.sons) {
-      let depth = 0;
-      for (const son of commit.sons) {
-        const sonDepth = son.depth;
-        if (sonDepth > depth) {
-          depth = sonDepth;
-        }
-      }
-      return depth;
-    }
-    return null;
   }
 
   function defineDadIndexAndDistance(commit, index, commitList) {
@@ -436,13 +193,28 @@ export default function Repository({ repositoryDirectory }) {
   return (
     <>
       <h1>{repositoryDirectory.split(/[/\\]/).pop()}</h1>
-      <small style={{ opacity: 0.6 }}>{repositoryDirectory}</small><br></br>
+      <small style={{ opacity: 0.6 }}>{repositoryDirectory}</small>
+      <div style={{ display: "flex", gap: 16, alignItems: "center", margin: "8px 0", flexWrap: "wrap" }}>
+        <label style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 13, cursor: "pointer" }}>
+          <input type="checkbox" checked={allBranches} onChange={e => setAllBranches(e.target.checked)} />
+          All branches
+        </label>
+        <label style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 13, cursor: "pointer" }}>
+          <input type="checkbox" checked={useTopoOrder} onChange={e => setUseTopoOrder(e.target.checked)} />
+          Topo order
+        </label>
+        <label style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 13 }}>
+          Limit:
+          <input type="number" value={commitLimit} onChange={e => setCommitLimit(Number(e.target.value))}
+            style={{ width: 80, padding: "2px 6px", fontSize: 13 }} />
+        </label>
+      </div>
       <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, background: "var(--bg-primary, white)", padding: "8px 16px", zIndex: 100, borderTop: "1px solid var(--border-color, #ccc)" }}>
         <SearchText></SearchText>
       </div>
+      <div style={{ height: "60px" }}></div>
       <CommitTable
         commitList={commitList}
-        longestDepth={longestDepth}
       ></CommitTable>
     </>
   );

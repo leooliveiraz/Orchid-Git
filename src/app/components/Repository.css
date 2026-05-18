@@ -33,7 +33,6 @@
   white-space: nowrap;
   border: solid 0px black;
   border-spacing: 0px;
-  width: calc(var(--max-commit-depth) * var(--commit-depth-width));
 }
 
 .table-collumn-graph {
@@ -45,68 +44,4 @@
   width: 200px;
   background-color: white;
   position: relative;
-}
-
-/*Circulo 8 px*/
-.circle {
-  position: relative;
-  height: var(--commit-circle-height);
-  width: var(--commit-circle-height);
-  background-color: blue;
-  border-radius: 50%;
-  display: inline-block;
-  z-index: 99;
-  left: calc(1px + var(--commit-depth) * var(--commit-depth-width));
-}
-
-.vertical-line {
-  position: relative;
-  display: inline-block;
-  align-self: baseline;
-  height: calc(((var(--commit-line-height) + var(--commit-circle-half-height)) * var(--commit-lines)) - var(--commit-circle-half-height) - 2px);
-  width: 2px;
-  background-color: var(--commit-line-color);
-  z-index: 11;
-  top: var(--commit-line-half-height);
-  left: calc((var(--commit-circle-half-height) * -1) + (var(--commit-depth) * var(--commit-depth-width)));
-}
-
-.horizontal-line {
-  position: absolute;
-  float: left;
-  height: 1.5px;
-  width: calc((var(--commit-line-depth-width) * var(--commit-depth-distance)) - var(--commit-circle-half-height));
-  z-index: 11;
-  background-color: var(--commit-line-color);
-  left: calc((var(--commit-depth) * var(--commit-depth-width)) + (var(--commit-circle-half-height)));
-  top: var(--commit-line-half-height);
-}
-
-.opening-branch {
-  position: absolute;
-  float: left;
-  z-index: 19;
-  border: solid var(--commit-line-color) 2px;
-  border-bottom-right-radius: 10px;
-  border-left: 0px;
-  border-top: 0px;
-  bottom: calc(var(--commit-line-height) / 2);
-  height: calc(var(--commit-line-height) + var(--adjustment-vertical));
-  width: calc(var(--commit-depth-width) - 2px + var(--adjustment));
-  left: calc(3px + (var(--commit-circle-half-height)) + (var(--commit-depth) * var(--commit-depth-width)))
-}
-
-.closing-branch {
-  position: relative;
-  display: inline-block;
-  align-self: normal;
-  z-index: 13;
-  border: solid var(--commit-line-color) 2px;
-  border-top-right-radius: 10px;
-  border-left: 0px;
-  border-bottom: 0px;
-  top: calc(var(--commit-line-height) / 2);
-  left: calc((var(--commit-circle-height) / 2 * -1) + (var(--commit-depth) * var(--commit-depth-width)));
-  width: calc(var(--commit-depth-width) - 2px);
-  height: calc((var(--commit-line-height) * var(--commit-lines) + var(--adjustment)));
 }

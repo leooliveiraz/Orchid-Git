@@ -1,6 +1,7 @@
 import React from "react";
+import GitGraph from "./GitGraph.jsx";
 import Graphline from "./Graphline.jsx";
-export default function CommitTable({ commitList, longestDepth }) {
+export default function CommitTable({ commitList }) {
   return (
     <>
       <table>
@@ -27,12 +28,9 @@ export default function CommitTable({ commitList, longestDepth }) {
               <tr
                 key={'tr' + commit.commit}
                 className="table-row-commit"
-                style={{
-                  "--max-commit-depth": longestDepth ? longestDepth : "",
-                }}
               >
                 <td style={{ color: commit.merge ? "red" : "inherit", fontWeight: commit.merge ? "bold" : "inherit"}}>{index}</td>
-                <Graphline commit={commit} index={index} ></Graphline>
+                <GitGraph commit={commit} index={index} commitList={commitList} />
                 <td>{commit.commit}</td>
                 <td>{commit.parent}</td>
                 <td>

@@ -1,0 +1,5 @@
+.git-graph-svg {
+  overflow: visible;
+  display: block;
+  pointer-events: none;
+}
