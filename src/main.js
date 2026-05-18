@@ -1,9 +1,10 @@
 import { app, BrowserWindow } from "electron";
-const { dialog } = require("electron");
+const { dialog, Menu, MenuItem } = require("electron");
 import path from "node:path";
 import started from "electron-squirrel-startup";
 const ipcMain = require("electron").ipcMain;
 const childProcess = require("child_process");
+const fs = require("fs");
 const isWindows = process.platform === "win32";
 
 function runGit(args, cwd) {
@@ -35,6 +36,15 @@ const createWindow = () => {
   // Open the DevTools.
   mainWindow.webContents.openDevTools();
   win = mainWindow;
+
+  mainWindow.webContents.on("context-menu", (event, params) => {
+    const menu = new Menu();
+    menu.append(new MenuItem({
+      label: "Inspect Element",
+      click: () => mainWindow.webContents.inspectElement(params.x, params.y),
+    }));
+    menu.popup();
+  });
 };
 
 // This method will be called when Electron has finished
@@ -95,7 +105,10 @@ ipcMain.handle("get-repository-commits", function (event, directory, topoOrder, 
     ...(allCommits ? ["--all"] : []),
     ...(topoOrder ? ["--topo-order"] : []),
     ...(limit ? ["-n", String(limit)] : []),
-    `--pretty=format:{%n  "commit": "%h",%n  "parent": "%p",%n  "author": "%an",%n  "date": "%ad",%n  "message": "*()*()*()%s"*()*()*(),%n  "decoration":"%d"%n}!@#!@#!@#`,
+    `--pretty=format:%h%n%p%n%an%n%ad%n%s%n%D%x00`,
   ];
-  return runGit(args, directory);
+  const output = runGit(args, directory);
+  const dirName = path.basename(directory);
+  fs.writeFileSync(`${dirName}.txt`, output);
+  return output;
 });

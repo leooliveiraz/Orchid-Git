@@ -30,6 +30,7 @@ export default function Repository({ repositoryDirectory }) {
           commitLimit
         )
         .then((result) => {
+          console.log("result\n", result)
           const commits = configureCommitList(result);
           let longestDepthCommit = 0;
           let maxDepth = 0;
@@ -58,9 +59,6 @@ export default function Repository({ repositoryDirectory }) {
             //     longestDepthCommit = maxDepth;
             //   }
           });
-          // commits.forEach((element, index) => {
-          //   defineMerge(element, index, commits);
-          // });
 
           setCommitList(commits);
           setLongestDepth(longestDepthCommit);
@@ -74,23 +72,19 @@ export default function Repository({ repositoryDirectory }) {
   }, [commitList]);
 
   function configureCommitList(result) {
-    const commitStringArray = result.split("!@#!@#!@#");
     const commitList = [];
-    commitStringArray.forEach((commit) => {
-      try {
-        if (commit.trim()) {
-          const arrayMessage = commit.split('"*()*()*()');
-          let message = arrayMessage[1]?.replaceAll('"', '\\"');
-          const newElement = `${arrayMessage[0]}\"${message}\"${arrayMessage[2]}`;
-          const json = JSON.parse(newElement);
-          commitList.push(json);
-        }
-      } catch (e) {
-        console.log(e);
-        alert("erro ao configurar commit");
-      }
+    const blocks = result.split("\0").filter(Boolean);
+    blocks.forEach((block) => {
+      const lines = block.trimStart().split("\n");
+      commitList.push({
+        commit: lines[0] || "",
+        parent: lines[1] || "",
+        author: lines[2] || "",
+        date: lines[3] || "",
+        message: lines[4] || "",
+        decoration: (lines[5] || "").trim(),
+      });
     });
-    // const sortedList = commitList.sort((a,b) => new Date(b.date) - new Date(a.date))
     return commitList;
   }
 
@@ -210,7 +204,6 @@ export default function Repository({ repositoryDirectory }) {
         }
       }
     }
-    console.log([branchMap[commit.index]]);
     return maxDepth;
   }
 
