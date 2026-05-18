@@ -1,7 +1,7 @@
 import React from "react";
 import GitGraph from "./GitGraph.jsx";
 import Graphline from "./Graphline.jsx";
-export default function CommitTable({ commitList }) {
+export default function CommitTable({ commitList, connectionStyle }) {
   return (
     <>
       <table>
@@ -30,7 +30,7 @@ export default function CommitTable({ commitList }) {
                 className="table-row-commit"
               >
                 <td style={{ color: commit.merge ? "red" : "inherit", fontWeight: commit.merge ? "bold" : "inherit"}}>{index}</td>
-                <GitGraph commit={commit} index={index} commitList={commitList} />
+                <GitGraph commit={commit} index={index} commitList={commitList} connectionStyle={connectionStyle} />
                 <td>{commit.commit}</td>
                 <td>{commit.parent}</td>
                 <td>
