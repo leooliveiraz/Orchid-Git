@@ -6,15 +6,15 @@ export default function CommitTable({ commitList, longestDepth }) {
       <table>
         <thead className="table-header-title">
           <tr>
-            <th>Index</th>
+            <th title="INDEX">I.</th>
             <th>Graph</th>
             <th>Hash</th>
             <th>Parent</th>
-            <th>DI</th>
-            <th>DD</th>
-            <th>De</th>
-            <th>Sons</th> 
-            <th>MD</th>
+            <th title="DAD INDEX">DI</th>
+            <th title="DAD DISTANCE">DD</th>
+            <th title="DEPTH">De</th>
+            <th title="NUMBER OF SONS">Sons</th> 
+            <th title="MAX DEPTH">MD</th>
             <th>Decoration</th>
             <th>Author</th>
             <th>Date</th>

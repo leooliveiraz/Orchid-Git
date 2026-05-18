@@ -109,6 +109,6 @@ ipcMain.handle("get-repository-commits", function (event, directory, topoOrder, 
   ];
   const output = runGit(args, directory);
   const dirName = path.basename(directory);
-  fs.writeFileSync(`${dirName}.txt`, output);
+  fs.writeFileSync(`repositories/${dirName}.txt`, output);
   return output;
 });

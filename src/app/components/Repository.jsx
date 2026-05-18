@@ -30,7 +30,6 @@ export default function Repository({ repositoryDirectory }) {
           commitLimit
         )
         .then((result) => {
-          console.log("result\n", result)
           const commits = configureCommitList(result);
           let longestDepthCommit = 0;
           let maxDepth = 0;
@@ -118,15 +117,14 @@ export default function Repository({ repositoryDirectory }) {
       initializeBranchMap(index, branchMap);
       branchMap[`${index}`][`${commit.depth}`] = commit.commit;
     } else {
-      const nextCommit = commitList[index - 1];
-      const beforeCommit = commitList[index + 1];
+      const prevCommit = commitList[index - 1];
       const parent = getParentElement(commit, commitList);
       const mergeParent = getMergeParentElement(commit, commitList);
 
       //define commit depth
-      if (nextCommit.parent === commit.commit) {
+      if (prevCommit.parent === commit.commit) {
         if (commit.depth === undefined) {
-          commit.depth = nextCommit.depth;
+          commit.depth = prevCommit.depth;
         }
         if (commit.sonsNumber > 1 || commit.sonsMergeNumber > 0) {
           const minDepthSon = getMinDepthAllSons(commit);
@@ -167,12 +165,12 @@ export default function Repository({ repositoryDirectory }) {
         }
       }
       if (commit.sonsNumber > 1) {
-        maxDepth = maxDepth - (commit.sons.length - 1);
+        maxDepth = Math.max(0, maxDepth - (commit.sons.length - 1));
       }
       if (commit.sonsMergeNumber > 0) {
         for (const son of commit.sonsMerge) {
           if (son.depth > commit.depth) {
-            maxDepth = maxDepth - 1;
+            maxDepth = Math.max(0, maxDepth - 1);
           }
         }
         // maxDepth = maxDepth - commit.sonsMergeNumber;
