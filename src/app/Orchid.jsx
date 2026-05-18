@@ -5,7 +5,10 @@ import { Box } from "@mui/material";
 import MainArea from "./components/MainArea.jsx";
 import AppMenu from "./components/AppMenu.jsx";
 export default function Orchid() {
-  const [directory, setDirectory] = useState("/home/leo/Projects/mf");
+  const [directory, setDirectory] = useState(() => localStorage.getItem("orchit-last-dir") || "");
+  useEffect(() => {
+    if (directory) localStorage.setItem("orchit-last-dir", directory);
+  }, [directory]);
 
   useEffect(() => {
     function keyDown(e) {
