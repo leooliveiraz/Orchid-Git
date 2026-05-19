@@ -30,7 +30,42 @@ function straightPath(x1, y1, vDist, x2, y2) {
   return `M ${x1},${y1} L ${x2},${y2}`;
 }
 
-const PATH_FUNCS = { bezier: bezierPath, angular: angularPath, straight: straightPath };
+function stepPath(x1, y1, vDist, x2, y2) {
+  if (vDist <= 0) return `M ${x1},${y1} L ${x2},${y2}`;
+  const turnY = (y1 + vDist + y2) / 2;
+  return `M ${x1},${y1} L ${x1},${turnY} L ${x2},${turnY} L ${x2},${y2}`;
+}
+
+function teardropPath(x1, y1, vDist, x2, y2) {
+  if (vDist <= 0) {
+    const dy = Math.abs(y2 - y1) * 0.15;
+    return `M ${x1},${y1} C ${x1},${y1 + dy} ${x2},${y2 - dy} ${x2},${y2}`;
+  }
+  const midY = y1 + vDist;
+  const dy = Math.abs(y2 - midY) * 0.15;
+  return `M ${x1},${y1} v ${vDist} C ${x1},${midY + dy} ${x2},${y2 - dy} ${x2},${y2}`;
+}
+
+function roundedPath(x1, y1, vDist, x2, y2) {
+  if (vDist <= 0) {
+    const dy = Math.abs(y2 - y1) * 0.5;
+    return `M ${x1},${y1} C ${x1},${y1 + dy} ${x2},${y2 - dy} ${x2},${y2}`;
+  }
+  const midY = y1 + vDist;
+  const dy = Math.abs(y2 - midY) * 0.5;
+  return `M ${x1},${y1} v ${vDist} C ${x1},${midY + dy * 1.5} ${x2},${y2 - dy * 0.5} ${x2},${y2}`;
+}
+
+function elbowPath(x1, y1, vDist, x2, y2) {
+  if (vDist <= 0) return `M ${x1},${y1} L ${x2},${y2}`;
+  const turnY = y1 + vDist * 0.3;
+  return `M ${x1},${y1} L ${x1},${turnY} L ${x2},${turnY} L ${x2},${y2}`;
+}
+
+const PATH_FUNCS = {
+  bezier: bezierPath, angular: angularPath, straight: straightPath,
+  step: stepPath, teardrop: teardropPath, rounded: roundedPath, elbow: elbowPath
+};
 
 export default function GitGraph({ commit, index, commitList, connectionStyle, lanesAtRow, maxDepth }) {
   const activeLanes = lanesAtRow?.[index] || [];
@@ -38,6 +73,7 @@ export default function GitGraph({ commit, index, commitList, connectionStyle, l
   const totalWidth = Math.max((maxDepth + 1) * LANE_WIDTH + 10, 40);
   const color = COLORS[depth % COLORS.length];
   const pathFn = PATH_FUNCS[connectionStyle] || PATH_FUNCS.bezier;
+  const hasSonAtDepth = commit.sons?.some(s => s.depth === depth);
 
   const parentDepth = commit.dad?.parentIndex != null
     ? (commitList[commit.dad.parentIndex]?.depth ?? null)
@@ -54,17 +90,17 @@ export default function GitGraph({ commit, index, commitList, connectionStyle, l
       width={totalWidth}
       height={ROW_HEIGHT}
       className="git-graph-svg"
-      style={{ overflow: "visible", display: "block" }}
+      style={{ overflow: "visible", display: "block", position: "relative", zIndex: 9999 - index }}
     >
       {activeLanes.map(d => (
         <rect
           key={"ln" + d}
           x={d * LANE_WIDTH + 5}
-          y={0}
+          y={d === depth ? (hasSonAtDepth ? 0 : ROW_HEIGHT / 2 - CIRCLE_R) : 0}
           width={2}
-          height={ROW_HEIGHT}
-          fill="#d0d0d0"
-          rx={1}
+          height={d === depth ? (hasSonAtDepth ? ROW_HEIGHT + 1 : ROW_HEIGHT / 2 + CIRCLE_R + 1) : ROW_HEIGHT + 1}
+          fill={COLORS[d % COLORS.length]}
+          opacity={0.5}
         />
       ))}
 
@@ -89,7 +125,7 @@ export default function GitGraph({ commit, index, commitList, connectionStyle, l
             (commit.merge.parentDistance - 1) * ROW_HEIGHT,
             cx(mergeDepth), ROW_HEIGHT / 2 + commit.merge.parentDistance * ROW_HEIGHT
           )}
-          stroke={COLORS[mergeDepth % COLORS.length]}
+          stroke={color}
           fill="none"
           strokeWidth={2}
           strokeLinecap="round"

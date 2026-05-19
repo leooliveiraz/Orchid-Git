@@ -1,7 +1,7 @@
 import React, { useMemo } from "react";
 import GitGraph from "./GitGraph.jsx";
 import Graphline from "./Graphline.jsx";
-export default function CommitTable({ commitList }) {
+export default function CommitTable({ commitList, connectionStyle }) {
   const { lanesAtRow, maxDepth } = useMemo(() => {
     const lanesAtRow = {};
     commitList.forEach((commit, index) => {
@@ -66,7 +66,7 @@ export default function CommitTable({ commitList }) {
                 >
                   <td style={{ color: commit.merge ? "red" : "inherit", fontWeight: commit.merge ? "bold" : "inherit" }}>{index}</td>
                   <td className="table-collumn-graph">
-                    <GitGraph commit={commit} index={index} commitList={commitList} connectionStyle="bezier" lanesAtRow={lanesAtRow} maxDepth={maxDepth} />
+                    <GitGraph commit={commit} index={index} commitList={commitList} connectionStyle={connectionStyle} lanesAtRow={lanesAtRow} maxDepth={maxDepth} />
                   </td>
                   <td>{commit.commit}</td>
                   <td>{commit.parent}</td>

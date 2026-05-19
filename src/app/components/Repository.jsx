@@ -9,6 +9,11 @@ export default function Repository({ repositoryDirectory }) {
   const [useTopoOrder, setUseTopoOrder] = useState(() => JSON.parse(localStorage.getItem("orchid-topo-order") ?? "true"));
   const [commitLimit, setCommitLimit] = useState(() => JSON.parse(localStorage.getItem("orchid-commit-limit") ?? "10000"));
   const [showSearch, setShowSearch] = useState(false);
+  const [connectionStyle, setConnectionStyle] = useState(() => localStorage.getItem("orchid-connection-style") || "bezier");
+
+  useEffect(() => {
+    localStorage.setItem("orchid-connection-style", connectionStyle);
+  }, [connectionStyle]);
 
   useEffect(() => {
     function keyDown(e) {
@@ -180,6 +185,19 @@ export default function Repository({ repositoryDirectory }) {
           <input type="number" value={commitLimit} onChange={e => setCommitLimit(Number(e.target.value))}
             style={{ width: 80, padding: "2px 6px", fontSize: 13 }} />
         </label>
+        <span style={{ fontSize: 13, display: "flex", gap: 2 }}>
+          {["bezier", "angular", "straight", "step", "teardrop", "rounded", "elbow"].map(mode => (
+            <span key={mode}
+              onClick={() => setConnectionStyle(mode)}
+              style={{
+                padding: "2px 6px", cursor: "pointer", borderRadius: 3,
+                background: connectionStyle === mode ? "#1976d2" : "#e0e0e0",
+                color: connectionStyle === mode ? "#fff" : "#333",
+                fontSize: 11, userSelect: "none",
+              }}
+            >{mode}</span>
+          ))}
+        </span>
       </div>
       {showSearch && (
         <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, background: "var(--bg-primary, white)", padding: "8px 16px", zIndex: 100, borderTop: "1px solid var(--border-color, #ccc)" }}>
@@ -187,7 +205,7 @@ export default function Repository({ repositoryDirectory }) {
         </div>
       )}
       <div style={{ height: "60px" }}></div>
-      <CommitTable commitList={commitList}></CommitTable>
+      <CommitTable commitList={commitList} connectionStyle={connectionStyle}></CommitTable>
     </>
   );
 }
