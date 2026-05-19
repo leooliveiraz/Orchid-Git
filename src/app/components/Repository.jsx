@@ -119,12 +119,14 @@ export default function Repository({ repositoryDirectory }) {
               if (prev.dad?.parentIndex === index) {
                 let d = prev.depth;
                 if (commit.sons?.length) {
-                  d = Math.min(...commit.sons.map(s => s.depth));
+                  const vals = commit.sons.filter(s => Number.isFinite(s.depth)).map(s => s.depth);
+                  d = vals.length ? Math.min(...vals) : 0;
                 }
                 commit.depth = d;
                 occupy(index, d);
               } else if (commit.sons?.length) {
-                const minDepth = Math.min(...commit.sons.map(s => s.depth));
+                const vals = commit.sons.filter(s => Number.isFinite(s.depth)).map(s => s.depth);
+                const minDepth = vals.length ? Math.min(...vals) : 0;
                 commit.depth = minDepth;
                 occupy(index, minDepth);
               } else {
@@ -141,10 +143,6 @@ export default function Repository({ repositoryDirectory }) {
               }
             }
           });
-
-          for (let i = 0; i < commits.length; i++) {
-            console.log("  " + i + ": " + commits[i].commit + " depth=" + commits[i].depth);
-          }
 
           setCommitList(commits);
         });

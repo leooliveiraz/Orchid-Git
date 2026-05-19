@@ -8,5 +8,5 @@ import '@fontsource/roboto/700.css';
 import './index.css';
 
 
-const root = createRoot(document.body);
+const root = createRoot(document.getElementById('root'));
 root.render(<Orchid/>);

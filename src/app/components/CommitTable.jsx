@@ -33,7 +33,7 @@ export default function CommitTable({ commitList, connectionStyle }) {
     });
     const sorted = {};
     for (const k in lanesAtRow) sorted[k] = [...lanesAtRow[k]].sort((a, b) => a - b);
-    const maxDepth = commitList.reduce((m, c) => Math.max(m, c.depth ?? 0), 0);
+    const maxDepth = commitList.reduce((m, c) => Math.max(m, Number.isFinite(c.depth) ? c.depth : 0), 0);
     return { lanesAtRow: sorted, maxDepth };
   }, [commitList]);
   return (

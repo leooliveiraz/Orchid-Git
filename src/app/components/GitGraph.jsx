@@ -69,28 +69,34 @@ const PATH_FUNCS = {
 
 export default function GitGraph({ commit, index, commitList, connectionStyle, lanesAtRow, maxDepth }) {
   const activeLanes = lanesAtRow?.[index] || [];
-  const depth = commit.depth ?? 0;
-  const totalWidth = Math.max((maxDepth + 1) * LANE_WIDTH + 10, 40);
+  const depth = Number.isFinite(commit?.depth) ? commit.depth : 0;
+  const safeMaxDepth = Number.isFinite(maxDepth) ? maxDepth : 0;
+  const totalWidth = Math.max((safeMaxDepth + 1) * LANE_WIDTH + 10, 40);
   const color = COLORS[depth % COLORS.length];
   const pathFn = PATH_FUNCS[connectionStyle] || PATH_FUNCS.bezier;
-  const hasSonAtDepth = commit.sons?.some(s => s.depth === depth);
+  const hasSonAtDepth = commit.sons?.some(s => Number.isFinite(s.depth) && s.depth === depth);
 
-  const parentDepth = commit.dad?.parentIndex != null
-    ? (commitList[commit.dad.parentIndex]?.depth ?? null)
+  const parentDepth = commit.dad?.parentIndex != null && Number.isFinite(commitList[commit.dad.parentIndex]?.depth)
+    ? commitList[commit.dad.parentIndex].depth
     : null;
 
-  const mergeDepth = commit.merge?.parentIndex != null
-    ? (commitList[commit.merge.parentIndex]?.depth ?? null)
+  const mergeDepth = commit.merge?.parentIndex != null && Number.isFinite(commitList[commit.merge.parentIndex]?.depth)
+    ? commitList[commit.merge.parentIndex].depth
     : null;
 
-  function cx(d) { return d * LANE_WIDTH + 6; }
+  function cx(d) { return Number.isFinite(d) ? d * LANE_WIDTH + 6 : 6; }
+
+  const pd = commit.dad?.parentDistance;
+  const safePd = Number.isFinite(pd) ? pd : 0;
+  const mpd = commit.merge?.parentDistance;
+  const safeMpd = Number.isFinite(mpd) ? mpd : 0;
 
   return (
     <svg
       width={totalWidth}
       height={ROW_HEIGHT}
       className="git-graph-svg"
-      style={{ overflow: "visible", display: "block", position: "relative", zIndex: 9999 - index }}
+      style={{ overflow: "visible", display: "block", position: "relative", zIndex: 10 }}
     >
       {activeLanes.map(d => (
         <rect
@@ -108,8 +114,8 @@ export default function GitGraph({ commit, index, commitList, connectionStyle, l
         <path
           d={pathFn(
             cx(depth), ROW_HEIGHT / 2,
-            (commit.dad.parentDistance - 1) * ROW_HEIGHT,
-            cx(parentDepth), ROW_HEIGHT / 2 + commit.dad.parentDistance * ROW_HEIGHT
+            (safePd - 1) * ROW_HEIGHT,
+            cx(parentDepth), ROW_HEIGHT / 2 + safePd * ROW_HEIGHT
           )}
           stroke={color}
           fill="none"
@@ -122,8 +128,8 @@ export default function GitGraph({ commit, index, commitList, connectionStyle, l
         <path
           d={pathFn(
             cx(depth), ROW_HEIGHT / 2,
-            (commit.merge.parentDistance - 1) * ROW_HEIGHT,
-            cx(mergeDepth), ROW_HEIGHT / 2 + commit.merge.parentDistance * ROW_HEIGHT
+            (safeMpd - 1) * ROW_HEIGHT,
+            cx(mergeDepth), ROW_HEIGHT / 2 + safeMpd * ROW_HEIGHT
           )}
           stroke={color}
           fill="none"
