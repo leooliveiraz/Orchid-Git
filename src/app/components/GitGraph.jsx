@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React from "react";
 import "./GitGraph.css";
 
 const LANE_WIDTH = 14;
@@ -32,50 +32,9 @@ function straightPath(x1, y1, vDist, x2, y2) {
 
 const PATH_FUNCS = { bezier: bezierPath, angular: angularPath, straight: straightPath };
 
-function computeLanes(commits) {
-  const lanesAtRow = {};
-  commits.forEach((commit, index) => {
-    if (!lanesAtRow[index]) lanesAtRow[index] = new Set();
-    lanesAtRow[index].add(commit.depth);
-
-    if (commit.merge) {
-      const mp = commits[commit.merge.parentIndex];
-      const mpDepth = mp ? mp.depth : null;
-      if (mpDepth === commit.depth) {
-        for (let r = index; r <= commit.merge.parentIndex; r++) {
-          if (!lanesAtRow[r]) lanesAtRow[r] = new Set();
-          lanesAtRow[r].add(mpDepth);
-        }
-      }
-    }
-  });
-
-  commits.forEach((commit, index) => {
-    if (!commit.dad) return;
-    const pDepth = commits[commit.dad.parentIndex]?.depth;
-    const endRow = pDepth === commit.depth ? commit.dad.parentIndex : index;
-    for (let r = index; r <= endRow; r++) {
-      if (!lanesAtRow[r]) lanesAtRow[r] = new Set();
-      lanesAtRow[r].add(commit.depth);
-    }
-    if (pDepth !== commit.depth && pDepth != null) {
-      if (!lanesAtRow[commit.dad.parentIndex]) lanesAtRow[commit.dad.parentIndex] = new Set();
-      lanesAtRow[commit.dad.parentIndex].add(pDepth);
-    }
-  });
-
-  const sorted = {};
-  for (const k in lanesAtRow) {
-    sorted[k] = [...lanesAtRow[k]].sort((a, b) => a - b);
-  }
-  return sorted;
-}
-
-export default function GitGraph({ commit, index, commitList, connectionStyle }) {
-  const lanesAtRow = useMemo(() => computeLanes(commitList), [commitList]);
-  const activeLanes = lanesAtRow[index] || [];
+export default function GitGraph({ commit, index, commitList, connectionStyle, lanesAtRow, maxDepth }) {
+  const activeLanes = lanesAtRow?.[index] || [];
   const depth = commit.depth ?? 0;
-  const maxDepth = commitList.reduce((m, c) => Math.max(m, c.depth ?? 0), 0);
   const totalWidth = Math.max((maxDepth + 1) * LANE_WIDTH + 10, 40);
   const color = COLORS[depth % COLORS.length];
   const pathFn = PATH_FUNCS[connectionStyle] || PATH_FUNCS.bezier;
