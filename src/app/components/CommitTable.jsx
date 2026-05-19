@@ -30,7 +30,7 @@ export default function CommitTable({ commitList }) {
                 className="table-row-commit"
               >
                 <td style={{ color: commit.merge ? "red" : "inherit", fontWeight: commit.merge ? "bold" : "inherit"}}>{index}</td>
-                <GitGraph commit={commit} index={index} commitList={commitList} />
+                <GitGraph commit={commit} index={index} commitList={commitList} connectionStyle="bezier" />
                 <td>{commit.commit}</td>
                 <td>{commit.parent}</td>
                 <td>

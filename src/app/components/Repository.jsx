@@ -39,11 +39,16 @@ export default function Repository({ repositoryDirectory }) {
 
           commits.forEach(commit => {
             const parents = commit.parent.split(" ");
-            parents.forEach(p => {
+            parents.forEach((p, idx) => {
               const parent = map[p];
-              if (parent) {
+              if (!parent) return;
+              if (idx === 0) {
                 parent.sons.push(commit);
                 parent.sonsNumber = parent.sons.length;
+              } else {
+                if (!parent.sonsMerge) parent.sonsMerge = [];
+                parent.sonsMerge.push(commit);
+                parent.sonsMergeNumber = parent.sonsMerge.length;
               }
             });
           });
@@ -120,11 +125,8 @@ export default function Repository({ repositoryDirectory }) {
             }
           });
 
-          if (commits.length) {
-            console.log("=== DEPTHS ===");
-            for (let i = 0; i < commits.length; i++) {
-              console.log("  " + i + ": " + commits[i].commit + " depth=" + commits[i].depth + " parent=" + commits[i].parent);
-            }
+          for (let i = 0; i < commits.length; i++) {
+            console.log("  " + i + ": " + commits[i].commit + " depth=" + commits[i].depth);
           }
 
           setCommitList(commits);
