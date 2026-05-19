@@ -7,12 +7,14 @@ import {
   Typography,
 } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
+import Brightness4Icon from "@mui/icons-material/Brightness4";
+import Brightness7Icon from "@mui/icons-material/Brightness7";
 import React, { useContext } from "react";
 import { OrchidContext } from "../OrchidContext.jsx";
 import "./AppMenu.css"
 
 export default function AppMenu() {
-  const { directory, setDirectory } = useContext(OrchidContext);
+  const { directory, setDirectory, themeMode, toggleTheme } = useContext(OrchidContext);
   
   function selectDirectory() {
     window.api.selectDirectory("").then((data) => {
@@ -39,6 +41,9 @@ export default function AppMenu() {
           <Typography variant="h5" component="div" sx={{ flexGrow: 1 }}>
             Orchid
           </Typography>
+          <IconButton color="inherit" onClick={toggleTheme} sx={{ mr: 1 }}>
+            {themeMode === "dark" ? <Brightness7Icon /> : <Brightness4Icon />}
+          </IconButton>
           <Button color="inherit" onClick={() => {selectDirectory()}}>Open Project</Button>
         </Toolbar>
       </AppBar>

@@ -1,3 +1,3 @@
 import React,{ createContext } from "react";
 
-export const OrchidContext = createContext();
+export const OrchidContext = createContext({ themeMode: "light", toggleTheme: () => {} });

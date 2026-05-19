@@ -1,5 +1,5 @@
 :root {
-  --commit-line-color: red;
+  --commit-line-color: var(--graph-line);
   --commit-line-height: 24px;
   --commit-line-half-height: calc(var(--commit-line-height) / 2);
   --commit-circle-height: 10px;
@@ -19,20 +19,28 @@
   position: sticky;
   top: 0;
   z-index: 100;
-  background-color: var(--bg-primary, white);
+  background-color: var(--bg-table, white);
 }
 
 .table-header-title th {
   background-color: inherit;
+  color: var(--text-primary);
+  border-bottom: 1px solid var(--border-color);
 }
 
-/*Linha 32 px*/
 .table-row-commit {
   height: var(--commit-line-height);
   line-height: var(--commit-line-height);
   white-space: nowrap;
-  border: solid 0px black;
   border-spacing: 0px;
+}
+
+.table-row-commit td {
+  background-color: var(--bg-table);
+  color: var(--text-primary);
+  border-bottom: 1px solid var(--border-color);
+  white-space: nowrap;
+  padding: 0 4px;
 }
 
 .table-collumn-graph {
@@ -41,7 +49,7 @@
   align-items: center;
   justify-content: flex-start;
   height: var(--commit-line-height);
-  width: 200px;
-  background-color: white;
+  min-width: 80px;
+  background-color: var(--graph-bg);
   position: relative;
 }

@@ -1,14 +1,26 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { OrchidContext } from "./OrchidContext.jsx";
 import LeftMenu from "./components/LeftMenu.jsx";
 import { Box } from "@mui/material";
+import { createTheme, ThemeProvider } from "@mui/material/styles";
 import MainArea from "./components/MainArea.jsx";
 import AppMenu from "./components/AppMenu.jsx";
 export default function Orchid() {
-  const [directory, setDirectory] = useState(() => localStorage.getItem("orchit-last-dir") || "");
+  const [directory, setDirectory] = useState(() => localStorage.getItem("orchid-last-dir") || "");
+  const [themeMode, setThemeMode] = useState(() => localStorage.getItem("orchid-theme") || "light");
+
+  const toggleTheme = () => {
+    setThemeMode((prev) => (prev === "light" ? "dark" : "light"));
+  };
+
   useEffect(() => {
-    if (directory) localStorage.setItem("orchit-last-dir", directory);
+    if (directory) localStorage.setItem("orchid-last-dir", directory);
   }, [directory]);
+
+  useEffect(() => {
+    localStorage.setItem("orchid-theme", themeMode);
+    document.documentElement.className = themeMode === "dark" ? "dark" : "";
+  }, [themeMode]);
 
   useEffect(() => {
     function keyDown(e) {
@@ -29,9 +41,11 @@ export default function Orchid() {
     };
   }, []);
 
+  const theme = useMemo(() => createTheme({ palette: { mode: themeMode } }), [themeMode]);
+
   return (
-    <>
-      <OrchidContext.Provider value={{ directory, setDirectory }}>
+    <ThemeProvider theme={theme}>
+      <OrchidContext.Provider value={{ directory, setDirectory, themeMode, toggleTheme }}>
         <Box sx={{ flexGrow: 1 }}>
           <AppMenu></AppMenu>
           <Box sx={{ display: "flex" }}>
@@ -43,6 +57,6 @@ export default function Orchid() {
           </Box>
         </Box>
       </OrchidContext.Provider>
-    </>
+    </ThemeProvider>
   );
 }

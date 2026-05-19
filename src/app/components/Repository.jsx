@@ -8,6 +8,18 @@ export default function Repository({ repositoryDirectory }) {
   const [allBranches, setAllBranches] = useState(() => JSON.parse(localStorage.getItem("orchid-all-branches") ?? "true"));
   const [useTopoOrder, setUseTopoOrder] = useState(() => JSON.parse(localStorage.getItem("orchid-topo-order") ?? "true"));
   const [commitLimit, setCommitLimit] = useState(() => JSON.parse(localStorage.getItem("orchid-commit-limit") ?? "10000"));
+  const [showSearch, setShowSearch] = useState(false);
+
+  useEffect(() => {
+    function keyDown(e) {
+      if ((e.ctrlKey || e.metaKey) && e.key === "f") {
+        e.preventDefault();
+        setShowSearch(prev => !prev);
+      }
+    }
+    document.addEventListener("keydown", keyDown);
+    return () => document.removeEventListener("keydown", keyDown);
+  }, []);
 
   useEffect(() => {
     localStorage.setItem("orchid-all-branches", JSON.stringify(allBranches));
@@ -169,9 +181,11 @@ export default function Repository({ repositoryDirectory }) {
             style={{ width: 80, padding: "2px 6px", fontSize: 13 }} />
         </label>
       </div>
-      <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, background: "var(--bg-primary, white)", padding: "8px 16px", zIndex: 100, borderTop: "1px solid var(--border-color, #ccc)" }}>
-        <SearchText></SearchText>
-      </div>
+      {showSearch && (
+        <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, background: "var(--bg-primary, white)", padding: "8px 16px", zIndex: 100, borderTop: "1px solid var(--border-color, #ccc)" }}>
+          <SearchText visible={showSearch}></SearchText>
+        </div>
+      )}
       <div style={{ height: "60px" }}></div>
       <CommitTable commitList={commitList}></CommitTable>
     </>
