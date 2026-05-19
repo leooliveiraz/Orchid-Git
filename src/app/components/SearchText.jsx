@@ -14,7 +14,19 @@ export default function SearchText({ visible }){
     }, [visible]);
 
     function findText(){
-        if(text) window.find(text, false, false, true);
+        if(text && window.find(text, false, false, true)){
+            const sel = window.getSelection();
+            if (sel && sel.rangeCount > 0) {
+                const node = sel.getRangeAt(0).startContainer;
+                const el = node?.nodeType === 3 ? node.parentElement : node;
+                if (el) {
+                    const row = el.closest('.table-row-commit');
+                    if (row) {
+                        row.scrollIntoView({ block: "center", behavior: "smooth" });
+                    }
+                }
+            }
+        }
     }
 
     function findByText(key){
