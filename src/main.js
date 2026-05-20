@@ -289,6 +289,10 @@ ipcMain.handle("pull", (event, directory) => {
   return runGit(["pull"], directory);
 });
 
+ipcMain.handle("fetch", (event, directory) => {
+  return runGit(["fetch", "--all"], directory);
+});
+
 ipcMain.handle("clone", async (event, url, destPath) => {
   if (typeof url !== "string" || url.startsWith("-")) throw new Error("Invalid repository URL");
   try {

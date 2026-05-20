@@ -5,6 +5,7 @@ import {
   Toolbar,
   Typography,
   Tooltip,
+  Button,
 } from "@mui/material";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import SettingsIcon from "@mui/icons-material/Settings";
@@ -14,17 +15,35 @@ import Brightness7Icon from "@mui/icons-material/Brightness7";
 import FolderOpenIcon from "@mui/icons-material/FolderOpen";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import CallSplitIcon from "@mui/icons-material/CallSplit";
+import CloudUploadIcon from "@mui/icons-material/CloudUpload";
+import CloudDownloadIcon from "@mui/icons-material/CloudDownload";
+import SyncIcon from "@mui/icons-material/Sync";
 import React, { useContext, useState } from "react";
 import { OrchidContext } from "../OrchidContext.jsx";
 import CloneDialog from "./CloneDialog.jsx";
 import SettingsDialog from "./SettingsDialog.jsx";
 import CreateBranchDialog from "./CreateBranchDialog.jsx";
+import SuccessSnackbar from "./SuccessSnackbar.jsx";
+
+const OVERLAY_STYLE = {
+  position: "fixed", inset: 0, bgcolor: "rgba(0,0,0,0.4)",
+  display: "flex", alignItems: "center", justifyContent: "center",
+  zIndex: 1300,
+};
+
+const MODAL_STYLE = {
+  bgcolor: "background.paper", borderRadius: 3,
+  width: 400, maxWidth: "90vw", boxShadow: 24, p: 3,
+};
 
 export default function AppMenu({ onToggleMenu }) {
   const { directory, setDirectory, themeMode, toggleTheme, refresh } = useContext(OrchidContext);
   const [showClone, setShowClone] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showNewBranch, setShowNewBranch] = useState(false);
+  const [syncAction, setSyncAction] = useState(null);
+  const [syncError, setSyncError] = useState(null);
+  const [syncSuccess, setSyncSuccess] = useState(null);
 
   function selectDirectory() {
     window.api.selectDirectory("").then((data) => {
@@ -34,6 +53,41 @@ export default function AppMenu({ onToggleMenu }) {
       }
     })
   }
+
+  const handlePush = async () => {
+    setSyncAction(null);
+    setSyncError(null);
+    try {
+      await window.api.push(directory);
+      setSyncSuccess("Pushed successfully");
+      refresh();
+    } catch (e) {
+      setSyncError(e.message || String(e));
+    }
+  };
+
+  const handlePull = async () => {
+    setSyncAction(null);
+    setSyncError(null);
+    try {
+      await window.api.pull(directory);
+      setSyncSuccess("Pull completed");
+      refresh();
+    } catch (e) {
+      setSyncError(e.message || String(e));
+    }
+  };
+
+  const handleFetch = async () => {
+    setSyncError(null);
+    try {
+      await window.api.fetch(directory);
+      setSyncSuccess("Fetch completed");
+      refresh();
+    } catch (e) {
+      setSyncError(e.message || String(e));
+    }
+  };
 
   return (
     <Box>
@@ -75,6 +129,27 @@ export default function AppMenu({ onToggleMenu }) {
             </Tooltip>
           )}
           {directory && (
+            <Tooltip title="Push">
+              <IconButton color="inherit" onClick={() => setSyncAction("push")} sx={{ mr: 0.5 }}>
+                <CloudUploadIcon />
+              </IconButton>
+            </Tooltip>
+          )}
+          {directory && (
+            <Tooltip title="Pull">
+              <IconButton color="inherit" onClick={() => setSyncAction("pull")} sx={{ mr: 0.5 }}>
+                <CloudDownloadIcon />
+              </IconButton>
+            </Tooltip>
+          )}
+          {directory && (
+            <Tooltip title="Fetch">
+              <IconButton color="inherit" onClick={handleFetch} sx={{ mr: 0.5 }}>
+                <SyncIcon />
+              </IconButton>
+            </Tooltip>
+          )}
+          {directory && (
             <Tooltip title="Create branch">
               <IconButton color="inherit" onClick={() => setShowNewBranch(true)} sx={{ mr: 0.5 }}>
                 <CallSplitIcon />
@@ -91,6 +166,46 @@ export default function AppMenu({ onToggleMenu }) {
       {showClone && <CloneDialog onClose={() => setShowClone(false)} />}
       {showSettings && <SettingsDialog onClose={() => setShowSettings(false)} />}
       {showNewBranch && <CreateBranchDialog onClose={() => setShowNewBranch(false)} />}
+
+      {syncAction === "push" && (
+        <Box sx={OVERLAY_STYLE}>
+          <Box sx={MODAL_STYLE}>
+            <Typography variant="h6" sx={{ mb: 1 }}>Push</Typography>
+            <Typography variant="body2" sx={{ mb: 2 }}>Push commits to the remote repository?</Typography>
+            <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 1 }}>
+              <Button onClick={() => setSyncAction(null)}>Cancel</Button>
+              <Button variant="contained" onClick={handlePush}>Push</Button>
+            </Box>
+          </Box>
+        </Box>
+      )}
+
+      {syncAction === "pull" && (
+        <Box sx={OVERLAY_STYLE}>
+          <Box sx={MODAL_STYLE}>
+            <Typography variant="h6" sx={{ mb: 1 }}>Pull</Typography>
+            <Typography variant="body2" sx={{ mb: 2 }}>Pull latest changes from the remote repository?</Typography>
+            <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 1 }}>
+              <Button onClick={() => setSyncAction(null)}>Cancel</Button>
+              <Button variant="contained" onClick={handlePull}>Pull</Button>
+            </Box>
+          </Box>
+        </Box>
+      )}
+
+      {syncError && (
+        <Box sx={OVERLAY_STYLE}>
+          <Box sx={MODAL_STYLE}>
+            <Typography variant="h6" sx={{ mb: 1, color: "error.main" }}>Error</Typography>
+            <Typography variant="body2" sx={{ mb: 2 }}>{syncError}</Typography>
+            <Box sx={{ display: "flex", justifyContent: "flex-end" }}>
+              <Button onClick={() => setSyncError(null)}>Close</Button>
+            </Box>
+          </Box>
+        </Box>
+      )}
+
+      <SuccessSnackbar message={syncSuccess} onClose={() => setSyncSuccess(null)} />
     </Box>
   );
 }

@@ -1,97 +1,98 @@
 import React from "react";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import "@testing-library/jest-dom";
-import ChangesPanel from "../src/app/components/ChangesPanel";
+import AppMenu from "../src/app/components/AppMenu";
+import { OrchidContext } from "../src/app/OrchidContext";
 
-const mockStatus = [
-  { type: "M", path: "src/file1.js", staged: true },
-  { type: "M", path: "src/file2.js", staged: false },
-];
-
-beforeEach(() => {
+function renderAppMenu() {
+  const refresh = jest.fn();
   window.api = {
-    getStatus: jest.fn().mockResolvedValue(mockStatus),
-    stageFile: jest.fn().mockResolvedValue(""),
-    unstageFile: jest.fn().mockResolvedValue(""),
-    stageAll: jest.fn().mockResolvedValue(""),
-    getDiff: jest.fn().mockResolvedValue("diff content"),
-    getStagedDiff: jest.fn().mockResolvedValue("staged diff"),
     push: jest.fn().mockResolvedValue("done"),
     pull: jest.fn().mockResolvedValue("done"),
+    fetch: jest.fn().mockResolvedValue("done"),
   };
-});
+
+  const result = render(
+    <OrchidContext.Provider value={{
+      directory: "/test/repo",
+      setDirectory: () => {},
+      themeMode: "light",
+      toggleTheme: () => {},
+      repoData: null,
+      setRepoData: () => {},
+      menuOpen: true,
+      setMenuOpen: () => {},
+      refresh,
+      refreshKey: 0,
+      recentDirs: [],
+    }}>
+      <AppMenu onToggleMenu={() => {}} />
+    </OrchidContext.Provider>
+  );
+
+  return { ...result, api: window.api, refresh };
+}
 
 afterEach(() => {
   delete window.api;
 });
 
-test("renders Push and Pull buttons", async () => {
-  render(<ChangesPanel directory="/repo" />);
-  await waitFor(() => {
-    expect(screen.getByText("Push")).toBeInTheDocument();
-    expect(screen.getByText("Pull")).toBeInTheDocument();
-  });
+test("renders Push, Pull and Fetch buttons", () => {
+  renderAppMenu();
+  expect(screen.getByLabelText("Push")).toBeInTheDocument();
+  expect(screen.getByLabelText("Pull")).toBeInTheDocument();
+  expect(screen.getByLabelText("Fetch")).toBeInTheDocument();
 });
 
 test("shows confirm modal on Push click", async () => {
-  render(<ChangesPanel directory="/repo" />);
-  await waitFor(() => {
-    fireEvent.click(screen.getByText("Push"));
-  });
-  expect(screen.getByText("Push commits to the remote repository?")).toBeInTheDocument();
+  renderAppMenu();
+  fireEvent.click(screen.getByLabelText("Push"));
+  expect(screen.getByText(/Push commits to the remote repository/)).toBeInTheDocument();
 });
 
 test("shows confirm modal on Pull click", async () => {
-  render(<ChangesPanel directory="/repo" />);
-  await waitFor(() => {
-    fireEvent.click(screen.getByText("Pull"));
-  });
-  expect(screen.getByText("Pull latest changes from the remote repository?")).toBeInTheDocument();
+  renderAppMenu();
+  fireEvent.click(screen.getByLabelText("Pull"));
+  expect(screen.getByText(/Pull latest changes from the remote repository/)).toBeInTheDocument();
 });
 
 test("calls api.push on confirm", async () => {
-  render(<ChangesPanel directory="/repo" />);
-  await waitFor(() => {
-    fireEvent.click(screen.getByText("Push"));
-  });
-  await screen.findByText("Push commits to the remote repository?");
+  renderAppMenu();
+  fireEvent.click(screen.getByLabelText("Push"));
+  await screen.findByText(/Push commits/);
   const btns = screen.getAllByText("Push");
   fireEvent.click(btns[btns.length - 1]);
   await waitFor(() => {
-    expect(window.api.push).toHaveBeenCalledWith("/repo");
+    expect(window.api.push).toHaveBeenCalledWith("/test/repo");
   });
 });
 
 test("calls api.pull on confirm", async () => {
-  render(<ChangesPanel directory="/repo" />);
-  await waitFor(() => {
-    fireEvent.click(screen.getByText("Pull"));
-  });
-  await screen.findByText("Pull latest changes from the remote repository?");
+  renderAppMenu();
+  fireEvent.click(screen.getByLabelText("Pull"));
+  await screen.findByText(/Pull latest changes/);
   const btns = screen.getAllByText("Pull");
   fireEvent.click(btns[btns.length - 1]);
   await waitFor(() => {
-    expect(window.api.pull).toHaveBeenCalledWith("/repo");
+    expect(window.api.pull).toHaveBeenCalledWith("/test/repo");
   });
 });
 
 test("cancel closes confirm modal", async () => {
-  render(<ChangesPanel directory="/repo" />);
-  await waitFor(() => {
-    fireEvent.click(screen.getByText("Push"));
-  });
-  expect(screen.getByText("Push commits to the remote repository?")).toBeInTheDocument();
+  renderAppMenu();
+  fireEvent.click(screen.getByLabelText("Push"));
+  expect(screen.getByText(/Push commits/)).toBeInTheDocument();
   fireEvent.click(screen.getByText("Cancel"));
-  expect(screen.queryByText("Push commits to the remote repository?")).not.toBeInTheDocument();
+  await waitFor(() => {
+    expect(screen.queryByText(/Push commits/)).not.toBeInTheDocument();
+  });
 });
 
 test("shows error when push fails", async () => {
-  window.api.push.mockRejectedValue(new Error("No remote configured"));
-  render(<ChangesPanel directory="/repo" />);
-  await waitFor(() => {
-    fireEvent.click(screen.getByText("Push"));
-  });
-  await screen.findByText("Push commits to the remote repository?");
+  const { api } = renderAppMenu();
+  api.push.mockRejectedValue(new Error("No remote configured"));
+  fireEvent.click(screen.getByLabelText("Push"));
+  await screen.findByText(/Push commits/);
   const btns = screen.getAllByText("Push");
   fireEvent.click(btns[btns.length - 1]);
   await waitFor(() => {
@@ -100,15 +101,21 @@ test("shows error when push fails", async () => {
 });
 
 test("shows error when pull fails", async () => {
-  window.api.pull.mockRejectedValue(new Error("Merge conflict"));
-  render(<ChangesPanel directory="/repo" />);
-  await waitFor(() => {
-    fireEvent.click(screen.getByText("Pull"));
-  });
-  await screen.findByText("Pull latest changes from the remote repository?");
+  const { api } = renderAppMenu();
+  api.pull.mockRejectedValue(new Error("Merge conflict"));
+  fireEvent.click(screen.getByLabelText("Pull"));
+  await screen.findByText(/Pull latest changes/);
   const btns = screen.getAllByText("Pull");
   fireEvent.click(btns[btns.length - 1]);
   await waitFor(() => {
     expect(screen.getByText("Merge conflict")).toBeInTheDocument();
+  });
+});
+
+test("calls api.fetch on Fetch click", async () => {
+  renderAppMenu();
+  fireEvent.click(screen.getByLabelText("Fetch"));
+  await waitFor(() => {
+    expect(window.api.fetch).toHaveBeenCalledWith("/test/repo");
   });
 });

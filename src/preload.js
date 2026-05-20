@@ -33,6 +33,7 @@ contextBridge.exposeInMainWorld("api", {
   getStagedDiff: (directory, filePath) => ipcRenderer.invoke("get-staged-diff", directory, filePath),
   push: (directory) => ipcRenderer.invoke("push", directory),
   pull: (directory) => ipcRenderer.invoke("pull", directory),
+  fetch: (directory) => ipcRenderer.invoke("fetch", directory),
   getUserConfig: (directory) => ipcRenderer.invoke("get-user-config", directory),
   setUserConfig: (directory, name, email) => ipcRenderer.invoke("set-user-config", directory, name, email),
   clone: (url, destPath) => ipcRenderer.invoke("clone", url, destPath),

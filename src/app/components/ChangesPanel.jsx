@@ -75,7 +75,6 @@ export default function ChangesPanel({ directory }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [showCommit, setShowCommit] = useState(false);
-  const [confirmAction, setConfirmAction] = useState(null);
   const [diffViewer, setDiffViewer] = useState(null);
   const [blameViewer, setBlameViewer] = useState(null);
   const [success, setSuccess] = useState(null);
@@ -162,30 +161,6 @@ export default function ChangesPanel({ directory }) {
     }
   };
 
-  const handlePush = async () => {
-    setConfirmAction(null);
-    setError(null);
-    try {
-      await window.api.push(directory);
-      setSuccess("Pushed successfully");
-      refresh();
-    } catch (e) {
-      setError(e.message || String(e));
-    }
-  };
-
-  const handlePull = async () => {
-    setConfirmAction(null);
-    setError(null);
-    try {
-      await window.api.pull(directory);
-      setSuccess("Pull completed");
-      refresh();
-    } catch (e) {
-      setError(e.message || String(e));
-    }
-  };
-
   const staged = statusList.filter(f => f.staged);
   const unstaged = statusList.filter(f => !f.staged);
 
@@ -200,8 +175,6 @@ export default function ChangesPanel({ directory }) {
         <Button size="small" variant="contained" onClick={() => setShowCommit(true)} disabled={staged.length === 0}>
           Commit
         </Button>
-        <Button size="small" variant="outlined" onClick={() => setConfirmAction("push")}>Push</Button>
-        <Button size="small" variant="outlined" onClick={() => setConfirmAction("pull")}>Pull</Button>
       </Box>
 
       {error && <Alert severity="error" sx={{ mb: 1 }}>{error}</Alert>}
@@ -232,32 +205,6 @@ export default function ChangesPanel({ directory }) {
 
       {showCommit && (
         <CommitDialog directory={directory} stagedFiles={staged} onClose={handleCommitClose} />
-      )}
-
-      {confirmAction === "push" && (
-        <Box sx={OVERLAY_STYLE}>
-          <Box sx={MODAL_STYLE}>
-            <Typography variant="h6" sx={{ mb: 1 }}>Push</Typography>
-            <Typography variant="body2" sx={{ mb: 2 }}>Push commits to the remote repository?</Typography>
-            <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 1 }}>
-              <Button onClick={() => setConfirmAction(null)}>Cancel</Button>
-              <Button variant="contained" onClick={handlePush}>Push</Button>
-            </Box>
-          </Box>
-        </Box>
-      )}
-
-      {confirmAction === "pull" && (
-        <Box sx={OVERLAY_STYLE}>
-          <Box sx={MODAL_STYLE}>
-            <Typography variant="h6" sx={{ mb: 1 }}>Pull</Typography>
-            <Typography variant="body2" sx={{ mb: 2 }}>Pull latest changes from the remote repository?</Typography>
-            <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 1 }}>
-              <Button onClick={() => setConfirmAction(null)}>Cancel</Button>
-              <Button variant="contained" onClick={handlePull}>Pull</Button>
-            </Box>
-          </Box>
-        </Box>
       )}
 
       {diffViewer && (
