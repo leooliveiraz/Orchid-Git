@@ -172,6 +172,19 @@ ipcMain.handle("get-staged-diff", (event, directory, filePath) => {
   return runGit(["diff", "--cached", "--", filePath], directory);
 });
 
+ipcMain.handle("get-user-config", (event, directory) => {
+  let name = "", email = "";
+  try { name = runGit(["config", "user.name"], directory).trim(); } catch {}
+  try { email = runGit(["config", "user.email"], directory).trim(); } catch {}
+  return { name, email };
+});
+
+ipcMain.handle("set-user-config", (event, directory, name, email) => {
+  runGit(["config", "user.name", name], directory);
+  runGit(["config", "user.email", email], directory);
+  return "ok";
+});
+
 ipcMain.handle("push", (event, directory) => {
   try {
     return runGit(["push"], directory);

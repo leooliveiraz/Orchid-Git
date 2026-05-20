@@ -20,7 +20,7 @@ export default function Repository({ repositoryDirectory }) {
   useEffect(() => {
     const useTopoOrder = true;
     const allBranches = true;
-    const commitLimit = 10000;
+    const commitLimit = 1000;
     if (window.api)
       window.api
         .getRepositoryCommits(

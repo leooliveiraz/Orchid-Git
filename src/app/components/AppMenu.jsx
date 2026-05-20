@@ -7,6 +7,7 @@ import {
   Tooltip,
 } from "@mui/material";
 import RefreshIcon from "@mui/icons-material/Refresh";
+import SettingsIcon from "@mui/icons-material/Settings";
 import MenuIcon from "@mui/icons-material/Menu";
 import Brightness4Icon from "@mui/icons-material/Brightness4";
 import Brightness7Icon from "@mui/icons-material/Brightness7";
@@ -15,10 +16,12 @@ import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import React, { useContext, useState } from "react";
 import { OrchidContext } from "../OrchidContext.jsx";
 import CloneDialog from "./CloneDialog.jsx";
+import SettingsDialog from "./SettingsDialog.jsx";
 
 export default function AppMenu({ onToggleMenu }) {
   const { directory, setDirectory, themeMode, toggleTheme, refresh } = useContext(OrchidContext);
   const [showClone, setShowClone] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
 
   function selectDirectory() {
     window.api.selectDirectory("").then((data) => {
@@ -61,6 +64,13 @@ export default function AppMenu({ onToggleMenu }) {
               <ContentCopyIcon />
             </IconButton>
           </Tooltip>
+          {directory && (
+            <Tooltip title="Repository settings">
+              <IconButton color="inherit" onClick={() => setShowSettings(true)} sx={{ mr: 0.5 }}>
+                <SettingsIcon />
+              </IconButton>
+            </Tooltip>
+          )}
           <Tooltip title="Open project">
             <IconButton color="inherit" onClick={selectDirectory}>
               <FolderOpenIcon />
@@ -69,6 +79,7 @@ export default function AppMenu({ onToggleMenu }) {
         </Toolbar>
       </AppBar>
       {showClone && <CloneDialog onClose={() => setShowClone(false)} />}
+      {showSettings && <SettingsDialog onClose={() => setShowSettings(false)} />}
     </Box>
   );
 }
