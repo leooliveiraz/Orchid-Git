@@ -98,7 +98,6 @@ ipcMain.handle("select-directory", function (event, arg) {
 });
 
 ipcMain.handle("get-repository-commits", function (event, directory, topoOrder, allCommits, limit) {
-  console.log(event, directory)
   if (!topoOrder) topoOrder = false;
   if (!allCommits) allCommits = false;
   const args = [

@@ -1,7 +1,8 @@
 import React, { useContext, useState, useCallback, useEffect } from "react";
 import {
   Drawer, Snackbar, Alert, Accordion, AccordionSummary, AccordionDetails,
-  List, ListItem, ListItemIcon, ListItemText, IconButton, Typography, Box,
+  List, ListItem, ListItemIcon, ListItemText,
+  Typography, Box,
 } from "@mui/material";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
@@ -134,12 +135,14 @@ export default function LeftMenu({ open, onRefresh }) {
         },
       }}
     >
-      <Box sx={{ display: "flex", alignItems: "center", gap: 1, p: 1, borderBottom: 1, borderColor: "divider" }}>
-        <IconButton size="small" onClick={onRefresh} title="Refresh (F5)">
-          <RefreshIcon fontSize="small" />
-        </IconButton>
+      <Box sx={{ display: "flex", alignItems: "center", p: 1, borderBottom: 1, borderColor: "divider", cursor: "pointer" }} onClick={onRefresh}>
+        <RefreshIcon fontSize="small" sx={{ mr: 0.5, color: "text.secondary" }} />
+        <Typography variant="body2" sx={{ flex: 1, color: "text.secondary" }}>
+          Refresh branches
+        </Typography>
+        <Typography variant="caption" sx={{ color: "text.disabled" }}>F5</Typography>
         {checking && (
-          <Typography variant="caption" sx={{ color: "text.secondary", animation: "pulse 1s infinite" }}>
+          <Typography variant="caption" sx={{ color: "text.secondary", animation: "pulse 1s infinite", ml: 1 }}>
             Working...
           </Typography>
         )}
