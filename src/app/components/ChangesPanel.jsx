@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useCallback } from "react";
 import CommitDialog from "./CommitDialog.jsx";
+import DiffViewer from "./DiffViewer.jsx";
 
 const STATUS_LABELS = {
   M: "Modified", A: "Added", D: "Deleted", R: "Renamed",
@@ -57,6 +58,7 @@ export default function ChangesPanel({ directory }) {
   const [error, setError] = useState(null);
   const [showCommit, setShowCommit] = useState(false);
   const [confirmAction, setConfirmAction] = useState(null);
+  const [diffViewer, setDiffViewer] = useState(null);
 
   const refresh = useCallback(async () => {
     if (!directory || !window.api) return;
@@ -110,9 +112,9 @@ export default function ChangesPanel({ directory }) {
         ? await window.api.getStagedDiff(directory, file.path)
         : await window.api.getDiff(directory, file.path);
       if (diff && diff.trim()) {
-        alert(diff);
+        setDiffViewer({ fileName: file.path, diffText: diff });
       } else {
-        alert("No diff available");
+        setError("No diff available");
       }
     } catch (e) {
       setError(e.message || String(e));
@@ -203,6 +205,14 @@ export default function ChangesPanel({ directory }) {
           confirmLabel="Pull"
           onConfirm={handlePull}
           onCancel={() => setConfirmAction(null)}
+        />
+      )}
+
+      {diffViewer && (
+        <DiffViewer
+          fileName={diffViewer.fileName}
+          diffText={diffViewer.diffText}
+          onClose={() => setDiffViewer(null)}
         />
       )}
     </div>

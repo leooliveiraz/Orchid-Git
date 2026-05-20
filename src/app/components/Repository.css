@@ -376,3 +376,77 @@
 .cd-btn-primary:hover:not(:disabled) {
   background: #1565c0;
 }
+
+.dv-modal {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  width: 720px;
+  max-width: 90vw;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+}
+
+.dv-body {
+  padding: 12px 16px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.dv-empty {
+  font-size: 13px;
+  color: var(--text-secondary);
+  text-align: center;
+  padding: 24px;
+}
+
+.dv-file {
+  margin-bottom: 12px;
+}
+
+.dv-file-path {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+  padding: 4px 8px;
+  background: var(--bg-table-alt);
+  border-radius: 3px;
+}
+
+.dv-diff {
+  font-size: 12px;
+  font-family: monospace;
+}
+
+.dv-diff .diff-line-normal,
+.dv-diff .diff-line-insert,
+.dv-diff .diff-line-delete {
+  padding: 1px 8px;
+  white-space: pre;
+}
+
+.dv-diff .diff-line-insert {
+  background: #e6ffec;
+}
+
+.dv-diff .diff-line-delete {
+  background: #ffebe9;
+}
+
+.dv-diff .diff-gutter-normal {
+  color: var(--text-secondary);
+  user-select: none;
+}
+
+.dv-diff .diff-gutter-insert {
+  background: #ccffd8;
+  user-select: none;
+}
+
+.dv-diff .diff-gutter-delete {
+  background: #ffd7d5;
+  user-select: none;
+}
