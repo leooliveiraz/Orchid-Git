@@ -154,6 +154,10 @@ ipcMain.handle("stash-drop", (event, directory, stashId) => {
   return runGit(["stash", "drop", stashId], directory);
 });
 
+ipcMain.handle("stash-push", (event, directory, message) => {
+  return runGit(["stash", "push", "-m", message], directory);
+});
+
 ipcMain.handle("delete-branch", (event, directory, branchName) => {
   try {
     return runGit(["branch", "-d", branchName], directory);

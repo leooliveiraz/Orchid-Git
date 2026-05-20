@@ -19,6 +19,7 @@ contextBridge.exposeInMainWorld("api", {
   createTag: (directory, tagName) => ipcRenderer.invoke("create-tag", directory, tagName),
   stashApply: (directory, stashId) => ipcRenderer.invoke("stash-apply", directory, stashId),
   stashDrop: (directory, stashId) => ipcRenderer.invoke("stash-drop", directory, stashId),
+  stashPush: (directory, message) => ipcRenderer.invoke("stash-push", directory, message),
   deleteBranch: (directory, branchName) => ipcRenderer.invoke("delete-branch", directory, branchName),
   deleteTag: (directory, tagName) => ipcRenderer.invoke("delete-tag", directory, tagName),
   getStatus: (directory) => ipcRenderer.invoke("get-status", directory),

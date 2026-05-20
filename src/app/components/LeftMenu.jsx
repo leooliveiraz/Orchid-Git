@@ -92,6 +92,9 @@ export default function LeftMenu({ open }) {
   const [newTagName, setNewTagName] = useState("");
   const [creatingTag, setCreatingTag] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(null);
+  const [showNewStash, setShowNewStash] = useState(false);
+  const [stashMessage, setStashMessage] = useState("");
+  const [creatingStash, setCreatingStash] = useState(false);
 
   useEffect(() => {
     if (message) {
@@ -183,6 +186,29 @@ export default function LeftMenu({ open }) {
   const openNewTagDialog = useCallback(() => {
     setNewTagName("");
     setShowNewTag(true);
+  }, []);
+
+  const handleCreateStash = async () => {
+    if (!stashMessage.trim() || !directory || !window.api) return;
+    setCreatingStash(true);
+    setMessage(null);
+    try {
+      await window.api.stashPush(directory, stashMessage.trim());
+      setMessageType("success");
+      setMessage("Stash created");
+      setShowNewStash(false);
+      setStashMessage("");
+      refresh();
+    } catch (e) {
+      setMessageType("error");
+      setMessage(e.message || String(e));
+    }
+    setCreatingStash(false);
+  };
+
+  const openNewStashDialog = useCallback(() => {
+    setStashMessage("");
+    setShowNewStash(true);
   }, []);
 
   const handleDeleteBranch = useCallback(async (branch) => {
@@ -287,7 +313,7 @@ export default function LeftMenu({ open }) {
               ))}
             </Section>
 
-            <Section title="Stash" count={repoData.stashList?.length ?? 0} defaultOpen={false}>
+            <Section title="Stash" count={repoData.stashList?.length ?? 0} defaultOpen={false} onAdd={openNewStashDialog}>
               {repoData.stashList?.map(s => (
                 <Item key={s.id} label={`${s.id}: ${s.message}`} onDoubleClick={() => handleStashDblClick(s.id)} onDelete={() => confirmDropStash(s.id)} />
               ))}
@@ -342,6 +368,29 @@ export default function LeftMenu({ open }) {
           <Button onClick={() => setShowNewTag(false)} disabled={creatingTag}>Cancel</Button>
           <Button variant="contained" onClick={handleCreateTag} disabled={!newTagName.trim() || creatingTag}>
             {creatingTag ? "Creating..." : "Create"}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog open={showNewStash} onClose={() => setShowNewStash(false)} maxWidth="xs" fullWidth>
+        <DialogTitle>Create stash</DialogTitle>
+        <DialogContent>
+          <TextField
+            autoFocus
+            fullWidth
+            label="Stash message"
+            placeholder="e.g. WIP: working on feature"
+            value={stashMessage}
+            onChange={e => setStashMessage(e.target.value)}
+            disabled={creatingStash}
+            onKeyDown={e => { if (e.key === "Enter") handleCreateStash(); }}
+            sx={{ mt: 1 }}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setShowNewStash(false)} disabled={creatingStash}>Cancel</Button>
+          <Button variant="contained" onClick={handleCreateStash} disabled={!stashMessage.trim() || creatingStash}>
+            {creatingStash ? "Creating..." : "Create"}
           </Button>
         </DialogActions>
       </Dialog>
