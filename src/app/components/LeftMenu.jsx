@@ -2,7 +2,8 @@ import React, { useContext, useState, useCallback, useEffect } from "react";
 import {
   Drawer, Snackbar, Alert, Accordion, AccordionSummary, AccordionDetails,
   List, ListItem, ListItemIcon, ListItemText,
-  Typography, Box, IconButton, Dialog, DialogTitle, DialogContent, DialogActions, Button, TextField,
+  Typography, Box, Button, TextField,
+  Dialog, DialogTitle, DialogContent, DialogActions,
 } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import AddIcon from "@mui/icons-material/Add";
@@ -16,9 +17,11 @@ function Section({ title, count, children, defaultOpen, onAdd }) {
       <AccordionSummary expandIcon={<ExpandMoreIcon sx={{ fontSize: 16, color: "text.secondary" }} />}>
         <Typography variant="body2" sx={{ fontWeight: 600, flex: 1 }}>{title}</Typography>
         {onAdd && (
-          <IconButton size="small" onClick={(e) => { e.stopPropagation(); onAdd(); }} sx={{ mr: 0.5, p: 0.25 }}>
-            <AddIcon sx={{ fontSize: 16, color: "text.secondary" }} />
-          </IconButton>
+          <Box component="span" onClick={(e) => { e.stopPropagation(); onAdd(); }}
+            sx={{ mr: 0.5, p: 0.25, lineHeight: 1, cursor: "pointer", borderRadius: 1, "&:hover": { bgcolor: "action.hover" } }}
+          >
+            <AddIcon sx={{ fontSize: 16, color: "text.secondary", display: "block" }} />
+          </Box>
         )}
         <Box component="span" sx={{
           fontSize: "0.6875rem", color: "text.secondary",

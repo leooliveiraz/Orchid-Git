@@ -321,6 +321,30 @@ export default function Repository({ repositoryDirectory }) {
             </Box>
           </Box>
         )}
+        {selectedCommit?.decoration && (
+          <Box sx={{ px: 2, py: 1, borderBottom: 1, borderColor: "divider", display: "flex", gap: 0.5, flexWrap: "wrap" }}>
+            {(() => {
+              const parts = selectedCommit.decoration.split(", ");
+              return parts.map((part, i) => {
+                const t = part.trim();
+                if (!t || t === "HEAD") return null;
+                const isHead = t.startsWith("HEAD -> ");
+                const isTag = t.startsWith("tag: ");
+                const isRemote = t.startsWith("origin/");
+                const name = isHead ? t.slice(8) : isTag ? t.slice(5) : t;
+                const chipColor = isHead ? "#e6a817" : isTag ? "#28a745" : isRemote ? "#6a737d" : "#1976d2";
+                return (
+                  <Chip
+                    key={i}
+                    label={name}
+                    size="small"
+                    sx={{ fontSize: "0.65rem", height: 20, color: "#fff", fontWeight: isHead ? 700 : 400, backgroundColor: chipColor }}
+                  />
+                );
+              });
+            })()}
+          </Box>
+        )}
         {getParentCommits().length > 0 && (
           <Box sx={{ px: 2, py: 1, borderBottom: 1, borderColor: "divider", bgcolor: "action.hover" }}>
             <Typography variant="caption" sx={{ fontWeight: 600, color: "text.secondary", mb: 0.5, display: "block" }}>

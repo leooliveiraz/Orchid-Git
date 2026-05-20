@@ -68,9 +68,6 @@ export default function CommitTable({ commitList, connectionStyle, onCommitClick
               Message
             </TableCell>
             <TableCell sx={{ fontWeight: 600, fontSize: "0.75rem", color: "text.secondary" }}>
-              Decoration
-            </TableCell>
-            <TableCell sx={{ fontWeight: 600, fontSize: "0.75rem", color: "text.secondary" }}>
               Author
             </TableCell>
             <TableCell sx={{ fontWeight: 600, fontSize: "0.75rem", color: "text.secondary" }}>
@@ -109,9 +106,6 @@ export default function CommitTable({ commitList, connectionStyle, onCommitClick
               </TableCell>
               <TableCell sx={{ fontSize: "0.8125rem", maxWidth: 400, overflow: "hidden", textOverflow: "ellipsis" }}>
                 {commit.message}
-              </TableCell>
-              <TableCell sx={{ fontSize: "0.75rem" }}>
-                {commit.decoration}
               </TableCell>
               <TableCell sx={{ fontSize: "0.75rem" }}>
                 {commit.author}

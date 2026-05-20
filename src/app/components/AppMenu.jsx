@@ -81,7 +81,7 @@ export default function AppMenu({ onToggleMenu }) {
               </IconButton>
             </Tooltip>
           )}
-          <Tooltip title="Open project">
+          <Tooltip title="Open repository">
             <IconButton color="inherit" onClick={selectDirectory}>
               <FolderOpenIcon />
             </IconButton>

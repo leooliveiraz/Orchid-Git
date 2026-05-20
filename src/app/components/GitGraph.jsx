@@ -91,9 +91,51 @@ export default function GitGraph({ commit, index, commitList, connectionStyle, l
   const mpd = commit.merge?.parentDistance;
   const safeMpd = Number.isFinite(mpd) ? mpd : 0;
 
+  function parseLabels(decoration) {
+    if (!decoration) return [];
+    const rawLabels = [];
+    const parts = decoration.split(", ");
+    for (const part of parts) {
+      const t = part.trim();
+      if (!t) continue;
+      if (t.startsWith("HEAD -> ")) { rawLabels.push({ type: "head", name: t.slice(8) }); }
+      else if (t.startsWith("tag: ")) { rawLabels.push({ type: "tag", name: t.slice(5) }); }
+      else if (t.startsWith("HEAD")) { /* skip */ }
+      else if (t.startsWith("origin/")) { rawLabels.push({ type: "remote", name: t.slice(7) }); }
+      else { rawLabels.push({ type: "branch", name: t }); }
+    }
+    const remoteNames = new Set(
+      rawLabels.filter(l => l.type === "remote").map(l => l.name)
+    );
+    const merged = [];
+    const seen = new Set();
+    for (const label of rawLabels) {
+      if (label.type === "remote") {
+        if (remoteNames.has(label.name) && rawLabels.some(l => l.type !== "remote" && l.name === label.name)) continue;
+        const key = `remote:${label.name}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        merged.push(label);
+      } else {
+        const key = `${label.type}:${label.name}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        merged.push({ ...label, hasRemote: remoteNames.has(label.name) });
+      }
+    }
+    return merged;
+  }
+
+  const labels = parseLabels(commit?.decoration);
+  const maxLabels = 2;
+  const labelWidths = labels.slice(0, maxLabels).map(l => (l.name.length + (l.hasRemote ? 2 : 0)) * 6 + 16);
+  const totalLabelWidth = labelWidths.reduce((s, w) => s + w + 6, 0) - 6;
+  const svgWidth = totalWidth + (labels.length ? totalLabelWidth + 10 : 0);
+  const labelStart = totalWidth + 2;
+
   return (
     <svg
-      width={totalWidth}
+      width={svgWidth}
       height={ROW_HEIGHT}
       className="git-graph-svg"
       style={{ overflow: "visible", display: "block", position: "relative", zIndex: 10 }}
@@ -146,6 +188,77 @@ export default function GitGraph({ commit, index, commitList, connectionStyle, l
         stroke="white"
         strokeWidth={2}
       />
+
+      {labels.slice(0, maxLabels).map((label, i) => {
+        const hasIcon = label.hasRemote;
+        const labelWidth = (label.name.length + (hasIcon ? 2 : 0)) * 6 + 16;
+        const cx = labelStart + (i * (labelWidth + 6)) + labelWidth / 2;
+        return (
+          <g key={i}>
+            <rect
+              x={cx - labelWidth / 2}
+              y={ROW_HEIGHT / 2 - 7}
+              width={labelWidth}
+              height={14}
+              rx={7}
+              fill={color}
+            />
+            <text
+              x={cx - (hasIcon ? 4 : 0)}
+              y={ROW_HEIGHT / 2}
+              textAnchor="middle"
+              dominantBaseline="middle"
+              fontSize={9}
+              fill="#fff"
+              fontFamily="monospace"
+              fontWeight={label.type === "head" ? 700 : 400}
+            >
+              {label.name}
+            </text>
+            {hasIcon && (
+              <text
+                x={cx + label.name.length * 3 + 3}
+                y={(ROW_HEIGHT / 2) + 2}
+                textAnchor="middle"
+                dominantBaseline="middle"
+                fontSize={13}
+                fill="#fff"
+                opacity={0.85}
+              >
+                ☁
+              </text>
+            )}
+          </g>
+        );
+      })}
+      {labels.length > maxLabels && (
+        <g>
+          <title>{labels.slice(maxLabels).map(l => l.name).join(", ")}</title>
+          <rect
+            x={labelStart + labelWidths.reduce((s, w) => s + w + 6, 0)}
+            y={ROW_HEIGHT / 2 - 7}
+            width={labels.length > maxLabels ? 24 : 0}
+            height={14}
+            rx={7}
+            fill={color}
+            opacity={0.7}
+            style={{ cursor: "pointer" }}
+          />
+          <text
+            x={labelStart + labelWidths.reduce((s, w) => s + w + 6, 0) + 12}
+            y={ROW_HEIGHT / 2}
+            textAnchor="middle"
+            dominantBaseline="middle"
+            fontSize={9}
+            fill="#fff"
+            fontFamily="monospace"
+            style={{ cursor: "pointer" }}
+            pointerEvents="none"
+          >
+            +{labels.length - maxLabels}
+          </text>
+        </g>
+      )}
     </svg>
   );
 }
