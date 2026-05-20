@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback } from "react";
 import CommitDialog from "./CommitDialog.jsx";
 import DiffViewer from "./DiffViewer.jsx";
+import SuccessSnackbar from "./SuccessSnackbar.jsx";
 
 const STATUS_LABELS = {
   M: "Modified", A: "Added", D: "Deleted", R: "Renamed",
@@ -59,6 +60,7 @@ export default function ChangesPanel({ directory }) {
   const [showCommit, setShowCommit] = useState(false);
   const [confirmAction, setConfirmAction] = useState(null);
   const [diffViewer, setDiffViewer] = useState(null);
+  const [success, setSuccess] = useState(null);
 
   const refresh = useCallback(async () => {
     if (!directory || !window.api) return;
@@ -123,7 +125,10 @@ export default function ChangesPanel({ directory }) {
 
   const handleCommitClose = (didCommit) => {
     setShowCommit(false);
-    if (didCommit) refresh();
+    if (didCommit) {
+      setSuccess("Commit created successfully");
+      refresh();
+    }
   };
 
   const handlePush = async () => {
@@ -131,6 +136,7 @@ export default function ChangesPanel({ directory }) {
     setError(null);
     try {
       await window.api.push(directory);
+      setSuccess("Pushed successfully");
       refresh();
     } catch (e) {
       setError(e.message || String(e));
@@ -142,6 +148,7 @@ export default function ChangesPanel({ directory }) {
     setError(null);
     try {
       await window.api.pull(directory);
+      setSuccess("Pull completed");
       refresh();
     } catch (e) {
       setError(e.message || String(e));
@@ -215,6 +222,8 @@ export default function ChangesPanel({ directory }) {
           onClose={() => setDiffViewer(null)}
         />
       )}
+
+      <SuccessSnackbar message={success} onClose={() => setSuccess(null)} />
     </div>
   );
 }

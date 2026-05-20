@@ -32,6 +32,7 @@ export default function CommitDialog({ directory, stagedFiles, onClose }) {
             placeholder="Commit message"
             value={message}
             onChange={e => setMessage(e.target.value)}
+            onKeyDown={e => { if ((e.ctrlKey || e.metaKey) && e.key === "Enter") handleCommit(); }}
             disabled={committing}
             autoFocus
           />

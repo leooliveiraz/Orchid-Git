@@ -450,3 +450,27 @@
   background: #ffd7d5;
   user-select: none;
 }
+
+.snackbar {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 10px 20px;
+  border-radius: 6px;
+  font-size: 13px;
+  z-index: 2000;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  animation: snackbar-in 0.25s ease;
+}
+
+@keyframes snackbar-in {
+  from { opacity: 0; transform: translateX(-50%) translateY(12px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+.snackbar-success {
+  background: #28a745;
+  color: #fff;
+}

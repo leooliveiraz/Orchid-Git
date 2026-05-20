@@ -34,28 +34,33 @@ function Item({ label, active, onDoubleClick }) {
 export default function LeftMenu({ open, onRefresh }) {
   const { directory, repoData } = useContext(OrchidContext);
   const [checking, setChecking] = useState(false);
-  const [error, setError] = useState(null);
+  const [message, setMessage] = useState(null);
+  const [messageType, setMessageType] = useState("error");
 
   useEffect(() => {
-    if (error) {
-      const timer = setTimeout(() => setError(null), 5000);
+    if (message) {
+      const timer = setTimeout(() => setMessage(null), 4000);
       return () => clearTimeout(timer);
     }
-  }, [error]);
+  }, [message]);
 
   const handleBranchDblClick = useCallback(async (branch) => {
     if (!directory || !window.api) return;
     if (branch === repoData?.currentBranch) {
-      setError("This branch is already selected");
+      setMessageType("info");
+      setMessage("This branch is already selected");
       return;
     }
     setChecking(true);
-    setError(null);
+    setMessage(null);
     try {
       await window.api.checkoutBranch(directory, branch);
+      setMessageType("success");
+      setMessage(`Switched to ${branch}`);
       if (onRefresh) onRefresh();
     } catch (e) {
-      setError(e.message || String(e));
+      setMessageType("error");
+      setMessage(e.message || String(e));
     }
     setChecking(false);
   }, [directory, repoData, onRefresh]);
@@ -63,12 +68,15 @@ export default function LeftMenu({ open, onRefresh }) {
   const handleStashDblClick = useCallback(async (stashId) => {
     if (!directory || !window.api) return;
     setChecking(true);
-    setError(null);
+    setMessage(null);
     try {
       await window.api.stashApply(directory, stashId);
+      setMessageType("success");
+      setMessage("Stash applied");
       if (onRefresh) onRefresh();
     } catch (e) {
-      setError(e.message || String(e));
+      setMessageType("error");
+      setMessage(e.message || String(e));
     }
     setChecking(false);
   }, [directory, onRefresh]);
@@ -137,11 +145,14 @@ export default function LeftMenu({ open, onRefresh }) {
         <div className="lm-empty">Select a directory to view branches</div>
       )}
 
-      <Snackbar open={!!error} autoHideDuration={5000} onClose={() => setError(null)}
+      <Snackbar open={!!message} autoHideDuration={4000} onClose={() => setMessage(null)}
         anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
       >
-        <Alert onClose={() => setError(null)} severity="error" variant="filled" sx={{ width: "100%" }}>
-          {error}
+        <Alert onClose={() => setMessage(null)}
+          severity={messageType === "error" ? "error" : messageType === "success" ? "success" : "info"}
+          variant="filled" sx={{ width: "100%" }}
+        >
+          {message}
         </Alert>
       </Snackbar>
     </Drawer>
