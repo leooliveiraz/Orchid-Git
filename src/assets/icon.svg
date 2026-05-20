@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#7b1fa2"/>
+      <stop offset="100%" stop-color="#ab47bc"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
+
+  <g fill="#fff" opacity="0.92">
+    <!-- Top center petal -->
+    <ellipse cx="256" cy="175" rx="36" ry="52"/>
+
+    <!-- Top left petal -->
+    <ellipse cx="200" cy="200" rx="34" ry="48" transform="rotate(-25 200 200)"/>
+
+    <!-- Top right petal -->
+    <ellipse cx="312" cy="200" rx="34" ry="48" transform="rotate(25 312 200)"/>
+
+    <!-- Bottom left petal -->
+    <ellipse cx="195" cy="300" rx="30" ry="44" transform="rotate(-40 195 300)"/>
+
+    <!-- Bottom right petal -->
+    <ellipse cx="317" cy="300" rx="30" ry="44" transform="rotate(40 317 300)"/>
+
+    <!-- Bottom center lip -->
+    <path d="M 220 310 Q 256 370 292 310 Q 256 340 220 310Z"/>
+  </g>
+
+  <!-- Center -->
+  <circle cx="256" cy="256" r="20" fill="#fff"/>
+  <circle cx="256" cy="256" r="10" fill="url(#bg)" opacity="0.4"/>
+</svg>

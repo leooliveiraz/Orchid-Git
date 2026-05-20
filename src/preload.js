@@ -20,6 +20,7 @@ contextBridge.exposeInMainWorld("api", {
   stageFile: (directory, filePath) => ipcRenderer.invoke("stage-file", directory, filePath),
   unstageFile: (directory, filePath) => ipcRenderer.invoke("unstage-file", directory, filePath),
   stageAll: (directory) => ipcRenderer.invoke("stage-all", directory),
+  getBlame: (directory, filePath) => ipcRenderer.invoke("get-blame", directory, filePath),
   commit: (directory, message) => ipcRenderer.invoke("commit", directory, message),
   getDiff: (directory, filePath) => ipcRenderer.invoke("get-diff", directory, filePath),
   getStagedDiff: (directory, filePath) => ipcRenderer.invoke("get-staged-diff", directory, filePath),

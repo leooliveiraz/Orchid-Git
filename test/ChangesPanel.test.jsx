@@ -1,5 +1,5 @@
 import React from "react";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import "@testing-library/jest-dom";
 import ChangesPanel from "../src/app/components/ChangesPanel";
 
@@ -17,6 +17,7 @@ beforeEach(() => {
     stageAll: jest.fn().mockResolvedValue(""),
     getDiff: jest.fn().mockResolvedValue("diff content"),
     getStagedDiff: jest.fn().mockResolvedValue("staged diff content"),
+    getBlame: jest.fn().mockResolvedValue([{ hash: "abc", author: "A", date: "", lineNum: 1, content: "code" }]),
   };
 });
 
@@ -93,5 +94,27 @@ test("has Diff buttons for each file", async () => {
   await waitFor(() => {
     const diffButtons = screen.getAllByText("Diff");
     expect(diffButtons.length).toBe(3);
+  });
+});
+
+test("has Blame buttons for each file", async () => {
+  render(<ChangesPanel directory="/test/repo" />);
+
+  await waitFor(() => {
+    const blameButtons = screen.getAllByText("Blame");
+    expect(blameButtons.length).toBe(3);
+  });
+});
+
+test("clicking Blame calls getBlame API", async () => {
+  render(<ChangesPanel directory="/test/repo" />);
+
+  await waitFor(() => {
+    const blameButtons = screen.getAllByText("Blame");
+    fireEvent.click(blameButtons[0]);
+  });
+
+  await waitFor(() => {
+    expect(window.api.getBlame).toHaveBeenCalled();
   });
 });

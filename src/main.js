@@ -171,6 +171,37 @@ ipcMain.handle("get-commit-file-diff", (event, directory, commitHash, filePath) 
   return runGit(["diff-tree", "--no-commit-id", "-r", "-p", commitHash, "--", filePath], directory);
 });
 
+ipcMain.handle("get-blame", (event, directory, filePath) => {
+  const output = runGit(["blame", "--line-porcelain", filePath], directory);
+  const lines = [];
+  const split = output.split("\n");
+  let i = 0;
+  while (i < split.length) {
+    const first = split[i];
+    if (!first || first.startsWith("\t")) { i++; continue; }
+    const parts = first.split(/\s+/);
+    const hash = parts[0];
+    if (!/^[0-9a-f]{40}$/i.test(hash)) { i++; continue; }
+    const finalLine = parseInt(parts[2], 10);
+    let author = "", date = "";
+    i++;
+    while (i < split.length) {
+      const line = split[i];
+      if (line.startsWith("author ")) author = line.slice(7).replace(/\r$/, "").trim();
+      if (line.startsWith("author-time ")) {
+        date = new Date(parseInt(line.slice(11), 10) * 1000).toLocaleDateString();
+      }
+      if (line.startsWith("\t")) {
+        lines.push({ hash: hash.slice(0, 8), author: author || "Unknown", date: date || "-", lineNum: finalLine, content: line.slice(1).replace(/\r$/, "") });
+        i++;
+        break;
+      }
+      i++;
+    }
+  }
+  return lines;
+});
+
 ipcMain.handle("stage-file", (event, directory, filePath) => {
   return runGit(["add", "--", filePath], directory);
 });

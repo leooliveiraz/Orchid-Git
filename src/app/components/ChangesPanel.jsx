@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback, useContext } from "react";
 import CommitDialog from "./CommitDialog.jsx";
 import DiffViewer from "./DiffViewer.jsx";
+import BlameViewer from "./BlameViewer.jsx";
 import SuccessSnackbar from "./SuccessSnackbar.jsx";
 import {
   Box, Button, Typography, List, ListItem, ListItemIcon, ListItemText,
@@ -24,7 +25,7 @@ const STATUS_COLORS = {
   "??": "#6a737d", "!!": "#6a737d",
 };
 
-function StatusFile({ file, onStage, onUnstage, onViewDiff }) {
+function StatusFile({ file, onStage, onUnstage, onViewDiff, onViewBlame }) {
   return (
     <ListItem
       secondaryAction={
@@ -40,6 +41,9 @@ function StatusFile({ file, onStage, onUnstage, onViewDiff }) {
           )}
           <Button size="small" variant="text" onClick={(e) => { e.stopPropagation(); onViewDiff(file); }}>
             Diff
+          </Button>
+          <Button size="small" variant="text" onClick={(e) => { e.stopPropagation(); onViewBlame(file); }}>
+            Blame
           </Button>
         </Box>
       }
@@ -73,6 +77,7 @@ export default function ChangesPanel({ directory }) {
   const [showCommit, setShowCommit] = useState(false);
   const [confirmAction, setConfirmAction] = useState(null);
   const [diffViewer, setDiffViewer] = useState(null);
+  const [blameViewer, setBlameViewer] = useState(null);
   const [success, setSuccess] = useState(null);
 
   const refresh = useCallback(async () => {
@@ -130,6 +135,19 @@ export default function ChangesPanel({ directory }) {
         setDiffViewer({ fileName: file.path, diffText: diff });
       } else {
         setError("No diff available");
+      }
+    } catch (e) {
+      setError(e.message || String(e));
+    }
+  };
+
+  const handleViewBlame = async (file) => {
+    try {
+      const data = await window.api.getBlame(directory, file.path);
+      if (data && data.length) {
+        setBlameViewer({ fileName: file.path, blameData: data });
+      } else {
+        setError("No blame data available");
       }
     } catch (e) {
       setError(e.message || String(e));
@@ -196,7 +214,7 @@ export default function ChangesPanel({ directory }) {
       )}
       <List dense>
         {staged.map(f => (
-          <StatusFile key={"staged-" + f.path} file={f} onStage={handleStage} onUnstage={handleUnstage} onViewDiff={handleViewDiff} />
+          <StatusFile key={"staged-" + f.path} file={f} onStage={handleStage} onUnstage={handleUnstage} onViewDiff={handleViewDiff} onViewBlame={handleViewBlame} />
         ))}
       </List>
 
@@ -208,7 +226,7 @@ export default function ChangesPanel({ directory }) {
       )}
       <List dense>
         {unstaged.map(f => (
-          <StatusFile key={"unstaged-" + f.path} file={f} onStage={handleStage} onUnstage={handleUnstage} onViewDiff={handleViewDiff} />
+          <StatusFile key={"unstaged-" + f.path} file={f} onStage={handleStage} onUnstage={handleUnstage} onViewDiff={handleViewDiff} onViewBlame={handleViewBlame} />
         ))}
       </List>
 
@@ -247,6 +265,14 @@ export default function ChangesPanel({ directory }) {
           fileName={diffViewer.fileName}
           diffText={diffViewer.diffText}
           onClose={() => setDiffViewer(null)}
+        />
+      )}
+
+      {blameViewer && (
+        <BlameViewer
+          fileName={blameViewer.fileName}
+          blameData={blameViewer.blameData}
+          onClose={() => setBlameViewer(null)}
         />
       )}
 
