@@ -4,11 +4,9 @@ import {
   List, ListItem, ListItemIcon, ListItemText,
   Typography, Box,
 } from "@mui/material";
-import RefreshIcon from "@mui/icons-material/Refresh";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import FiberManualRecordIcon from "@mui/icons-material/FiberManualRecord";
 import RadioButtonUncheckedIcon from "@mui/icons-material/RadioButtonUnchecked";
-import "./LeftMenu.css";
 import { OrchidContext } from "../OrchidContext.jsx";
 
 function Section({ title, count, children, defaultOpen }) {
@@ -66,9 +64,8 @@ function Item({ label, active, onDoubleClick, onClick }) {
   );
 }
 
-export default function LeftMenu({ open, onRefresh }) {
-  const { directory, repoData } = useContext(OrchidContext);
-  const [checking, setChecking] = useState(false);
+export default function LeftMenu({ open }) {
+  const { directory, repoData, refresh } = useContext(OrchidContext);
   const [message, setMessage] = useState(null);
   const [messageType, setMessageType] = useState("error");
 
@@ -86,19 +83,17 @@ export default function LeftMenu({ open, onRefresh }) {
       setMessage("This branch is already selected");
       return;
     }
-    setChecking(true);
     setMessage(null);
     try {
       await window.api.checkoutBranch(directory, branch);
       setMessageType("success");
       setMessage(`Switched to ${branch}`);
-      if (onRefresh) onRefresh();
+      refresh();
     } catch (e) {
       setMessageType("error");
       setMessage(e.message || String(e));
     }
-    setChecking(false);
-  }, [directory, repoData, onRefresh]);
+  }, [directory, repoData, refresh]);
 
   const handleBranchClick = useCallback((branch) => {
     if (branch === repoData?.currentBranch) return;
@@ -108,19 +103,17 @@ export default function LeftMenu({ open, onRefresh }) {
 
   const handleStashDblClick = useCallback(async (stashId) => {
     if (!directory || !window.api) return;
-    setChecking(true);
     setMessage(null);
     try {
       await window.api.stashApply(directory, stashId);
       setMessageType("success");
       setMessage("Stash applied");
-      if (onRefresh) onRefresh();
+      refresh();
     } catch (e) {
       setMessageType("error");
       setMessage(e.message || String(e));
     }
-    setChecking(false);
-  }, [directory, onRefresh]);
+  }, [directory, refresh]);
 
   return (
     <>

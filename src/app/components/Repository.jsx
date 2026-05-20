@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useContext } from "react";
 import "./Repository.css";
 import CommitTable from "./CommitTable.jsx";
 import ChangesPanel from "./ChangesPanel.jsx";
@@ -7,8 +7,10 @@ import {
   Typography, Box, Tabs, Tab, FormControlLabel, Checkbox,
   TextField, ToggleButtonGroup, ToggleButton, Paper,
 } from "@mui/material";
+import { OrchidContext } from "../OrchidContext.jsx";
 
 export default function Repository({ repositoryDirectory }) {
+  const { refreshKey } = useContext(OrchidContext);
   const [commitList, setCommitList] = useState([]);
   const [tab, setTab] = useState("graph");
   const [allBranches, setAllBranches] = useState(() => JSON.parse(localStorage.getItem("orchid-all-branches") ?? "true"));
@@ -152,7 +154,7 @@ export default function Repository({ repositoryDirectory }) {
 
           setCommitList(commits);
         });
-  }, [repositoryDirectory, useTopoOrder, allBranches, commitLimit]);
+  }, [repositoryDirectory, useTopoOrder, allBranches, commitLimit, refreshKey]);
 
   function configureCommitList(result) {
     const commitList = [];

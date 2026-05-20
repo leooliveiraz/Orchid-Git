@@ -9,4 +9,5 @@ export const OrchidContext = createContext({
   setRepoData: () => {},
   menuOpen: true,
   setMenuOpen: () => {},
+  refresh: () => {},
 });

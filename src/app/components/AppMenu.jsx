@@ -6,6 +6,7 @@ import {
   Typography,
   Tooltip,
 } from "@mui/material";
+import RefreshIcon from "@mui/icons-material/Refresh";
 import MenuIcon from "@mui/icons-material/Menu";
 import Brightness4Icon from "@mui/icons-material/Brightness4";
 import Brightness7Icon from "@mui/icons-material/Brightness7";
@@ -16,7 +17,7 @@ import { OrchidContext } from "../OrchidContext.jsx";
 import CloneDialog from "./CloneDialog.jsx";
 
 export default function AppMenu({ onToggleMenu }) {
-  const { directory, setDirectory, themeMode, toggleTheme } = useContext(OrchidContext);
+  const { directory, setDirectory, themeMode, toggleTheme, refresh } = useContext(OrchidContext);
   const [showClone, setShowClone] = useState(false);
 
   function selectDirectory() {
@@ -45,6 +46,11 @@ export default function AppMenu({ onToggleMenu }) {
           <Typography variant="h6" component="div" sx={{ flexGrow: 1, fontWeight: 600 }}>
             Orchid
           </Typography>
+          <Tooltip title="Refresh (F5)">
+            <IconButton color="inherit" onClick={refresh} sx={{ mr: 0.5 }}>
+              <RefreshIcon />
+            </IconButton>
+          </Tooltip>
           <Tooltip title="Toggle theme">
             <IconButton color="inherit" onClick={toggleTheme} sx={{ mr: 0.5 }}>
               {themeMode === "dark" ? <Brightness7Icon /> : <Brightness4Icon />}

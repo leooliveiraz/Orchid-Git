@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useContext } from "react";
 import CommitDialog from "./CommitDialog.jsx";
 import DiffViewer from "./DiffViewer.jsx";
 import SuccessSnackbar from "./SuccessSnackbar.jsx";
@@ -6,6 +6,7 @@ import {
   Box, Button, Typography, List, ListItem, ListItemIcon, ListItemText,
   Chip, Alert,
 } from "@mui/material";
+import { OrchidContext } from "../OrchidContext.jsx";
 
 const OVERLAY_STYLE = {
   position: "fixed", inset: 0, bgcolor: "rgba(0,0,0,0.4)",
@@ -61,6 +62,7 @@ function StatusFile({ file, onStage, onUnstage, onViewDiff }) {
 }
 
 export default function ChangesPanel({ directory }) {
+  const { refreshKey } = useContext(OrchidContext);
   const [statusList, setStatusList] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -86,7 +88,7 @@ export default function ChangesPanel({ directory }) {
     refresh();
     const interval = setInterval(refresh, 10000);
     return () => clearInterval(interval);
-  }, [refresh]);
+  }, [refresh, refreshKey]);
 
   const handleStage = async (path) => {
     try {
