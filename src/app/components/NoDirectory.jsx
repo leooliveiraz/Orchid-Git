@@ -33,7 +33,7 @@ export default function NoDirectory() {
         <Button variant="outlined" size="large" startIcon={<FolderOpenIcon />}
           onClick={selectDirectory} sx={{ minWidth: 220, justifyContent: "flex-start" }}
         >
-          Open Project
+          Open Repository
         </Button>
 
         <Button variant="outlined" size="large" startIcon={<ContentCopyIcon />}

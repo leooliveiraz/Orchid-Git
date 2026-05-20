@@ -13,15 +13,18 @@ import Brightness4Icon from "@mui/icons-material/Brightness4";
 import Brightness7Icon from "@mui/icons-material/Brightness7";
 import FolderOpenIcon from "@mui/icons-material/FolderOpen";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
+import CallSplitIcon from "@mui/icons-material/CallSplit";
 import React, { useContext, useState } from "react";
 import { OrchidContext } from "../OrchidContext.jsx";
 import CloneDialog from "./CloneDialog.jsx";
 import SettingsDialog from "./SettingsDialog.jsx";
+import CreateBranchDialog from "./CreateBranchDialog.jsx";
 
 export default function AppMenu({ onToggleMenu }) {
   const { directory, setDirectory, themeMode, toggleTheme, refresh } = useContext(OrchidContext);
   const [showClone, setShowClone] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [showNewBranch, setShowNewBranch] = useState(false);
 
   function selectDirectory() {
     window.api.selectDirectory("").then((data) => {
@@ -71,6 +74,13 @@ export default function AppMenu({ onToggleMenu }) {
               </IconButton>
             </Tooltip>
           )}
+          {directory && (
+            <Tooltip title="Create branch">
+              <IconButton color="inherit" onClick={() => setShowNewBranch(true)} sx={{ mr: 0.5 }}>
+                <CallSplitIcon />
+              </IconButton>
+            </Tooltip>
+          )}
           <Tooltip title="Open project">
             <IconButton color="inherit" onClick={selectDirectory}>
               <FolderOpenIcon />
@@ -80,6 +90,7 @@ export default function AppMenu({ onToggleMenu }) {
       </AppBar>
       {showClone && <CloneDialog onClose={() => setShowClone(false)} />}
       {showSettings && <SettingsDialog onClose={() => setShowSettings(false)} />}
+      {showNewBranch && <CreateBranchDialog onClose={() => setShowNewBranch(false)} />}
     </Box>
   );
 }
