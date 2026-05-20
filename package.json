@@ -14,6 +14,7 @@
   },
   "devDependencies": {
     "@babel/core": "^7.26.0",
+    "@babel/preset-env": "^7.29.5",
     "@babel/preset-react": "^7.25.9",
     "@electron-forge/cli": "^7.6.0",
     "@electron-forge/maker-deb": "^7.6.0",
@@ -24,11 +25,14 @@
     "@electron-forge/plugin-fuses": "^7.6.0",
     "@electron-forge/plugin-webpack": "^7.6.0",
     "@electron/fuses": "^1.8.0",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
     "@vercel/webpack-asset-relocator-loader": "1.7.3",
     "babel-loader": "^9.2.1",
     "css-loader": "^6.0.0",
     "electron": "33.2.1",
     "jest": "^30.4.2",
+    "jest-environment-jsdom": "^30.4.1",
     "node-loader": "^2.0.0",
     "style-loader": "^3.0.0"
   },

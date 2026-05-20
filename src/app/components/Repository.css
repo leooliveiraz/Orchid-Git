@@ -53,3 +53,125 @@
   background-color: var(--graph-bg);
   position: relative;
 }
+
+.tab-bar {
+  display: flex;
+  gap: 0;
+  margin: 8px 0;
+  border-bottom: 2px solid var(--border-color);
+}
+
+.tab-btn {
+  padding: 6px 16px;
+  cursor: pointer;
+  border: none;
+  background: none;
+  font-size: 13px;
+  color: var(--text-secondary);
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.tab-btn:hover {
+  color: var(--text-primary);
+}
+
+.tab-active {
+  color: var(--text-primary);
+  border-bottom-color: #1976d2;
+  font-weight: 600;
+}
+
+.cp-container {
+  padding: 8px 0;
+}
+
+.cp-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.cp-loading {
+  animation: pulse 1s infinite;
+}
+
+.cp-error {
+  color: #d73a49;
+  font-size: 12px;
+  padding: 4px 8px;
+  background: rgba(215, 58, 73, 0.1);
+  border-radius: 4px;
+  margin-bottom: 8px;
+}
+
+.cp-section {
+  margin-bottom: 12px;
+}
+
+.cp-section-title {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  padding: 4px 0;
+  border-bottom: 1px solid var(--border-color);
+  margin-bottom: 4px;
+}
+
+.cp-empty {
+  font-size: 12px;
+  color: var(--text-secondary);
+  padding: 8px 0;
+}
+
+.cp-file {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+  font-size: 13px;
+}
+
+.cp-status {
+  font-weight: 700;
+  width: 24px;
+  font-size: 12px;
+}
+
+.cp-path {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-primary);
+}
+
+.cp-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.cp-btn {
+  padding: 3px 10px;
+  font-size: 11px;
+  border: 1px solid var(--border-color);
+  border-radius: 3px;
+  cursor: pointer;
+  background: var(--bg-table);
+  color: var(--text-primary);
+  transition: background 0.1s;
+}
+
+.cp-btn:hover {
+  background: var(--bg-table-alt);
+}
+
+.cp-btn-sm {
+  padding: 2px 6px;
+  font-size: 10px;
+}

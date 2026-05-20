@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from "react";
 import "./Repository.css";
 import CommitTable from "./CommitTable.jsx";
+import ChangesPanel from "./ChangesPanel.jsx";
 import SearchText from "./SearchText.jsx";
 
 export default function Repository({ repositoryDirectory }) {
   const [commitList, setCommitList] = useState([]);
+  const [tab, setTab] = useState("graph");
   const [allBranches, setAllBranches] = useState(() => JSON.parse(localStorage.getItem("orchid-all-branches") ?? "true"));
   const [useTopoOrder, setUseTopoOrder] = useState(() => JSON.parse(localStorage.getItem("orchid-topo-order") ?? "true"));
   const [commitLimit, setCommitLimit] = useState(() => JSON.parse(localStorage.getItem("orchid-commit-limit") ?? "10000"));
@@ -169,7 +171,15 @@ export default function Repository({ repositoryDirectory }) {
     <>
       <h1>{repositoryDirectory.split(/[/\\]/).pop()}</h1>
       <small style={{ opacity: 0.6 }}>{repositoryDirectory}</small>
-      <div style={{ display: "flex", gap: 16, alignItems: "center", margin: "8px 0", flexWrap: "wrap" }}>
+
+      <div className="tab-bar">
+        <button className={`tab-btn ${tab === "graph" ? "tab-active" : ""}`} onClick={() => setTab("graph")}>📊 Graph</button>
+        <button className={`tab-btn ${tab === "changes" ? "tab-active" : ""}`} onClick={() => setTab("changes")}>📝 Changes</button>
+      </div>
+
+      {tab === "graph" && (
+        <>
+          <div style={{ display: "flex", gap: 16, alignItems: "center", margin: "8px 0", flexWrap: "wrap" }}>
         <label style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 13, cursor: "pointer" }}>
           <input type="checkbox" checked={allBranches} onChange={e => setAllBranches(e.target.checked)} />
           All branches
@@ -204,6 +214,12 @@ export default function Repository({ repositoryDirectory }) {
       )}
       <div style={{ height: "60px" }}></div>
       <CommitTable commitList={commitList} connectionStyle={connectionStyle}></CommitTable>
+    </>
+    )}
+
+    {tab === "changes" && (
+      <ChangesPanel directory={repositoryDirectory} />
+    )}
     </>
   );
 }
