@@ -168,7 +168,7 @@ export default function Orchid() {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <OrchidContext.Provider value={{ directory, setDirectory, themeMode, toggleTheme, repoData, setRepoData, menuOpen, setMenuOpen, refresh }}>
+      <OrchidContext.Provider value={{ directory, setDirectory, themeMode, toggleTheme, repoData, setRepoData, menuOpen, setMenuOpen, refresh, refreshKey }}>
         <Box sx={{ height: "100vh", display: "flex", flexDirection: "column" }}>
           <AppMenu onToggleMenu={() => setMenuOpen(prev => !prev)} />
           <Box sx={{ display: "flex", flex: 1, overflow: "hidden" }}>

@@ -40,6 +40,8 @@ export default function CommitTable({ commitList, connectionStyle }) {
     return { lanesAtRow: sorted, maxDepth };
   }, [commitList]);
 
+  const headIdx = commitList.findIndex(c => c.decoration && c.decoration.includes("HEAD"));
+
   return (
     <TableContainer component={Paper} variant="outlined" sx={{ height: "100%", overflow: "auto" }}>
       <Table size="small" stickyHeader sx={{ minWidth: 650 }}>
@@ -73,7 +75,10 @@ export default function CommitTable({ commitList, connectionStyle }) {
             <TableRow
               key={commit.commit}
               hover
-              sx={{ "&:last-child td": { borderBottom: 0 } }}
+              sx={{
+                "&:last-child td": { borderBottom: 0 },
+                ...(index === headIdx ? { outline: "2px solid", outlineColor: "primary.main", outlineOffset: -1 } : {}),
+              }}
             >
               <TableCell sx={{ textAlign: "center", color: commit.merge ? "error.main" : "text.secondary", fontWeight: commit.merge ? 700 : 400, fontSize: "0.75rem" }}>
                 {index}
