@@ -11,6 +11,26 @@ const STATUS_COLORS = {
   "??": "#6a737d", "!!": "#6a737d",
 };
 
+function ConfirmModal({ title, message, confirmLabel, onConfirm, onCancel }) {
+  return (
+    <div className="cd-overlay" onClick={onCancel}>
+      <div className="cd-modal" onClick={e => e.stopPropagation()} style={{ width: 400 }}>
+        <div className="cd-header">
+          <h3 className="cd-title">{title}</h3>
+          <button className="cd-close" onClick={onCancel}>✕</button>
+        </div>
+        <div className="cd-body">
+          <p style={{ fontSize: 13, color: "var(--text-primary)", margin: 0 }}>{message}</p>
+        </div>
+        <div className="cd-footer">
+          <button className="cd-btn" onClick={onCancel}>Cancel</button>
+          <button className="cd-btn cd-btn-primary" onClick={onConfirm}>{confirmLabel}</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function StatusFile({ file, onStage, onUnstage, onViewDiff }) {
   const label = STATUS_LABELS[file.type] || file.type;
   return (
@@ -36,6 +56,7 @@ export default function ChangesPanel({ directory }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [showCommit, setShowCommit] = useState(false);
+  const [confirmAction, setConfirmAction] = useState(null);
 
   const refresh = useCallback(async () => {
     if (!directory || !window.api) return;
@@ -103,6 +124,28 @@ export default function ChangesPanel({ directory }) {
     if (didCommit) refresh();
   };
 
+  const handlePush = async () => {
+    setConfirmAction(null);
+    setError(null);
+    try {
+      await window.api.push(directory);
+      refresh();
+    } catch (e) {
+      setError(e.message || String(e));
+    }
+  };
+
+  const handlePull = async () => {
+    setConfirmAction(null);
+    setError(null);
+    try {
+      await window.api.pull(directory);
+      refresh();
+    } catch (e) {
+      setError(e.message || String(e));
+    }
+  };
+
   const staged = statusList.filter(f => f.staged);
   const unstaged = statusList.filter(f => !f.staged);
 
@@ -117,6 +160,8 @@ export default function ChangesPanel({ directory }) {
         <button className="cp-btn cp-btn-primary" onClick={() => setShowCommit(true)} disabled={staged.length === 0}>
           Commit
         </button>
+        <button className="cp-btn" onClick={() => setConfirmAction("push")}>▲ Push</button>
+        <button className="cp-btn" onClick={() => setConfirmAction("pull")}>▼ Pull</button>
       </div>
 
       {error && <div className="cp-error">{error}</div>}
@@ -139,6 +184,26 @@ export default function ChangesPanel({ directory }) {
 
       {showCommit && (
         <CommitDialog directory={directory} stagedFiles={staged} onClose={handleCommitClose} />
+      )}
+
+      {confirmAction === "push" && (
+        <ConfirmModal
+          title="Push"
+          message="Push commits to the remote repository?"
+          confirmLabel="Push"
+          onConfirm={handlePush}
+          onCancel={() => setConfirmAction(null)}
+        />
+      )}
+
+      {confirmAction === "pull" && (
+        <ConfirmModal
+          title="Pull"
+          message="Pull latest changes from the remote repository?"
+          confirmLabel="Pull"
+          onConfirm={handlePull}
+          onCancel={() => setConfirmAction(null)}
+        />
       )}
     </div>
   );
