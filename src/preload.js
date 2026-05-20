@@ -17,6 +17,7 @@ contextBridge.exposeInMainWorld("api", {
   checkoutBranch: (directory, branch) => ipcRenderer.invoke("checkout-branch", directory, branch),
   createBranch: (directory, branchName) => ipcRenderer.invoke("create-branch", directory, branchName),
   createTag: (directory, tagName) => ipcRenderer.invoke("create-tag", directory, tagName),
+  merge: (directory, branch, strategy) => ipcRenderer.invoke("merge", directory, branch, strategy),
   stashApply: (directory, stashId) => ipcRenderer.invoke("stash-apply", directory, stashId),
   stashDrop: (directory, stashId) => ipcRenderer.invoke("stash-drop", directory, stashId),
   stashPush: (directory, message) => ipcRenderer.invoke("stash-push", directory, message),

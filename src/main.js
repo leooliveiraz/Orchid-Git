@@ -146,6 +146,15 @@ ipcMain.handle("create-tag", (event, directory, tagName) => {
   return runGit(["tag", tagName], directory);
 });
 
+ipcMain.handle("merge", (event, directory, branch, strategy) => {
+  const args = ["merge"];
+  if (strategy === "squash") args.push("--squash");
+  else if (strategy === "no-ff") args.push("--no-ff");
+  else if (strategy === "ff-only") args.push("--ff-only");
+  args.push(branch);
+  return runGit(args, directory);
+});
+
 ipcMain.handle("stash-apply", (event, directory, stashId) => {
   return runGit(["stash", "apply", stashId], directory);
 });

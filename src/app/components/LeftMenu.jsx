@@ -8,12 +8,14 @@ import {
 } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import AddIcon from "@mui/icons-material/Add";
+import MergeIcon from "@mui/icons-material/Merge";
 import DeleteIcon from "@mui/icons-material/Delete";
 import FiberManualRecordIcon from "@mui/icons-material/FiberManualRecord";
 import RadioButtonUncheckedIcon from "@mui/icons-material/RadioButtonUnchecked";
 import { OrchidContext } from "../OrchidContext.jsx";
+import MergeDialog from "./MergeDialog.jsx";
 
-function Section({ title, count, children, defaultOpen, onAdd }) {
+function Section({ title, count, children, defaultOpen, onAdd, onMerge }) {
   return (
     <Accordion defaultExpanded={defaultOpen !== false} disableGutters>
       <AccordionSummary expandIcon={<ExpandMoreIcon sx={{ fontSize: 16, color: "text.secondary" }} />}>
@@ -23,6 +25,13 @@ function Section({ title, count, children, defaultOpen, onAdd }) {
             sx={{ mr: 0.5, p: 0.25, lineHeight: 1, cursor: "pointer", borderRadius: 1, "&:hover": { bgcolor: "action.hover" } }}
           >
             <AddIcon sx={{ fontSize: 16, color: "text.secondary", display: "block" }} />
+          </Box>
+        )}
+        {onMerge && (
+          <Box component="span" onClick={(e) => { e.stopPropagation(); onMerge(); }}
+            sx={{ mr: 0.5, p: 0.25, lineHeight: 1, cursor: "pointer", borderRadius: 1, "&:hover": { bgcolor: "action.hover" } }}
+          >
+            <MergeIcon sx={{ fontSize: 16, color: "text.secondary", display: "block" }} />
           </Box>
         )}
         <Box component="span" sx={{
@@ -96,6 +105,7 @@ export default function LeftMenu({ open }) {
   const [showNewStash, setShowNewStash] = useState(false);
   const [stashMessage, setStashMessage] = useState("");
   const [creatingStash, setCreatingStash] = useState(false);
+  const [showMerge, setShowMerge] = useState(false);
   const [pendingRecentDir, setPendingRecentDir] = useState(null);
   const [skipRecentConfirm, setSkipRecentConfirm] = useState(() => localStorage.getItem("orchid-skip-repo-switch") === "true");
 
@@ -322,7 +332,7 @@ export default function LeftMenu({ open }) {
         )}
         {repoData ? (
           <>
-            <Section title="Branches" count={repoData.branches?.length ?? 0} onAdd={openNewBranchDialog}>
+            <Section title="Branches" count={repoData.branches?.length ?? 0} onAdd={openNewBranchDialog} onMerge={() => setShowMerge(true)}>
               {repoData.branches?.map(b => (
                 <Item
                   key={b}
@@ -452,6 +462,8 @@ export default function LeftMenu({ open }) {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {showMerge && <MergeDialog onClose={() => setShowMerge(false)} />}
 
       <Dialog open={!!confirmDelete} onClose={() => setConfirmDelete(null)} maxWidth="xs" fullWidth>
         <DialogTitle>Confirm deletion</DialogTitle>
