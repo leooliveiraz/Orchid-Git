@@ -1,12 +1,13 @@
 import React, { useContext, useState } from "react";
-import { Box, Typography, Button } from "@mui/material";
+import { Box, Typography, Button, Divider } from "@mui/material";
 import FolderOpenIcon from "@mui/icons-material/FolderOpen";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
+import FolderIcon from "@mui/icons-material/Folder";
 import { OrchidContext } from "../OrchidContext.jsx";
 import CloneDialog from "./CloneDialog.jsx";
 
 export default function NoDirectory() {
-  const { setDirectory } = useContext(OrchidContext);
+  const { setDirectory, recentDirs } = useContext(OrchidContext);
   const [showClone, setShowClone] = useState(false);
 
   function selectDirectory() {
@@ -41,6 +42,27 @@ export default function NoDirectory() {
         >
           Clone Repository
         </Button>
+
+        {recentDirs?.length > 0 && (
+          <Box sx={{ mt: 3, width: "100%", maxWidth: 360 }}>
+            <Divider sx={{ mb: 2 }}>Recent</Divider>
+            {recentDirs.map(dir => (
+              <Box
+                key={dir}
+                onClick={() => setDirectory(dir)}
+                sx={{
+                  display: "flex", alignItems: "center", gap: 1, p: 1, borderRadius: 1,
+                  cursor: "pointer", "&:hover": { bgcolor: "action.hover" },
+                }}
+              >
+                <FolderIcon sx={{ fontSize: 16, color: "text.secondary" }} />
+                <Typography variant="body2" sx={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {dir}
+                </Typography>
+              </Box>
+            ))}
+          </Box>
+        )}
       </Box>
 
       {showClone && <CloneDialog onClose={() => setShowClone(false)} />}

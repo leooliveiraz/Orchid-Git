@@ -54,7 +54,8 @@ export default function Repository({ repositoryDirectory }) {
   }, [commitLimit]);
 
   useEffect(() => {
-    if (window.api)
+    if (window.api) {
+      setCommitList([]);
       window.api
         .getRepositoryCommits(repositoryDirectory, useTopoOrder, allBranches, commitLimit)
         .then((result) => {
@@ -161,6 +162,7 @@ export default function Repository({ repositoryDirectory }) {
 
           setCommitList(commits);
         });
+    }
   }, [repositoryDirectory, useTopoOrder, allBranches, commitLimit, refreshKey]);
 
   function configureCommitList(result) {

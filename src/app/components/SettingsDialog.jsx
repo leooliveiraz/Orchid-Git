@@ -2,6 +2,7 @@ import React, { useState, useEffect, useContext } from "react";
 import {
   Dialog, DialogTitle, DialogContent, DialogActions,
   Button, TextField, Alert, LinearProgress,
+  FormControlLabel, Checkbox, Typography, Box,
 } from "@mui/material";
 import { OrchidContext } from "../OrchidContext.jsx";
 
@@ -13,6 +14,7 @@ export default function SettingsDialog({ onClose }) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
+  const [skipConfirm, setSkipConfirm] = useState(() => localStorage.getItem("orchid-skip-repo-switch") === "true");
 
   useEffect(() => {
     if (!directory || !window.api) return;
@@ -63,6 +65,17 @@ export default function SettingsDialog({ onClose }) {
               onChange={e => setEmail(e.target.value)}
               disabled={saving}
             />
+            <Box sx={{ mt: 2 }}>
+              <FormControlLabel
+                control={<Checkbox checked={skipConfirm}
+                  onChange={e => {
+                    setSkipConfirm(e.target.checked);
+                    localStorage.setItem("orchid-skip-repo-switch", e.target.checked ? "true" : "false");
+                  }}
+                />}
+                label={<Typography variant="body2">Don't ask when switching repositories</Typography>}
+              />
+            </Box>
           </>
         )}
         {error && <Alert severity="error" sx={{ mt: 2 }}>{error}</Alert>}

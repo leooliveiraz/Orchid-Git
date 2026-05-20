@@ -27,24 +27,27 @@ function renderLeftMenu(overrides = {}) {
   window.api = api;
 
   const refresh = jest.fn();
+  const setDirectory = jest.fn();
+  const recentDirs = overrides.recentDirs || [];
 
   const result = render(
     <OrchidContext.Provider value={{
       directory: "/test/repo",
       repoData: mockRepoData,
       refresh,
-      setDirectory: () => {},
+      setDirectory,
       themeMode: "light",
       toggleTheme: () => {},
       setRepoData: () => {},
       menuOpen: true,
       setMenuOpen: () => {},
+      recentDirs,
     }}>
       <LeftMenu open />
     </OrchidContext.Provider>
   );
 
-  return { ...result, api, refresh };
+  return { ...result, api, refresh, setDirectory };
 }
 
 afterEach(() => {
@@ -177,4 +180,25 @@ test("confirm delete remote branch calls api.deleteRemoteBranch", async () => {
   await waitFor(() => {
     expect(api.deleteRemoteBranch).toHaveBeenCalledWith("/test/repo", "origin/main");
   });
+});
+
+test("shows recent directories section when recentDirs provided", () => {
+  renderLeftMenu({ recentDirs: ["/home/proj/one", "/home/proj/two"] });
+  expect(screen.getByText("one")).toBeInTheDocument();
+  expect(screen.getByText("two")).toBeInTheDocument();
+});
+
+test("clicking recent directory calls setDirectory", () => {
+  localStorage.setItem("orchid-skip-repo-switch", "true");
+  const { setDirectory } = renderLeftMenu({ recentDirs: ["/home/proj/test-repo"] });
+  fireEvent.click(screen.getByText("test-repo"));
+  expect(setDirectory).toHaveBeenCalledWith("/home/proj/test-repo");
+  localStorage.removeItem("orchid-skip-repo-switch");
+});
+
+test("clicking recent shows confirm dialog when skip is not set", () => {
+  localStorage.removeItem("orchid-skip-repo-switch");
+  renderLeftMenu({ recentDirs: ["/home/proj/test-repo"] });
+  fireEvent.click(screen.getByText("test-repo"));
+  expect(screen.getByRole("dialog")).toHaveTextContent(/test-repo/i);
 });

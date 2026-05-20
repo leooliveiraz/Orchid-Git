@@ -4,6 +4,7 @@ import {
   List, ListItem, ListItemIcon, ListItemText,
   Typography, Box, Button, TextField,
   Dialog, DialogTitle, DialogContent, DialogActions,
+  FormControlLabel, Checkbox,
 } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import AddIcon from "@mui/icons-material/Add";
@@ -82,7 +83,7 @@ function Item({ label, active, onDoubleClick, onClick, onDelete }) {
 }
 
 export default function LeftMenu({ open }) {
-  const { directory, repoData, refresh } = useContext(OrchidContext);
+  const { directory, repoData, refresh, recentDirs, setDirectory } = useContext(OrchidContext);
   const [message, setMessage] = useState(null);
   const [messageType, setMessageType] = useState("error");
   const [showNewBranch, setShowNewBranch] = useState(false);
@@ -95,6 +96,8 @@ export default function LeftMenu({ open }) {
   const [showNewStash, setShowNewStash] = useState(false);
   const [stashMessage, setStashMessage] = useState("");
   const [creatingStash, setCreatingStash] = useState(false);
+  const [pendingRecentDir, setPendingRecentDir] = useState(null);
+  const [skipRecentConfirm, setSkipRecentConfirm] = useState(() => localStorage.getItem("orchid-skip-repo-switch") === "true");
 
   useEffect(() => {
     if (message) {
@@ -304,6 +307,19 @@ export default function LeftMenu({ open }) {
           },
         }}
       >
+        {recentDirs?.length > 0 && (
+          <Section title="Recent" count={recentDirs.length} defaultOpen={!repoData}>
+            {recentDirs.map(dir => (
+              <Item key={dir} label={dir.split(/[/\\]/).pop()}
+                title={dir}
+                onClick={() => {
+                  if (skipRecentConfirm) { setDirectory(dir); }
+                  else { setPendingRecentDir(dir); }
+                }}
+              />
+            ))}
+          </Section>
+        )}
         {repoData ? (
           <>
             <Section title="Branches" count={repoData.branches?.length ?? 0} onAdd={openNewBranchDialog}>
@@ -409,6 +425,30 @@ export default function LeftMenu({ open }) {
           <Button onClick={() => setShowNewStash(false)} disabled={creatingStash}>Cancel</Button>
           <Button variant="contained" onClick={handleCreateStash} disabled={!stashMessage.trim() || creatingStash}>
             {creatingStash ? "Creating..." : "Create"}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog open={!!pendingRecentDir} onClose={() => setPendingRecentDir(null)} maxWidth="xs" fullWidth>
+        <DialogTitle>Switch repository</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" sx={{ mb: 2 }}>
+            Open <strong>{pendingRecentDir}</strong>?
+          </Typography>
+          <FormControlLabel
+            control={<Checkbox size="small" checked={skipRecentConfirm}
+              onChange={e => {
+                setSkipRecentConfirm(e.target.checked);
+                localStorage.setItem("orchid-skip-repo-switch", e.target.checked ? "true" : "false");
+              }}
+            />}
+            label={<Typography variant="body2">Don't ask again</Typography>}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setPendingRecentDir(null)}>Cancel</Button>
+          <Button variant="contained" onClick={() => { setDirectory(pendingRecentDir); setPendingRecentDir(null); }}>
+            Open
           </Button>
         </DialogActions>
       </Dialog>

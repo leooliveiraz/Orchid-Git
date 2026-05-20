@@ -28,12 +28,28 @@ export default function Orchid() {
   const [menuOpen, setMenuOpen] = useState(true);
   const [repoData, setRepoData] = useState(null);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [recentDirs, setRecentDirs] = useState(() => {
+    try { return JSON.parse(localStorage.getItem("orchid-recent-dirs") || "[]"); }
+    catch { return []; }
+  });
 
   const refresh = useCallback(() => setRefreshKey(k => k + 1), []);
 
+  const addRecentDir = useCallback((dir) => {
+    if (!dir) return;
+    setRecentDirs(prev => {
+      const next = [dir, ...prev.filter(d => d !== dir)].slice(0, 8);
+      localStorage.setItem("orchid-recent-dirs", JSON.stringify(next));
+      return next;
+    });
+  }, []);
+
   useEffect(() => {
-    if (directory) localStorage.setItem("orchid-last-dir", directory);
-  }, [directory]);
+    if (directory) {
+      localStorage.setItem("orchid-last-dir", directory);
+      addRecentDir(directory);
+    }
+  }, [directory, addRecentDir]);
 
   useEffect(() => {
     localStorage.setItem("orchid-theme", themeMode);
@@ -168,7 +184,7 @@ export default function Orchid() {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <OrchidContext.Provider value={{ directory, setDirectory, themeMode, toggleTheme, repoData, setRepoData, menuOpen, setMenuOpen, refresh, refreshKey }}>
+      <OrchidContext.Provider value={{ directory, setDirectory, themeMode, toggleTheme, repoData, setRepoData, menuOpen, setMenuOpen, refresh, refreshKey, recentDirs }}>
         <Box sx={{ height: "100vh", display: "flex", flexDirection: "column" }}>
           <AppMenu onToggleMenu={() => setMenuOpen(prev => !prev)} />
           <Box sx={{ display: "flex", flex: 1, overflow: "hidden" }}>

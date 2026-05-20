@@ -11,4 +11,5 @@ export const OrchidContext = createContext({
   setMenuOpen: () => {},
   refresh: () => {},
   refreshKey: 0,
+  recentDirs: [],
 });
