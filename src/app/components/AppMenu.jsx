@@ -9,12 +9,14 @@ import {
 import MenuIcon from "@mui/icons-material/Menu";
 import Brightness4Icon from "@mui/icons-material/Brightness4";
 import Brightness7Icon from "@mui/icons-material/Brightness7";
-import React, { useContext } from "react";
+import React, { useContext, useState } from "react";
 import { OrchidContext } from "../OrchidContext.jsx";
+import CloneDialog from "./CloneDialog.jsx";
 import "./AppMenu.css"
 
 export default function AppMenu({ onToggleMenu }) {
   const { directory, setDirectory, themeMode, toggleTheme } = useContext(OrchidContext);
+  const [showClone, setShowClone] = useState(false);
   
   function selectDirectory() {
     window.api.selectDirectory("").then((data) => {
@@ -45,9 +47,11 @@ export default function AppMenu({ onToggleMenu }) {
           <IconButton color="inherit" onClick={toggleTheme} sx={{ mr: 1 }}>
             {themeMode === "dark" ? <Brightness7Icon /> : <Brightness4Icon />}
           </IconButton>
+          <Button color="inherit" onClick={() => setShowClone(true)} sx={{ mr: 1 }}>Clone</Button>
           <Button color="inherit" onClick={() => {selectDirectory()}}>Open Project</Button>
         </Toolbar>
       </AppBar>
+      {showClone && <CloneDialog onClose={() => setShowClone(false)} />}
     </Box>
   );
 }
