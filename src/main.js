@@ -4,7 +4,6 @@ import path from "node:path";
 import started from "electron-squirrel-startup";
 const ipcMain = require("electron").ipcMain;
 const childProcess = require("child_process");
-const fs = require("fs");
 const isWindows = process.platform === "win32";
 
 function runGit(args, cwd) {
@@ -110,10 +109,6 @@ ipcMain.handle("get-repository-commits", function (event, directory, topoOrder, 
     `--pretty=format:%h%n%p%n%an%n%ad%n%s%n%D%x00`,
   ];
   const output = runGit(args, directory);
-  const dirName = path.basename(directory);
-  const repoDir = path.join(__dirname, "..", "repositories");
-  if (!fs.existsSync(repoDir)) fs.mkdirSync(repoDir, { recursive: true });
-  fs.writeFileSync(path.join(repoDir, `${dirName}.txt`), output);
   return output;
 });
 
@@ -141,7 +136,7 @@ ipcMain.handle("get-current-branch", (event, directory) => {
 });
 
 ipcMain.handle("checkout-branch", (event, directory, branch) => {
-  return runGit(["checkout", branch], directory);
+  return runGit(["checkout", branch, "--"], directory);
 });
 
 ipcMain.handle("stash-apply", (event, directory, stashId) => {
@@ -155,7 +150,7 @@ ipcMain.handle("get-status", (event, directory) => {
 });
 
 ipcMain.handle("stage-file", (event, directory, filePath) => {
-  return runGit(["add", filePath], directory);
+  return runGit(["add", "--", filePath], directory);
 });
 
 ipcMain.handle("unstage-file", (event, directory, filePath) => {
@@ -171,15 +166,24 @@ ipcMain.handle("commit", (event, directory, message) => {
 });
 
 ipcMain.handle("get-diff", (event, directory, filePath) => {
-  return runGit(["diff", filePath], directory);
+  return runGit(["diff", "--", filePath], directory);
 });
 
 ipcMain.handle("get-staged-diff", (event, directory, filePath) => {
-  return runGit(["diff", "--cached", filePath], directory);
+  return runGit(["diff", "--cached", "--", filePath], directory);
 });
 
 ipcMain.handle("push", (event, directory) => {
-  return runGit(["push"], directory);
+  try {
+    return runGit(["push"], directory);
+  } catch (e) {
+    const msg = e.message || "";
+    if (msg.includes("has no upstream")) {
+      const branch = runGit(["rev-parse", "--abbrev-ref", "HEAD"], directory).trim();
+      return runGit(["push", "--set-upstream", "origin", branch], directory);
+    }
+    throw e;
+  }
 });
 
 ipcMain.handle("pull", (event, directory) => {
@@ -187,5 +191,11 @@ ipcMain.handle("pull", (event, directory) => {
 });
 
 ipcMain.handle("clone", async (event, url, destPath) => {
+  if (typeof url !== "string" || url.startsWith("-")) throw new Error("Invalid repository URL");
+  try {
+    new URL(url);
+  } catch {
+    throw new Error("Invalid repository URL");
+  }
   return runGit(["clone", url, destPath]);
 });
