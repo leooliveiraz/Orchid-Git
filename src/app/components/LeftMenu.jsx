@@ -7,6 +7,7 @@ import {
 } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import AddIcon from "@mui/icons-material/Add";
+import DeleteIcon from "@mui/icons-material/Delete";
 import FiberManualRecordIcon from "@mui/icons-material/FiberManualRecord";
 import RadioButtonUncheckedIcon from "@mui/icons-material/RadioButtonUnchecked";
 import { OrchidContext } from "../OrchidContext.jsx";
@@ -41,14 +42,21 @@ function Section({ title, count, children, defaultOpen, onAdd }) {
   );
 }
 
-function Item({ label, active, onDoubleClick, onClick }) {
+function Item({ label, active, onDoubleClick, onClick, onDelete }) {
   return (
     <ListItem
       dense
       onClick={onClick}
       onDoubleClick={onDoubleClick}
+      secondaryAction={onDelete ? (
+        <Box component="span" onClick={(e) => { e.stopPropagation(); onDelete(); }}
+          sx={{ display: "flex", lineHeight: 1, cursor: "pointer", color: "text.disabled", "&:hover": { color: "error.main" }, mr: 0.5 }}
+        >
+          <DeleteIcon sx={{ fontSize: 16 }} />
+        </Box>
+      ) : null}
       sx={{
-        cursor: "pointer", py: 0.25,
+        cursor: "pointer", py: 0.25, pr: onDelete ? 6 : 2,
         "&:hover": { bgcolor: "action.hover", borderRadius: 1 },
         ...(active ? { fontWeight: 700 } : {}),
       }}
@@ -80,6 +88,10 @@ export default function LeftMenu({ open }) {
   const [showNewBranch, setShowNewBranch] = useState(false);
   const [newBranchName, setNewBranchName] = useState("");
   const [creating, setCreating] = useState(false);
+  const [showNewTag, setShowNewTag] = useState(false);
+  const [newTagName, setNewTagName] = useState("");
+  const [creatingTag, setCreatingTag] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(null);
 
   useEffect(() => {
     if (message) {
@@ -150,6 +162,83 @@ export default function LeftMenu({ open }) {
     setShowNewBranch(true);
   }, []);
 
+  const handleCreateTag = async () => {
+    if (!newTagName.trim() || !directory || !window.api) return;
+    setCreatingTag(true);
+    setMessage(null);
+    try {
+      await window.api.createTag(directory, newTagName.trim());
+      setMessageType("success");
+      setMessage(`Tag created: ${newTagName.trim()}`);
+      setShowNewTag(false);
+      setNewTagName("");
+      refresh();
+    } catch (e) {
+      setMessageType("error");
+      setMessage(e.message || String(e));
+    }
+    setCreatingTag(false);
+  };
+
+  const openNewTagDialog = useCallback(() => {
+    setNewTagName("");
+    setShowNewTag(true);
+  }, []);
+
+  const handleDeleteBranch = useCallback(async (branch) => {
+    if (!directory || !window.api) return;
+    setMessage(null);
+    try {
+      await window.api.deleteBranch(directory, branch);
+      setMessageType("success");
+      setMessage(`Branch deleted: ${branch}`);
+      refresh();
+    } catch (e) {
+      setMessageType("error");
+      setMessage(e.message || String(e));
+    }
+  }, [directory, refresh]);
+
+  const confirmDeleteBranch = useCallback((branch) => {
+    setConfirmDelete({ type: "branch", name: branch, action: () => handleDeleteBranch(branch) });
+  }, [handleDeleteBranch]);
+
+  const handleDeleteTag = useCallback(async (tag) => {
+    if (!directory || !window.api) return;
+    setMessage(null);
+    try {
+      await window.api.deleteTag(directory, tag);
+      setMessageType("success");
+      setMessage(`Tag deleted: ${tag}`);
+      refresh();
+    } catch (e) {
+      setMessageType("error");
+      setMessage(e.message || String(e));
+    }
+  }, [directory, refresh]);
+
+  const confirmDeleteTag = useCallback((tag) => {
+    setConfirmDelete({ type: "tag", name: tag, action: () => handleDeleteTag(tag) });
+  }, [handleDeleteTag]);
+
+  const handleDropStash = useCallback(async (stashId) => {
+    if (!directory || !window.api) return;
+    setMessage(null);
+    try {
+      await window.api.stashDrop(directory, stashId);
+      setMessageType("success");
+      setMessage("Stash dropped");
+      refresh();
+    } catch (e) {
+      setMessageType("error");
+      setMessage(e.message || String(e));
+    }
+  }, [directory, refresh]);
+
+  const confirmDropStash = useCallback((stashId) => {
+    setConfirmDelete({ type: "stash", name: stashId, action: () => handleDropStash(stashId) });
+  }, [handleDropStash]);
+
   return (
     <>
       <Drawer
@@ -181,6 +270,7 @@ export default function LeftMenu({ open }) {
                   active={b === repoData.currentBranch}
                   onClick={() => handleBranchClick(b)}
                   onDoubleClick={() => handleBranchDblClick(b)}
+                  onDelete={b !== repoData.currentBranch ? () => confirmDeleteBranch(b) : undefined}
                 />
               ))}
             </Section>
@@ -191,15 +281,15 @@ export default function LeftMenu({ open }) {
               ))}
             </Section>
 
-            <Section title="Tags" count={repoData.tags?.length ?? 0} defaultOpen={false}>
+            <Section title="Tags" count={repoData.tags?.length ?? 0} defaultOpen={false} onAdd={openNewTagDialog}>
               {repoData.tags?.map(t => (
-                <Item key={t} label={t} />
+                <Item key={t} label={t} onDelete={() => confirmDeleteTag(t)} />
               ))}
             </Section>
 
             <Section title="Stash" count={repoData.stashList?.length ?? 0} defaultOpen={false}>
               {repoData.stashList?.map(s => (
-                <Item key={s.id} label={`${s.id}: ${s.message}`} onDoubleClick={() => handleStashDblClick(s.id)} />
+                <Item key={s.id} label={`${s.id}: ${s.message}`} onDoubleClick={() => handleStashDblClick(s.id)} onDelete={() => confirmDropStash(s.id)} />
               ))}
             </Section>
           </>
@@ -229,6 +319,44 @@ export default function LeftMenu({ open }) {
           <Button onClick={() => setShowNewBranch(false)} disabled={creating}>Cancel</Button>
           <Button variant="contained" onClick={handleCreateBranch} disabled={!newBranchName.trim() || creating}>
             {creating ? "Creating..." : "Create & switch"}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog open={showNewTag} onClose={() => setShowNewTag(false)} maxWidth="xs" fullWidth>
+        <DialogTitle>Create tag</DialogTitle>
+        <DialogContent>
+          <TextField
+            autoFocus
+            fullWidth
+            label="Tag name"
+            placeholder="e.g. v1.0.0"
+            value={newTagName}
+            onChange={e => setNewTagName(e.target.value)}
+            disabled={creatingTag}
+            onKeyDown={e => { if (e.key === "Enter") handleCreateTag(); }}
+            sx={{ mt: 1 }}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setShowNewTag(false)} disabled={creatingTag}>Cancel</Button>
+          <Button variant="contained" onClick={handleCreateTag} disabled={!newTagName.trim() || creatingTag}>
+            {creatingTag ? "Creating..." : "Create"}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog open={!!confirmDelete} onClose={() => setConfirmDelete(null)} maxWidth="xs" fullWidth>
+        <DialogTitle>Confirm deletion</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2">
+            Delete {confirmDelete?.type} <strong>{confirmDelete?.name}</strong>?
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setConfirmDelete(null)}>Cancel</Button>
+          <Button color="error" variant="contained" onClick={() => { confirmDelete?.action(); setConfirmDelete(null); }}>
+            Delete
           </Button>
         </DialogActions>
       </Dialog>

@@ -142,8 +142,28 @@ ipcMain.handle("create-branch", (event, directory, branchName) => {
   return runGit(["checkout", "-b", branchName], directory);
 });
 
+ipcMain.handle("create-tag", (event, directory, tagName) => {
+  return runGit(["tag", tagName], directory);
+});
+
 ipcMain.handle("stash-apply", (event, directory, stashId) => {
   return runGit(["stash", "apply", stashId], directory);
+});
+
+ipcMain.handle("stash-drop", (event, directory, stashId) => {
+  return runGit(["stash", "drop", stashId], directory);
+});
+
+ipcMain.handle("delete-branch", (event, directory, branchName) => {
+  try {
+    return runGit(["branch", "-d", branchName], directory);
+  } catch (e) {
+    return runGit(["branch", "-D", branchName], directory);
+  }
+});
+
+ipcMain.handle("delete-tag", (event, directory, tagName) => {
+  return runGit(["tag", "-d", tagName], directory);
 });
 
 ipcMain.handle("get-status", (event, directory) => {
