@@ -147,3 +147,45 @@ ipcMain.handle("checkout-branch", (event, directory, branch) => {
 ipcMain.handle("stash-apply", (event, directory, stashId) => {
   return runGit(["stash", "apply", stashId], directory);
 });
+
+ipcMain.handle("get-status", (event, directory) => {
+  const { parseStatusOutput } = require("./git");
+  const output = runGit(["status", "--porcelain"], directory);
+  return parseStatusOutput(output);
+});
+
+ipcMain.handle("stage-file", (event, directory, filePath) => {
+  return runGit(["add", filePath], directory);
+});
+
+ipcMain.handle("unstage-file", (event, directory, filePath) => {
+  return runGit(["reset", "HEAD", "--", filePath], directory);
+});
+
+ipcMain.handle("stage-all", (event, directory) => {
+  return runGit(["add", "-A"], directory);
+});
+
+ipcMain.handle("commit", (event, directory, message) => {
+  return runGit(["commit", "-m", message], directory);
+});
+
+ipcMain.handle("get-diff", (event, directory, filePath) => {
+  return runGit(["diff", filePath], directory);
+});
+
+ipcMain.handle("get-staged-diff", (event, directory, filePath) => {
+  return runGit(["diff", "--cached", filePath], directory);
+});
+
+ipcMain.handle("push", (event, directory) => {
+  return runGit(["push"], directory);
+});
+
+ipcMain.handle("pull", (event, directory) => {
+  return runGit(["pull"], directory);
+});
+
+ipcMain.handle("clone", async (event, url, destPath) => {
+  return runGit(["clone", url, destPath]);
+});
