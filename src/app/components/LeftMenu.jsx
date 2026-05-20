@@ -265,6 +265,24 @@ export default function LeftMenu({ open }) {
     setConfirmDelete({ type: "stash", name: stashId, action: () => handleDropStash(stashId) });
   }, [handleDropStash]);
 
+  const handleDeleteRemoteBranch = useCallback(async (remoteName) => {
+    if (!directory || !window.api) return;
+    setMessage(null);
+    try {
+      await window.api.deleteRemoteBranch(directory, remoteName);
+      setMessageType("success");
+      setMessage(`Remote branch deleted: ${remoteName}`);
+      refresh();
+    } catch (e) {
+      setMessageType("error");
+      setMessage(e.message || String(e));
+    }
+  }, [directory, refresh]);
+
+  const confirmDeleteRemoteBranch = useCallback((remoteName) => {
+    setConfirmDelete({ type: "remote branch", name: remoteName, action: () => handleDeleteRemoteBranch(remoteName) });
+  }, [handleDeleteRemoteBranch]);
+
   return (
     <>
       <Drawer
@@ -303,7 +321,7 @@ export default function LeftMenu({ open }) {
 
             <Section title="Remote" count={repoData.remoteBranches?.length ?? 0} defaultOpen={false}>
               {repoData.remoteBranches?.map(b => (
-                <Item key={b} label={b} onClick={() => handleBranchClick(b)} onDoubleClick={() => handleBranchDblClick(b)} />
+                <Item key={b} label={b} onClick={() => handleBranchClick(b)} onDoubleClick={() => handleBranchDblClick(b)} onDelete={() => confirmDeleteRemoteBranch(b)} />
               ))}
             </Section>
 

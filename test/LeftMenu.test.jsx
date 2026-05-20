@@ -20,6 +20,7 @@ function renderLeftMenu(overrides = {}) {
     deleteBranch: jest.fn().mockResolvedValue(""),
     deleteTag: jest.fn().mockResolvedValue(""),
     stashDrop: jest.fn().mockResolvedValue(""),
+    deleteRemoteBranch: jest.fn().mockResolvedValue(""),
     ...overrides.api,
   };
 
@@ -157,8 +158,23 @@ test("no delete icon on active branch", () => {
   }
 });
 
-test("delete icons count matches non-active branches + tags + stashes", () => {
+test("delete icons count matches non-active branches + remote + tags + stashes", () => {
   renderLeftMenu();
   const deletes = screen.getAllByTestId("DeleteIcon");
-  expect(deletes.length).toBe(5);
+  // Non-active branches: 1 (develop) + remote: 1 (origin/main) + tags: 2 + stashes: 2 = 6
+  expect(deletes.length).toBe(6);
+});
+
+test("confirm delete remote branch calls api.deleteRemoteBranch", async () => {
+  const { api } = renderLeftMenu();
+  const deletes = screen.getAllByTestId("DeleteIcon");
+  const remoteDelete = deletes.find(d => d.closest("li")?.textContent?.includes("origin/main"));
+  fireEvent.click(remoteDelete);
+
+  await screen.findByRole("dialog");
+  fireEvent.click(screen.getByText("Delete"));
+
+  await waitFor(() => {
+    expect(api.deleteRemoteBranch).toHaveBeenCalledWith("/test/repo", "origin/main");
+  });
 });

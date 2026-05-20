@@ -22,6 +22,7 @@ contextBridge.exposeInMainWorld("api", {
   stashPush: (directory, message) => ipcRenderer.invoke("stash-push", directory, message),
   deleteBranch: (directory, branchName) => ipcRenderer.invoke("delete-branch", directory, branchName),
   deleteTag: (directory, tagName) => ipcRenderer.invoke("delete-tag", directory, tagName),
+  deleteRemoteBranch: (directory, remoteName) => ipcRenderer.invoke("delete-remote-branch", directory, remoteName),
   getStatus: (directory) => ipcRenderer.invoke("get-status", directory),
   stageFile: (directory, filePath) => ipcRenderer.invoke("stage-file", directory, filePath),
   unstageFile: (directory, filePath) => ipcRenderer.invoke("unstage-file", directory, filePath),

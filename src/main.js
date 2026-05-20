@@ -170,6 +170,11 @@ ipcMain.handle("delete-tag", (event, directory, tagName) => {
   return runGit(["tag", "-d", tagName], directory);
 });
 
+ipcMain.handle("delete-remote-branch", (event, directory, remoteName) => {
+  const branch = remoteName.replace(/^origin\//, "");
+  return runGit(["push", "origin", "--delete", branch], directory);
+});
+
 ipcMain.handle("get-status", (event, directory) => {
   const { parseStatusOutput } = require("./git");
   const output = runGit(["status", "--porcelain"], directory);
