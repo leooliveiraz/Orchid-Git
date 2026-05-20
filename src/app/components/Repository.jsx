@@ -1,11 +1,13 @@
-import React, { useEffect, useState, useContext } from "react";
+﻿import React, { useEffect, useState, useContext } from "react";
 import "./Repository.css";
 import CommitTable from "./CommitTable.jsx";
 import ChangesPanel from "./ChangesPanel.jsx";
+import DiffViewer from "./DiffViewer.jsx";
 import SearchText from "./SearchText.jsx";
 import {
   Typography, Box, Tabs, Tab, FormControlLabel, Checkbox,
   TextField, ToggleButtonGroup, ToggleButton, Paper,
+  Menu, MenuItem, ListItemIcon, ListItemText, Chip, Divider,
 } from "@mui/material";
 import { OrchidContext } from "../OrchidContext.jsx";
 
@@ -13,11 +15,16 @@ export default function Repository({ repositoryDirectory }) {
   const { refreshKey } = useContext(OrchidContext);
   const [commitList, setCommitList] = useState([]);
   const [tab, setTab] = useState("graph");
+  const [commitFiles, setCommitFiles] = useState(null);
+  const [menuAnchor, setMenuAnchor] = useState(null);
+  const [selectedCommit, setSelectedCommit] = useState(null);
+  const [commitFileDiff, setCommitFileDiff] = useState(null);
   const [allBranches, setAllBranches] = useState(() => JSON.parse(localStorage.getItem("orchid-all-branches") ?? "true"));
   const [useTopoOrder, setUseTopoOrder] = useState(() => JSON.parse(localStorage.getItem("orchid-topo-order") ?? "true"));
   const [commitLimit, setCommitLimit] = useState(() => JSON.parse(localStorage.getItem("orchid-commit-limit") ?? "10000"));
   const [showSearch, setShowSearch] = useState(false);
   const [connectionStyle, setConnectionStyle] = useState(() => localStorage.getItem("orchid-connection-style") || "bezier");
+  const [highlightIndex, setHighlightIndex] = useState(null);
 
   useEffect(() => {
     localStorage.setItem("orchid-connection-style", connectionStyle);
@@ -173,6 +180,55 @@ export default function Repository({ repositoryDirectory }) {
     return commitList;
   }
 
+  const handleCommitClick = async (commit, event) => {
+    if (!window.api) return;
+    try {
+      const files = await window.api.getCommitFiles(repositoryDirectory, commit.commit);
+      setSelectedCommit(commit);
+      setCommitFiles(files || []);
+      setMenuAnchor({ left: event.clientX, top: event.clientY });
+    } catch (e) {
+      // silently ignore
+    }
+  };
+
+  const handleCommitFileClick = async (file) => {
+    setMenuAnchor(null);
+    if (!window.api) return;
+    try {
+      const diff = await window.api.getCommitFileDiff(repositoryDirectory, selectedCommit.commit, file.path);
+      if (diff && diff.trim()) {
+        setCommitFileDiff({ fileName: `${file.path} (${selectedCommit.commit})`, diffText: diff });
+      }
+    } catch (e) {
+      // silently ignore
+    }
+  };
+
+  const handleParentClick = (parentIndex) => {
+    setMenuAnchor(null);
+    setHighlightIndex(parentIndex);
+    setTimeout(() => setHighlightIndex(null), 3000);
+  };
+
+  const getParentCommits = () => {
+    if (!selectedCommit || !commitList.length) return [];
+    const result = [];
+    if (selectedCommit.dad?.parentIndex != null) {
+      const parent = commitList[selectedCommit.dad.parentIndex];
+      if (parent) result.push({ ...parent, parentIndex: selectedCommit.dad.parentIndex });
+    }
+    if (selectedCommit.merge?.parentIndex != null) {
+      const parent = commitList[selectedCommit.merge.parentIndex];
+      if (parent && parent.commit !== result[0]?.commit) result.push({ ...parent, parentIndex: selectedCommit.merge.parentIndex });
+    }
+    return result;
+  };
+
+  const STATUS_COLORS = {
+    M: "#e6a817", A: "#28a745", D: "#d73a49", R: "#6f42c1",
+  };
+
   return (
     <Box sx={{ p: 2, height: "100%", display: "flex", flexDirection: "column", overflow: "hidden" }}>
       <Typography variant="h5" sx={{ fontWeight: 600 }}>
@@ -225,7 +281,7 @@ export default function Repository({ repositoryDirectory }) {
           )}
 
           <Box sx={{ flex: 1, minHeight: 0 }}>
-            <CommitTable commitList={commitList} connectionStyle={connectionStyle} />
+            <CommitTable commitList={commitList} connectionStyle={connectionStyle} onCommitClick={handleCommitClick} highlightIndex={highlightIndex} />
           </Box>
         </>
       )}
@@ -235,6 +291,86 @@ export default function Repository({ repositoryDirectory }) {
           <ChangesPanel directory={repositoryDirectory} />
         </Box>
       )}
+
+      {commitFileDiff && (
+        <DiffViewer
+          fileName={commitFileDiff.fileName}
+          diffText={commitFileDiff.diffText}
+          onClose={() => setCommitFileDiff(null)}
+        />
+      )}
+
+      <Menu
+        open={!!menuAnchor}
+        onClose={() => setMenuAnchor(null)}
+        anchorReference="anchorPosition"
+        anchorPosition={menuAnchor}
+        slotProps={{ paper: { sx: { maxHeight: 400, width: 400 } } }}
+      >
+        {selectedCommit && (
+          <Box sx={{ px: 2, py: 1.5, borderBottom: 1, borderColor: "divider" }}>
+            <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5, fontFamily: "monospace", fontSize: "0.75rem" }}>
+              {selectedCommit.commit}
+            </Typography>
+            <Typography variant="body2" sx={{ mb: 0.5, fontSize: "0.8125rem", wordBreak: "break-word" }}>
+              {selectedCommit.message}
+            </Typography>
+            <Box sx={{ display: "flex", gap: 2, fontSize: "0.75rem", color: "text.secondary" }}>
+              <span>{selectedCommit.author}</span>
+              <span>{selectedCommit.date}</span>
+            </Box>
+          </Box>
+        )}
+        {getParentCommits().length > 0 && (
+          <Box sx={{ px: 2, py: 1, borderBottom: 1, borderColor: "divider", bgcolor: "action.hover" }}>
+            <Typography variant="caption" sx={{ fontWeight: 600, color: "text.secondary", mb: 0.5, display: "block" }}>
+              Parents
+            </Typography>
+            {getParentCommits().map(p => (
+              <Box
+                key={p.commit}
+                onClick={() => handleParentClick(p.parentIndex)}
+                sx={{ display: "flex", gap: 1, alignItems: "center", cursor: "pointer", py: 0.5, px: 1, borderRadius: 1, "&:hover": { bgcolor: "action.selected" } }}
+              >
+                <Typography variant="caption" sx={{ fontFamily: "monospace", color: "primary.main", fontSize: "0.7rem" }}>
+                  {p.commit}
+                </Typography>
+                <Typography variant="caption" sx={{ color: "text.secondary", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: "0.7rem" }}>
+                  {p.message}
+                </Typography>
+              </Box>
+            ))}
+          </Box>
+        )}
+        <Divider />
+        {commitFiles?.map(file => (
+          <MenuItem key={file.path} onClick={() => handleCommitFileClick(file)} dense>
+            <ListItemIcon sx={{ minWidth: 28 }}>
+              <Chip label={file.status} size="small"
+                sx={{
+                  color: "#fff", fontWeight: 700, fontSize: "0.6rem", minWidth: 24, height: 18,
+                  backgroundColor: STATUS_COLORS[file.status] || "#6a737d",
+                }}
+              />
+            </ListItemIcon>
+            <ListItemText
+              primary={file.path}
+              primaryTypographyProps={{ variant: "body2", noWrap: true }}
+              secondary={
+                <Box component="span" sx={{ display: "flex", gap: 1, mt: 0.25 }}>
+                  {file.added > 0 && <Typography variant="caption" sx={{ color: "#28a745" }}>+{file.added}</Typography>}
+                  {file.deleted > 0 && <Typography variant="caption" sx={{ color: "#d73a49" }}>-{file.deleted}</Typography>}
+                </Box>
+              }
+            />
+          </MenuItem>
+        ))}
+        {commitFiles?.length === 0 && (
+          <MenuItem disabled dense>
+            <ListItemText primary="No files changed" />
+          </MenuItem>
+        )}
+      </Menu>
     </Box>
   );
 }

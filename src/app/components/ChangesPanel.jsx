@@ -30,15 +30,15 @@ function StatusFile({ file, onStage, onUnstage, onViewDiff }) {
       secondaryAction={
         <Box sx={{ display: "flex", gap: 0.5 }}>
           {file.staged ? (
-            <Button size="small" variant="outlined" color="warning" onClick={() => onUnstage(file.path)}>
+            <Button size="small" variant="outlined" color="warning" onClick={(e) => { e.stopPropagation(); onUnstage(file.path); }}>
               Unstage
             </Button>
           ) : (
-            <Button size="small" variant="outlined" onClick={() => onStage(file.path)}>
+            <Button size="small" variant="outlined" onClick={(e) => { e.stopPropagation(); onStage(file.path); }}>
               Stage
             </Button>
           )}
-          <Button size="small" variant="text" onClick={() => onViewDiff(file)}>
+          <Button size="small" variant="text" onClick={(e) => { e.stopPropagation(); onViewDiff(file); }}>
             Diff
           </Button>
         </Box>
@@ -55,7 +55,11 @@ function StatusFile({ file, onStage, onUnstage, onViewDiff }) {
       </ListItemIcon>
       <ListItemText
         primary={file.path}
-        primaryTypographyProps={{ variant: "body2", noWrap: true, sx: { fontSize: "0.8125rem" } }}
+        primaryTypographyProps={{
+          variant: "body2", noWrap: true,
+          sx: { fontSize: "0.8125rem", cursor: "pointer", "&:hover": { textDecoration: "underline" } },
+          onClick: (e) => { e.stopPropagation(); onViewDiff(file); },
+        }}
       />
     </ListItem>
   );

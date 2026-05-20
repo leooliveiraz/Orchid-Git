@@ -25,14 +25,17 @@
 }
 
 .dv-diff {
-  font-size: 12px;
-  font-family: monospace;
+  font-size: 0.8125rem;
+  font-family: "Cascadia Code", "Fira Code", "Consolas", monospace;
   width: 100%;
 }
 
 .dv-diff table {
   width: 100%;
   border-collapse: collapse;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  overflow: hidden;
 }
 
 .dv-diff tr.diff-line-insert {
@@ -43,14 +46,26 @@
   background: #fdd4d4;
 }
 
+.dv-diff .diff-hunk-header {
+  background: var(--bg-table-alt);
+  color: var(--text-secondary);
+  font-weight: 600;
+  font-size: 0.6875rem;
+  padding: 3px 12px;
+  border-top: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border-color);
+  user-select: none;
+}
+
 .dv-diff .diff-gutter {
-  width: 40px;
-  min-width: 40px;
-  padding: 1px 4px;
+  width: 48px;
+  min-width: 48px;
+  padding: 2px 8px 2px 6px;
   text-align: right;
   user-select: none;
   vertical-align: top;
-  font-family: monospace;
+  font-size: 0.6875rem;
+  border-right: 1px solid var(--border-color);
 }
 
 .dv-diff .diff-gutter-normal {
@@ -67,10 +82,11 @@
 }
 
 .dv-diff .diff-code {
-  white-space: pre;
-  padding: 1px 8px;
+  white-space: pre-wrap;
+  padding: 2px 12px;
   vertical-align: top;
-  font-family: monospace;
+  font-size: 0.8125rem;
+  line-height: 1.5;
 }
 
 .dv-diff .diff-code-insert {
@@ -83,12 +99,26 @@
   color: #8b1a1a;
 }
 
+:root.dark .dv-diff table {
+  border-color: #444;
+}
+
 :root.dark .dv-diff tr.diff-line-insert {
   background: #1a3a1a;
 }
 
 :root.dark .dv-diff tr.diff-line-delete {
   background: #3a1a1a;
+}
+
+:root.dark .dv-diff .diff-hunk-header {
+  background: #1e1e1e;
+  color: #888;
+  border-color: #333;
+}
+
+:root.dark .dv-diff .diff-gutter {
+  border-right-color: #333;
 }
 
 :root.dark .dv-diff .diff-gutter-insert {

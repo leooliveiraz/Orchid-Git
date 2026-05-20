@@ -148,6 +148,29 @@ ipcMain.handle("get-status", (event, directory) => {
   return parseStatusOutput(output);
 });
 
+ipcMain.handle("get-commit-files", (event, directory, commitHash) => {
+  const statusOutput = runGit(["diff-tree", "--no-commit-id", "-r", "--name-status", commitHash], directory);
+  const numstatOutput = runGit(["diff-tree", "--no-commit-id", "-r", "--numstat", commitHash], directory);
+  const statusLines = statusOutput.trim().split("\n").filter(Boolean);
+  const numstatLines = numstatOutput.trim().split("\n").filter(Boolean);
+  const numstatMap = {};
+  numstatLines.forEach(line => {
+    const [added, deleted, ...pathParts] = line.split("\t");
+    const path = pathParts.join("\t");
+    numstatMap[path] = { added: parseInt(added) || 0, deleted: parseInt(deleted) || 0 };
+  });
+  return statusLines.map(line => {
+    const [status, ...pathParts] = line.split("\t");
+    const path = pathParts.join("\t");
+    const counts = numstatMap[path] || { added: 0, deleted: 0 };
+    return { status, path, added: counts.added, deleted: counts.deleted };
+  });
+});
+
+ipcMain.handle("get-commit-file-diff", (event, directory, commitHash, filePath) => {
+  return runGit(["diff-tree", "--no-commit-id", "-r", "-p", commitHash, "--", filePath], directory);
+});
+
 ipcMain.handle("stage-file", (event, directory, filePath) => {
   return runGit(["add", "--", filePath], directory);
 });

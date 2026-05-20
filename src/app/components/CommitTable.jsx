@@ -1,10 +1,18 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useRef, useEffect } from "react";
 import GitGraph from "./GitGraph.jsx";
 import {
   TableContainer, Table, TableHead, TableBody, TableRow, TableCell, Paper,
 } from "@mui/material";
 
-export default function CommitTable({ commitList, connectionStyle }) {
+export default function CommitTable({ commitList, connectionStyle, onCommitClick, highlightIndex }) {
+  const containerRef = useRef(null);
+
+  useEffect(() => {
+    if (highlightIndex == null || !containerRef.current) return;
+    const rowHeight = 24;
+    containerRef.current.scrollTo({ top: highlightIndex * rowHeight, behavior: "smooth" });
+  }, [highlightIndex]);
+
   const { lanesAtRow, maxDepth } = useMemo(() => {
     const lanesAtRow = {};
     commitList.forEach((commit, index) => {
@@ -43,7 +51,7 @@ export default function CommitTable({ commitList, connectionStyle }) {
   const headIdx = commitList.findIndex(c => c.decoration && c.decoration.includes("HEAD"));
 
   return (
-    <TableContainer component={Paper} variant="outlined" sx={{ height: "100%", overflow: "auto" }}>
+    <TableContainer ref={containerRef} component={Paper} variant="outlined" sx={{ height: "100%", overflow: "auto" }}>
       <Table size="small" stickyHeader sx={{ minWidth: 650 }}>
         <TableHead>
           <TableRow>
@@ -75,9 +83,19 @@ export default function CommitTable({ commitList, connectionStyle }) {
             <TableRow
               key={commit.commit}
               hover
+              onClick={(e) => onCommitClick?.(commit, e)}
               sx={{
+                cursor: "pointer",
                 "&:last-child td": { borderBottom: 0 },
-                ...(index === headIdx ? { outline: "2px solid", outlineColor: "primary.main", outlineOffset: -1 } : {}),
+                ...(index === highlightIndex ? {
+                  animation: "highlight-pulse 3s ease-out",
+                  "@keyframes highlight-pulse": {
+                    "0%": { backgroundColor: "var(--bg-table-alt)", outline: "2px solid", outlineColor: "warning.main" },
+                    "70%": { backgroundColor: "var(--bg-table-alt)", outline: "2px solid", outlineColor: "warning.main" },
+                    "100%": { backgroundColor: "transparent", outline: "none" },
+                  },
+                } : {}),
+                ...(index === headIdx && index !== highlightIndex ? { outline: "2px solid", outlineColor: "primary.main", outlineOffset: -1 } : {}),
               }}
             >
               <TableCell sx={{ textAlign: "center", color: commit.merge ? "error.main" : "text.secondary", fontWeight: commit.merge ? 700 : 400, fontSize: "0.75rem" }}>
