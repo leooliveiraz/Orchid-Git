@@ -2,18 +2,24 @@ import React, { useContext, useState, useCallback, useEffect } from "react";
 import {
   Drawer, Snackbar, Alert, Accordion, AccordionSummary, AccordionDetails,
   List, ListItem, ListItemIcon, ListItemText,
-  Typography, Box,
+  Typography, Box, IconButton, Dialog, DialogTitle, DialogContent, DialogActions, Button, TextField,
 } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import AddIcon from "@mui/icons-material/Add";
 import FiberManualRecordIcon from "@mui/icons-material/FiberManualRecord";
 import RadioButtonUncheckedIcon from "@mui/icons-material/RadioButtonUnchecked";
 import { OrchidContext } from "../OrchidContext.jsx";
 
-function Section({ title, count, children, defaultOpen }) {
+function Section({ title, count, children, defaultOpen, onAdd }) {
   return (
     <Accordion defaultExpanded={defaultOpen !== false} disableGutters>
       <AccordionSummary expandIcon={<ExpandMoreIcon sx={{ fontSize: 16, color: "text.secondary" }} />}>
         <Typography variant="body2" sx={{ fontWeight: 600, flex: 1 }}>{title}</Typography>
+        {onAdd && (
+          <IconButton size="small" onClick={(e) => { e.stopPropagation(); onAdd(); }} sx={{ mr: 0.5, p: 0.25 }}>
+            <AddIcon sx={{ fontSize: 16, color: "text.secondary" }} />
+          </IconButton>
+        )}
         <Box component="span" sx={{
           fontSize: "0.6875rem", color: "text.secondary",
           bgcolor: "action.selected", px: 0.75, borderRadius: 2,
@@ -68,6 +74,9 @@ export default function LeftMenu({ open }) {
   const { directory, repoData, refresh } = useContext(OrchidContext);
   const [message, setMessage] = useState(null);
   const [messageType, setMessageType] = useState("error");
+  const [showNewBranch, setShowNewBranch] = useState(false);
+  const [newBranchName, setNewBranchName] = useState("");
+  const [creating, setCreating] = useState(false);
 
   useEffect(() => {
     if (message) {
@@ -115,6 +124,29 @@ export default function LeftMenu({ open }) {
     }
   }, [directory, refresh]);
 
+  const handleCreateBranch = async () => {
+    if (!newBranchName.trim() || !directory || !window.api) return;
+    setCreating(true);
+    setMessage(null);
+    try {
+      await window.api.createBranch(directory, newBranchName.trim());
+      setMessageType("success");
+      setMessage(`Created and switched to ${newBranchName.trim()}`);
+      setShowNewBranch(false);
+      setNewBranchName("");
+      refresh();
+    } catch (e) {
+      setMessageType("error");
+      setMessage(e.message || String(e));
+    }
+    setCreating(false);
+  };
+
+  const openNewBranchDialog = useCallback(() => {
+    setNewBranchName("");
+    setShowNewBranch(true);
+  }, []);
+
   return (
     <>
       <Drawer
@@ -138,7 +170,7 @@ export default function LeftMenu({ open }) {
       >
         {repoData ? (
           <>
-            <Section title="Branches" count={repoData.branches?.length ?? 0}>
+            <Section title="Branches" count={repoData.branches?.length ?? 0} onAdd={openNewBranchDialog}>
               {repoData.branches?.map(b => (
                 <Item
                   key={b}
@@ -174,6 +206,29 @@ export default function LeftMenu({ open }) {
           </Typography>
         )}
       </Drawer>
+
+      <Dialog open={showNewBranch} onClose={() => setShowNewBranch(false)} maxWidth="xs" fullWidth>
+        <DialogTitle>Create branch</DialogTitle>
+        <DialogContent>
+          <TextField
+            autoFocus
+            fullWidth
+            label="Branch name"
+            placeholder="e.g. feature/new-feature"
+            value={newBranchName}
+            onChange={e => setNewBranchName(e.target.value)}
+            disabled={creating}
+            onKeyDown={e => { if (e.key === "Enter") handleCreateBranch(); }}
+            sx={{ mt: 1 }}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setShowNewBranch(false)} disabled={creating}>Cancel</Button>
+          <Button variant="contained" onClick={handleCreateBranch} disabled={!newBranchName.trim() || creating}>
+            {creating ? "Creating..." : "Create & switch"}
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       <Snackbar open={!!message} autoHideDuration={4000} onClose={() => setMessage(null)}
         anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
