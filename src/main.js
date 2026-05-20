@@ -9,6 +9,8 @@ const isWindows = process.platform === "win32";
 
 function runGit(args, cwd) {
   const result = childProcess.spawnSync("git", args, { cwd, encoding: "utf8" });
+  if (result.error) throw result.error;
+  if (result.status !== 0) throw new Error(result.stderr || `git command failed: ${args.join(" ")}`);
   return result.stdout;
 }
 
@@ -109,6 +111,39 @@ ipcMain.handle("get-repository-commits", function (event, directory, topoOrder, 
   ];
   const output = runGit(args, directory);
   const dirName = path.basename(directory);
-  fs.writeFileSync(`repositories/${dirName}.txt`, output);
+  const repoDir = path.join(__dirname, "..", "repositories");
+  if (!fs.existsSync(repoDir)) fs.mkdirSync(repoDir, { recursive: true });
+  fs.writeFileSync(path.join(repoDir, `${dirName}.txt`), output);
   return output;
+});
+
+ipcMain.handle("get-branches", (event, directory) => {
+  return runGit(["branch", "--list", "--format=%(refname:short)"], directory).trim().split("\n").filter(Boolean);
+});
+
+ipcMain.handle("get-remote-branches", (event, directory) => {
+  return runGit(["branch", "-r", "--list", "--format=%(refname:short)"], directory).trim().split("\n").filter(Boolean);
+});
+
+ipcMain.handle("get-tags", (event, directory) => {
+  return runGit(["tag", "--list", "--format=%(refname:short)"], directory).trim().split("\n").filter(Boolean);
+});
+
+ipcMain.handle("get-stash-list", (event, directory) => {
+  return runGit(["stash", "list", "--format=%gd||%gs"], directory).trim().split("\n").filter(Boolean).map(line => {
+    const [id, ...msg] = line.split("||");
+    return { id, message: msg.join("||") };
+  });
+});
+
+ipcMain.handle("get-current-branch", (event, directory) => {
+  return runGit(["rev-parse", "--abbrev-ref", "HEAD"], directory).trim();
+});
+
+ipcMain.handle("checkout-branch", (event, directory, branch) => {
+  return runGit(["checkout", branch], directory);
+});
+
+ipcMain.handle("stash-apply", (event, directory, stashId) => {
+  return runGit(["stash", "apply", stashId], directory);
 });

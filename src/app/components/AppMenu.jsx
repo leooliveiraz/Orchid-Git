@@ -13,7 +13,7 @@ import React, { useContext } from "react";
 import { OrchidContext } from "../OrchidContext.jsx";
 import "./AppMenu.css"
 
-export default function AppMenu() {
+export default function AppMenu({ onToggleMenu }) {
   const { directory, setDirectory, themeMode, toggleTheme } = useContext(OrchidContext);
   
   function selectDirectory() {
@@ -35,6 +35,7 @@ export default function AppMenu() {
             color="inherit"
             aria-label="menu"
             sx={{ mr: 2 }}
+            onClick={onToggleMenu}
           >
             <MenuIcon />
           </IconButton>

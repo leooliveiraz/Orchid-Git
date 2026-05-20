@@ -38,19 +38,19 @@ export default function CommitTable({ commitList, connectionStyle }) {
   }, [commitList]);
   return (
     <>
-      <div style={{ overflow: "auto", height: "calc(74vh)", width:"100vw" }}>
+      <div style={{ overflow: "auto", height: "calc(74vh)" }}>
         <table>
           <thead className="table-header-title">
             <tr>
               <th title="INDEX">I.</th>
               <th>Graph</th>
               <th>Hash</th>
-              <th>Parent</th>
+              {/* <th>Parent</th>
               <th title="DAD INDEX">DI</th>
               <th title="DAD DISTANCE">DD</th>
               <th title="DEPTH">De</th>
               <th title="NUMBER OF SONS">Sons</th>
-              <th title="MAX DEPTH">MD</th>
+              <th title="MAX DEPTH">MD</th> */}
               <th>Message</th>
               <th>Decoration</th>
               <th>Author</th>
@@ -69,7 +69,7 @@ export default function CommitTable({ commitList, connectionStyle }) {
                     <GitGraph commit={commit} index={index} commitList={commitList} connectionStyle={connectionStyle} lanesAtRow={lanesAtRow} maxDepth={maxDepth} />
                   </td>
                   <td>{commit.commit}</td>
-                  <td>{commit.parent}</td>
+                  {/* <td>{commit.parent}</td>
                   <td>
                     {commit.dad?.parentIndex}
                     {commit.merge ? `-${commit.merge?.parentIndex}` : ""}
@@ -80,7 +80,7 @@ export default function CommitTable({ commitList, connectionStyle }) {
                   </td>
                   <td>{commit.depth + ""}</td>
                   <td>{commit.sonsNumber} {commit.sonsMergeNumber ? `- ${commit.sonsMergeNumber}` : ""}</td>
-                  <td>{!isNaN(commit.maxDepth) ? commit.maxDepth + 1 : ""}</td>
+                  <td>{!isNaN(commit.maxDepth) ? commit.maxDepth + 1 : ""}</td> */}
                   <td>{commit.message}</td>
                   <td>{commit.decoration}</td>
                   <td>{commit.author}</td>
