@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useCallback } from "react";
+import CommitDialog from "./CommitDialog.jsx";
 
 const STATUS_LABELS = {
   M: "Modified", A: "Added", D: "Deleted", R: "Renamed",
@@ -34,6 +35,7 @@ export default function ChangesPanel({ directory }) {
   const [statusList, setStatusList] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [showCommit, setShowCommit] = useState(false);
 
   const refresh = useCallback(async () => {
     if (!directory || !window.api) return;
@@ -96,6 +98,11 @@ export default function ChangesPanel({ directory }) {
     }
   };
 
+  const handleCommitClose = (didCommit) => {
+    setShowCommit(false);
+    if (didCommit) refresh();
+  };
+
   const staged = statusList.filter(f => f.staged);
   const unstaged = statusList.filter(f => !f.staged);
 
@@ -107,6 +114,9 @@ export default function ChangesPanel({ directory }) {
         </span>
         <button className="cp-btn" onClick={refresh}>Refresh</button>
         <button className="cp-btn" onClick={handleStageAll}>Stage All</button>
+        <button className="cp-btn cp-btn-primary" onClick={() => setShowCommit(true)} disabled={staged.length === 0}>
+          Commit
+        </button>
       </div>
 
       {error && <div className="cp-error">{error}</div>}
@@ -126,6 +136,10 @@ export default function ChangesPanel({ directory }) {
           <StatusFile key={"unstaged-" + f.path} file={f} onStage={handleStage} onUnstage={handleUnstage} onViewDiff={handleViewDiff} />
         ))}
       </div>
+
+      {showCommit && (
+        <CommitDialog directory={directory} stagedFiles={staged} onClose={handleCommitClose} />
+      )}
     </div>
   );
 }
