@@ -17,8 +17,8 @@ afterEach(() => {
 test("renders title and fields", () => {
   render(<CloneDialog onClose={() => {}} />);
   expect(screen.getByText("Clone Repository")).toBeInTheDocument();
-  expect(screen.getByText("Repository URL")).toBeInTheDocument();
-  expect(screen.getByText("Destination directory")).toBeInTheDocument();
+  expect(screen.getByLabelText("Repository URL")).toBeInTheDocument();
+  expect(screen.getByLabelText("Destination directory")).toBeInTheDocument();
 });
 
 test("has inputs and buttons", () => {

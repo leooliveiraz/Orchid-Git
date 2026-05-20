@@ -19,7 +19,7 @@ test("renders file name in title", () => {
 test("calls onClose when close button clicked", () => {
   const onClose = jest.fn();
   render(<DiffViewer fileName="src/file.js" diffText={sampleDiff} onClose={onClose} />);
-  fireEvent.click(screen.getByText("✕"));
+  fireEvent.click(screen.getByRole("button", { name: /close/i }));
   expect(onClose).toHaveBeenCalled();
 });
 

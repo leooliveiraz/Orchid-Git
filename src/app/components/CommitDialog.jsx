@@ -1,4 +1,9 @@
 import React, { useState } from "react";
+import {
+  Dialog, DialogTitle, DialogContent, DialogActions,
+  Button, TextField, Typography, List, ListItem, ListItemIcon, ListItemText,
+  LinearProgress, Box, Alert,
+} from "@mui/material";
 
 export default function CommitDialog({ directory, stagedFiles, onClose }) {
   const [message, setMessage] = useState("");
@@ -19,48 +24,54 @@ export default function CommitDialog({ directory, stagedFiles, onClose }) {
   };
 
   return (
-    <div className="cd-overlay" onClick={() => !committing && onClose(false)}>
-      <div className="cd-modal" onClick={e => e.stopPropagation()}>
-        <div className="cd-header">
-          <h3 className="cd-title">Commit changes</h3>
-          <button className="cd-close" onClick={() => onClose(false)} disabled={committing}>✕</button>
-        </div>
+    <Dialog open onClose={() => !committing && onClose(false)} maxWidth="sm" fullWidth>
+      <DialogTitle>Commit changes</DialogTitle>
+      {committing && <LinearProgress />}
+      <DialogContent>
+        <TextField
+          autoFocus
+          multiline
+          minRows={3}
+          maxRows={6}
+          fullWidth
+          placeholder="Commit message"
+          value={message}
+          onChange={e => setMessage(e.target.value)}
+          onKeyDown={e => { if ((e.ctrlKey || e.metaKey) && e.key === "Enter") handleCommit(); }}
+          disabled={committing}
+          sx={{ mb: 2 }}
+        />
 
-        <div className="cd-body">
-          <textarea
-            className="cd-textarea"
-            placeholder="Commit message"
-            value={message}
-            onChange={e => setMessage(e.target.value)}
-            onKeyDown={e => { if ((e.ctrlKey || e.metaKey) && e.key === "Enter") handleCommit(); }}
-            disabled={committing}
-            autoFocus
-          />
+        <Typography variant="body2" sx={{ fontWeight: 600, color: "text.secondary", mb: 1 }}>
+          Staged files ({stagedFiles.length})
+        </Typography>
 
-          <div className="cd-section-title">Staged files ({stagedFiles.length})</div>
-          <div className="cd-files">
-            {stagedFiles.map(f => (
-              <div key={f.path} className="cd-file">
-                <span className="cd-status" style={{ color: "#28a745" }}>A</span>
-                <span className="cd-path">{f.path}</span>
-              </div>
-            ))}
-          </div>
+        <List dense sx={{ maxHeight: 200, overflow: "auto" }}>
+          {stagedFiles.map(f => (
+            <ListItem key={f.path} sx={{ py: 0 }}>
+              <ListItemIcon sx={{ minWidth: 28 }}>
+                <Box component="span" sx={{ color: "success.main", fontWeight: 700, fontSize: "0.75rem" }}>A</Box>
+              </ListItemIcon>
+              <ListItemText primary={f.path} primaryTypographyProps={{ variant: "body2", noWrap: true }} />
+            </ListItem>
+          ))}
+        </List>
 
-          {error && <div className="cd-error">{error}</div>}
-        </div>
+        {error && (
+          <Alert severity="error" sx={{ mt: 2 }}>{error}</Alert>
+        )}
+      </DialogContent>
 
-        <div className="cd-footer">
-          <button className="cd-btn" onClick={() => onClose(false)} disabled={committing}>Cancel</button>
-          <button
-            className="cd-btn cd-btn-primary"
-            onClick={handleCommit}
-            disabled={!message.trim() || committing}
-          >
-            {committing ? "Committing..." : "Commit"}
-          </button>
-        </div>
-      </div>
-    </div>
+      <DialogActions>
+        <Button onClick={() => onClose(false)} disabled={committing}>Cancel</Button>
+        <Button
+          variant="contained"
+          onClick={handleCommit}
+          disabled={!message.trim() || committing}
+        >
+          {committing ? "Committing..." : "Commit"}
+        </Button>
+      </DialogActions>
+    </Dialog>
   );
 }

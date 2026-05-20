@@ -28,15 +28,15 @@ afterEach(() => {
 test("renders Push and Pull buttons", async () => {
   render(<ChangesPanel directory="/repo" />);
   await waitFor(() => {
-    expect(screen.getByText("▲ Push")).toBeInTheDocument();
-    expect(screen.getByText("▼ Pull")).toBeInTheDocument();
+    expect(screen.getByText("Push")).toBeInTheDocument();
+    expect(screen.getByText("Pull")).toBeInTheDocument();
   });
 });
 
 test("shows confirm modal on Push click", async () => {
   render(<ChangesPanel directory="/repo" />);
   await waitFor(() => {
-    fireEvent.click(screen.getByText("▲ Push"));
+    fireEvent.click(screen.getByText("Push"));
   });
   expect(screen.getByText("Push commits to the remote repository?")).toBeInTheDocument();
 });
@@ -44,7 +44,7 @@ test("shows confirm modal on Push click", async () => {
 test("shows confirm modal on Pull click", async () => {
   render(<ChangesPanel directory="/repo" />);
   await waitFor(() => {
-    fireEvent.click(screen.getByText("▼ Pull"));
+    fireEvent.click(screen.getByText("Pull"));
   });
   expect(screen.getByText("Pull latest changes from the remote repository?")).toBeInTheDocument();
 });
@@ -52,9 +52,11 @@ test("shows confirm modal on Pull click", async () => {
 test("calls api.push on confirm", async () => {
   render(<ChangesPanel directory="/repo" />);
   await waitFor(() => {
-    fireEvent.click(screen.getByText("▲ Push"));
+    fireEvent.click(screen.getByText("Push"));
   });
-  fireEvent.click(screen.getAllByText("Push")[1]);
+  await screen.findByText("Push commits to the remote repository?");
+  const btns = screen.getAllByText("Push");
+  fireEvent.click(btns[btns.length - 1]);
   await waitFor(() => {
     expect(window.api.push).toHaveBeenCalledWith("/repo");
   });
@@ -63,9 +65,11 @@ test("calls api.push on confirm", async () => {
 test("calls api.pull on confirm", async () => {
   render(<ChangesPanel directory="/repo" />);
   await waitFor(() => {
-    fireEvent.click(screen.getByText("▼ Pull"));
+    fireEvent.click(screen.getByText("Pull"));
   });
-  fireEvent.click(screen.getAllByText("Pull")[1]);
+  await screen.findByText("Pull latest changes from the remote repository?");
+  const btns = screen.getAllByText("Pull");
+  fireEvent.click(btns[btns.length - 1]);
   await waitFor(() => {
     expect(window.api.pull).toHaveBeenCalledWith("/repo");
   });
@@ -74,7 +78,7 @@ test("calls api.pull on confirm", async () => {
 test("cancel closes confirm modal", async () => {
   render(<ChangesPanel directory="/repo" />);
   await waitFor(() => {
-    fireEvent.click(screen.getByText("▲ Push"));
+    fireEvent.click(screen.getByText("Push"));
   });
   expect(screen.getByText("Push commits to the remote repository?")).toBeInTheDocument();
   fireEvent.click(screen.getByText("Cancel"));
@@ -85,9 +89,11 @@ test("shows error when push fails", async () => {
   window.api.push.mockRejectedValue(new Error("No remote configured"));
   render(<ChangesPanel directory="/repo" />);
   await waitFor(() => {
-    fireEvent.click(screen.getByText("▲ Push"));
+    fireEvent.click(screen.getByText("Push"));
   });
-  fireEvent.click(screen.getAllByText("Push")[1]);
+  await screen.findByText("Push commits to the remote repository?");
+  const btns = screen.getAllByText("Push");
+  fireEvent.click(btns[btns.length - 1]);
   await waitFor(() => {
     expect(screen.getByText("No remote configured")).toBeInTheDocument();
   });
@@ -97,9 +103,11 @@ test("shows error when pull fails", async () => {
   window.api.pull.mockRejectedValue(new Error("Merge conflict"));
   render(<ChangesPanel directory="/repo" />);
   await waitFor(() => {
-    fireEvent.click(screen.getByText("▼ Pull"));
+    fireEvent.click(screen.getByText("Pull"));
   });
-  fireEvent.click(screen.getAllByText("Pull")[1]);
+  await screen.findByText("Pull latest changes from the remote repository?");
+  const btns = screen.getAllByText("Pull");
+  fireEvent.click(btns[btns.length - 1]);
   await waitFor(() => {
     expect(screen.getByText("Merge conflict")).toBeInTheDocument();
   });

@@ -3,6 +3,10 @@ import "./Repository.css";
 import CommitTable from "./CommitTable.jsx";
 import ChangesPanel from "./ChangesPanel.jsx";
 import SearchText from "./SearchText.jsx";
+import {
+  Typography, Box, Tabs, Tab, FormControlLabel, Checkbox,
+  TextField, ToggleButtonGroup, ToggleButton, Paper,
+} from "@mui/material";
 
 export default function Repository({ repositoryDirectory }) {
   const [commitList, setCommitList] = useState([]);
@@ -168,58 +172,67 @@ export default function Repository({ repositoryDirectory }) {
   }
 
   return (
-    <>
-      <h1>{repositoryDirectory.split(/[/\\]/).pop()}</h1>
-      <small style={{ opacity: 0.6 }}>{repositoryDirectory}</small>
+    <Box sx={{ p: 2, height: "100%", display: "flex", flexDirection: "column", overflow: "hidden" }}>
+      <Typography variant="h5" sx={{ fontWeight: 600 }}>
+        {repositoryDirectory.split(/[/\\]/).pop()}
+      </Typography>
+      <Typography variant="body2" sx={{ color: "text.secondary", mb: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+        {repositoryDirectory}
+      </Typography>
 
-      <div className="tab-bar">
-        <button className={`tab-btn ${tab === "graph" ? "tab-active" : ""}`} onClick={() => setTab("graph")}>📊 Graph</button>
-        <button className={`tab-btn ${tab === "changes" ? "tab-active" : ""}`} onClick={() => setTab("changes")}>📝 Changes</button>
-      </div>
+      <Tabs value={tab} onChange={(e, v) => setTab(v)} sx={{ mb: 1 }}>
+        <Tab label="Graph" value="graph" />
+        <Tab label="Changes" value="changes" />
+      </Tabs>
 
       {tab === "graph" && (
         <>
-          <div style={{ display: "flex", gap: 16, alignItems: "center", margin: "8px 0", flexWrap: "wrap" }}>
-        <label style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 13, cursor: "pointer" }}>
-          <input type="checkbox" checked={allBranches} onChange={e => setAllBranches(e.target.checked)} />
-          All branches
-        </label>
-        <label style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 13, cursor: "pointer" }}>
-          <input type="checkbox" checked={useTopoOrder} onChange={e => setUseTopoOrder(e.target.checked)} />
-          Topo order
-        </label>
-        <label style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 13 }}>
-          Limit:
-          <input type="number" value={commitLimit} onChange={e => setCommitLimit(Number(e.target.value))}
-            style={{ width: 80, padding: "2px 6px", fontSize: 13 }} />
-        </label>
-        <span style={{ fontSize: 13, display: "flex", gap: 2 }}>
-          {["bezier", "angular", "straight", "step", "teardrop", "rounded", "elbow"].map(mode => (
-            <span key={mode}
-              onClick={() => setConnectionStyle(mode)}
-              style={{
-                padding: "2px 6px", cursor: "pointer", borderRadius: 3,
-                background: connectionStyle === mode ? "#1976d2" : "#e0e0e0",
-                color: connectionStyle === mode ? "#fff" : "#333",
-                fontSize: 11, userSelect: "none",
-              }}
-            >{mode}</span>
-          ))}
-        </span>
-      </div>
-      {showSearch && (
-        <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, background: "var(--bg-primary, white)", padding: "8px 16px", zIndex: 100, borderTop: "1px solid var(--border-color, #ccc)" }}>
-          <SearchText visible={showSearch}></SearchText>
-        </div>
-      )}
-      <div style={{ height: "60px" }}></div>
-      <CommitTable commitList={commitList} connectionStyle={connectionStyle}></CommitTable>
-    </>
-    )}
+          <Box sx={{ display: "flex", gap: 2, alignItems: "center", flexWrap: "wrap", mb: 1 }}>
+            <FormControlLabel
+              control={<Checkbox size="small" checked={allBranches} onChange={e => setAllBranches(e.target.checked)} />}
+              label={<Typography variant="body2">All branches</Typography>}
+            />
+            <FormControlLabel
+              control={<Checkbox size="small" checked={useTopoOrder} onChange={e => setUseTopoOrder(e.target.checked)} />}
+              label={<Typography variant="body2">Topo order</Typography>}
+            />
+            <TextField
+              type="number"
+              size="small"
+              label="Limit"
+              value={commitLimit}
+              onChange={e => setCommitLimit(Number(e.target.value))}
+              sx={{ width: 100 }}
+            />
+            <ToggleButtonGroup
+              size="small"
+              value={connectionStyle}
+              exclusive
+              onChange={(e, v) => v && setConnectionStyle(v)}
+            >
+              {["bezier", "angular", "straight", "step", "teardrop", "rounded", "elbow"].map(mode => (
+                <ToggleButton key={mode} value={mode}>{mode}</ToggleButton>
+              ))}
+            </ToggleButtonGroup>
+          </Box>
 
-    {tab === "changes" && (
-      <ChangesPanel directory={repositoryDirectory} />
-    )}
-    </>
+          {showSearch && (
+            <Paper sx={{ position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 100, p: 1, borderTop: 1, borderColor: "divider", borderRadius: 0 }}>
+              <SearchText visible={showSearch} />
+            </Paper>
+          )}
+
+          <Box sx={{ flex: 1, minHeight: 0 }}>
+            <CommitTable commitList={commitList} connectionStyle={connectionStyle} />
+          </Box>
+        </>
+      )}
+
+      {tab === "changes" && (
+        <Box sx={{ flex: 1, overflow: "auto" }}>
+          <ChangesPanel directory={repositoryDirectory} />
+        </Box>
+      )}
+    </Box>
   );
 }

@@ -2,10 +2,20 @@ import React, { useEffect, useState, useCallback } from "react";
 import CommitDialog from "./CommitDialog.jsx";
 import DiffViewer from "./DiffViewer.jsx";
 import SuccessSnackbar from "./SuccessSnackbar.jsx";
+import {
+  Box, Button, Typography, List, ListItem, ListItemIcon, ListItemText,
+  Chip, Alert,
+} from "@mui/material";
 
-const STATUS_LABELS = {
-  M: "Modified", A: "Added", D: "Deleted", R: "Renamed",
-  "??": "Untracked", "!!": "Ignored",
+const OVERLAY_STYLE = {
+  position: "fixed", inset: 0, bgcolor: "rgba(0,0,0,0.4)",
+  display: "flex", alignItems: "center", justifyContent: "center",
+  zIndex: 1300,
+};
+
+const MODAL_STYLE = {
+  bgcolor: "background.paper", borderRadius: 3,
+  width: 400, maxWidth: "90vw", boxShadow: 24, p: 3,
 };
 
 const STATUS_COLORS = {
@@ -13,43 +23,40 @@ const STATUS_COLORS = {
   "??": "#6a737d", "!!": "#6a737d",
 };
 
-function ConfirmModal({ title, message, confirmLabel, onConfirm, onCancel }) {
-  return (
-    <div className="cd-overlay" onClick={onCancel}>
-      <div className="cd-modal" onClick={e => e.stopPropagation()} style={{ width: 400 }}>
-        <div className="cd-header">
-          <h3 className="cd-title">{title}</h3>
-          <button className="cd-close" onClick={onCancel}>✕</button>
-        </div>
-        <div className="cd-body">
-          <p style={{ fontSize: 13, color: "var(--text-primary)", margin: 0 }}>{message}</p>
-        </div>
-        <div className="cd-footer">
-          <button className="cd-btn" onClick={onCancel}>Cancel</button>
-          <button className="cd-btn cd-btn-primary" onClick={onConfirm}>{confirmLabel}</button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 function StatusFile({ file, onStage, onUnstage, onViewDiff }) {
-  const label = STATUS_LABELS[file.type] || file.type;
   return (
-    <div className="cp-file">
-      <span className="cp-status" style={{ color: STATUS_COLORS[file.type] || "inherit" }}>
-        {file.type}
-      </span>
-      <span className="cp-path" title={file.path}>{file.path}</span>
-      <div className="cp-actions">
-        {file.staged ? (
-          <button className="cp-btn cp-btn-sm" onClick={() => onUnstage(file.path)}>Unstage</button>
-        ) : (
-          <button className="cp-btn cp-btn-sm" onClick={() => onStage(file.path)}>Stage</button>
-        )}
-        <button className="cp-btn cp-btn-sm" onClick={() => onViewDiff(file)}>Diff</button>
-      </div>
-    </div>
+    <ListItem
+      secondaryAction={
+        <Box sx={{ display: "flex", gap: 0.5 }}>
+          {file.staged ? (
+            <Button size="small" variant="outlined" color="warning" onClick={() => onUnstage(file.path)}>
+              Unstage
+            </Button>
+          ) : (
+            <Button size="small" variant="outlined" onClick={() => onStage(file.path)}>
+              Stage
+            </Button>
+          )}
+          <Button size="small" variant="text" onClick={() => onViewDiff(file)}>
+            Diff
+          </Button>
+        </Box>
+      }
+      sx={{ py: 0.5 }}
+    >
+      <ListItemIcon sx={{ minWidth: 32 }}>
+        <Chip label={file.type} size="small"
+          sx={{
+            color: "#fff", fontWeight: 700, fontSize: "0.65rem", minWidth: 28, height: 20,
+            backgroundColor: STATUS_COLORS[file.type] || "#6a737d",
+          }}
+        />
+      </ListItemIcon>
+      <ListItemText
+        primary={file.path}
+        primaryTypographyProps={{ variant: "body2", noWrap: true, sx: { fontSize: "0.8125rem" } }}
+      />
+    </ListItem>
   );
 }
 
@@ -159,60 +166,74 @@ export default function ChangesPanel({ directory }) {
   const unstaged = statusList.filter(f => !f.staged);
 
   return (
-    <div className="cp-container">
-      <div className="cp-toolbar">
-        <span className={loading ? "cp-loading" : ""}>
+    <Box sx={{ py: 1 }}>
+      <Box sx={{ display: "flex", gap: 1, alignItems: "center", mb: 1, flexWrap: "wrap" }}>
+        <Typography variant="body2" sx={{ color: "text.secondary", mr: 1 }}>
           {loading ? "Refreshing..." : `${statusList.length} file(s)`}
-        </span>
-        <button className="cp-btn" onClick={refresh}>Refresh</button>
-        <button className="cp-btn" onClick={handleStageAll}>Stage All</button>
-        <button className="cp-btn cp-btn-primary" onClick={() => setShowCommit(true)} disabled={staged.length === 0}>
+        </Typography>
+        <Button size="small" variant="outlined" onClick={refresh}>Refresh</Button>
+        <Button size="small" variant="outlined" onClick={handleStageAll}>Stage All</Button>
+        <Button size="small" variant="contained" onClick={() => setShowCommit(true)} disabled={staged.length === 0}>
           Commit
-        </button>
-        <button className="cp-btn" onClick={() => setConfirmAction("push")}>▲ Push</button>
-        <button className="cp-btn" onClick={() => setConfirmAction("pull")}>▼ Pull</button>
-      </div>
+        </Button>
+        <Button size="small" variant="outlined" onClick={() => setConfirmAction("push")}>Push</Button>
+        <Button size="small" variant="outlined" onClick={() => setConfirmAction("pull")}>Pull</Button>
+      </Box>
 
-      {error && <div className="cp-error">{error}</div>}
+      {error && <Alert severity="error" sx={{ mb: 1 }}>{error}</Alert>}
 
-      <div className="cp-section">
-        <div className="cp-section-title">Staged ({staged.length})</div>
-        {staged.length === 0 && <div className="cp-empty">No staged files</div>}
+      <Typography variant="overline" sx={{ display: "block", color: "text.secondary", mb: 0.5 }}>
+        Staged ({staged.length})
+      </Typography>
+      {staged.length === 0 && (
+        <Typography variant="body2" sx={{ color: "text.secondary", py: 1 }}>No staged files</Typography>
+      )}
+      <List dense>
         {staged.map(f => (
           <StatusFile key={"staged-" + f.path} file={f} onStage={handleStage} onUnstage={handleUnstage} onViewDiff={handleViewDiff} />
         ))}
-      </div>
+      </List>
 
-      <div className="cp-section">
-        <div className="cp-section-title">Changes ({unstaged.length})</div>
-        {unstaged.length === 0 && <div className="cp-empty">No changes</div>}
+      <Typography variant="overline" sx={{ display: "block", color: "text.secondary", mt: 2, mb: 0.5 }}>
+        Changes ({unstaged.length})
+      </Typography>
+      {unstaged.length === 0 && (
+        <Typography variant="body2" sx={{ color: "text.secondary", py: 1 }}>No changes</Typography>
+      )}
+      <List dense>
         {unstaged.map(f => (
           <StatusFile key={"unstaged-" + f.path} file={f} onStage={handleStage} onUnstage={handleUnstage} onViewDiff={handleViewDiff} />
         ))}
-      </div>
+      </List>
 
       {showCommit && (
         <CommitDialog directory={directory} stagedFiles={staged} onClose={handleCommitClose} />
       )}
 
       {confirmAction === "push" && (
-        <ConfirmModal
-          title="Push"
-          message="Push commits to the remote repository?"
-          confirmLabel="Push"
-          onConfirm={handlePush}
-          onCancel={() => setConfirmAction(null)}
-        />
+        <Box sx={OVERLAY_STYLE}>
+          <Box sx={MODAL_STYLE}>
+            <Typography variant="h6" sx={{ mb: 1 }}>Push</Typography>
+            <Typography variant="body2" sx={{ mb: 2 }}>Push commits to the remote repository?</Typography>
+            <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 1 }}>
+              <Button onClick={() => setConfirmAction(null)}>Cancel</Button>
+              <Button variant="contained" onClick={handlePush}>Push</Button>
+            </Box>
+          </Box>
+        </Box>
       )}
 
       {confirmAction === "pull" && (
-        <ConfirmModal
-          title="Pull"
-          message="Pull latest changes from the remote repository?"
-          confirmLabel="Pull"
-          onConfirm={handlePull}
-          onCancel={() => setConfirmAction(null)}
-        />
+        <Box sx={OVERLAY_STYLE}>
+          <Box sx={MODAL_STYLE}>
+            <Typography variant="h6" sx={{ mb: 1 }}>Pull</Typography>
+            <Typography variant="body2" sx={{ mb: 2 }}>Pull latest changes from the remote repository?</Typography>
+            <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 1 }}>
+              <Button onClick={() => setConfirmAction(null)}>Cancel</Button>
+              <Button variant="contained" onClick={handlePull}>Pull</Button>
+            </Box>
+          </Box>
+        </Box>
       )}
 
       {diffViewer && (
@@ -224,6 +245,6 @@ export default function ChangesPanel({ directory }) {
       )}
 
       <SuccessSnackbar message={success} onClose={() => setSuccess(null)} />
-    </div>
+    </Box>
   );
 }

@@ -1,4 +1,8 @@
 import React, { useState } from "react";
+import {
+  Dialog, DialogTitle, DialogContent, DialogActions,
+  Button, TextField, Box, Alert, LinearProgress,
+} from "@mui/material";
 
 export default function CloneDialog({ onClose }) {
   const [url, setUrl] = useState("");
@@ -30,57 +34,49 @@ export default function CloneDialog({ onClose }) {
   };
 
   return (
-    <div className="cd-overlay" onClick={() => !cloning && onClose()}>
-      <div className="cd-modal" onClick={e => e.stopPropagation()}>
-        <div className="cd-header">
-          <h3 className="cd-title">Clone Repository</h3>
-          <button className="cd-close" onClick={() => onClose()} disabled={cloning}>✕</button>
-        </div>
+    <Dialog open onClose={() => !cloning && onClose()} maxWidth="sm" fullWidth>
+      <DialogTitle>Clone Repository</DialogTitle>
+      {cloning && <LinearProgress />}
+      <DialogContent>
+        <TextField
+          autoFocus
+          fullWidth
+          label="Repository URL"
+          placeholder="https://github.com/user/repo.git"
+          value={url}
+          onChange={e => setUrl(e.target.value)}
+          disabled={cloning}
+          sx={{ mb: 2 }}
+        />
 
-        <div className="cd-body">
-          <div className="cl-field">
-            <label className="cl-label">Repository URL</label>
-            <input
-              className="cl-input"
-              type="text"
-              placeholder="https://github.com/user/repo.git"
-              value={url}
-              onChange={e => setUrl(e.target.value)}
-              disabled={cloning}
-              autoFocus
-            />
-          </div>
+        <Box sx={{ display: "flex", gap: 1, alignItems: "flex-start" }}>
+          <TextField
+            fullWidth
+            label="Destination directory"
+            placeholder="/path/to/destination"
+            value={destPath}
+            onChange={e => setDestPath(e.target.value)}
+            disabled={cloning}
+          />
+          <Button variant="outlined" onClick={handleBrowse} disabled={cloning} sx={{ mt: 0.5, minWidth: 80 }}>
+            Browse
+          </Button>
+        </Box>
 
-          <div className="cl-field">
-            <label className="cl-label">Destination directory</label>
-            <div className="cl-row">
-              <input
-                className="cl-input cl-input-flex"
-                type="text"
-                placeholder="/path/to/destination"
-                value={destPath}
-                onChange={e => setDestPath(e.target.value)}
-                disabled={cloning}
-              />
-              <button className="cp-btn" onClick={handleBrowse} disabled={cloning}>Browse</button>
-            </div>
-          </div>
+        {error && <Alert severity="error" sx={{ mt: 2 }}>{error}</Alert>}
+        {success && <Alert severity="success" sx={{ mt: 2 }}>{success}</Alert>}
+      </DialogContent>
 
-          {error && <div className="cd-error">{error}</div>}
-          {success && <div className="cl-success">{success}</div>}
-        </div>
-
-        <div className="cd-footer">
-          <button className="cd-btn" onClick={() => onClose()} disabled={cloning}>Cancel</button>
-          <button
-            className="cd-btn cd-btn-primary"
-            onClick={handleClone}
-            disabled={!url.trim() || !destPath.trim() || cloning}
-          >
-            {cloning ? "Cloning..." : "Clone"}
-          </button>
-        </div>
-      </div>
-    </div>
+      <DialogActions>
+        <Button onClick={() => onClose()} disabled={cloning}>Cancel</Button>
+        <Button
+          variant="contained"
+          onClick={handleClone}
+          disabled={!url.trim() || !destPath.trim() || cloning}
+        >
+          {cloning ? "Cloning..." : "Clone"}
+        </Button>
+      </DialogActions>
+    </Dialog>
   );
 }

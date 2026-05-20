@@ -1,6 +1,9 @@
 import React, { useMemo } from "react";
 import GitGraph from "./GitGraph.jsx";
-import Graphline from "./Graphline.jsx";
+import {
+  TableContainer, Table, TableHead, TableBody, TableRow, TableCell, Paper,
+} from "@mui/material";
+
 export default function CommitTable({ commitList, connectionStyle }) {
   const { lanesAtRow, maxDepth } = useMemo(() => {
     const lanesAtRow = {};
@@ -36,61 +39,67 @@ export default function CommitTable({ commitList, connectionStyle }) {
     const maxDepth = commitList.reduce((m, c) => Math.max(m, Number.isFinite(c.depth) ? c.depth : 0), 0);
     return { lanesAtRow: sorted, maxDepth };
   }, [commitList]);
+
   return (
-    <>
-      <div style={{ overflow: "auto", height: "calc(74vh)" }}>
-        <table>
-          <thead className="table-header-title">
-            <tr>
-              <th title="INDEX">I.</th>
-              <th>Graph</th>
-              <th>Hash</th>
-              {/* <th>Parent</th>
-              <th title="DAD INDEX">DI</th>
-              <th title="DAD DISTANCE">DD</th>
-              <th title="DEPTH">De</th>
-              <th title="NUMBER OF SONS">Sons</th>
-              <th title="MAX DEPTH">MD</th> */}
-              <th>Message</th>
-              <th>Decoration</th>
-              <th>Author</th>
-              <th>Date</th>
-            </tr>
-          </thead>
-          <tbody>
-            {commitList.map((commit, index) => {
-              return (
-                <tr
-                  key={'tr' + commit.commit}
-                  className="table-row-commit"
-                >
-                  <td style={{ color: commit.merge ? "red" : "inherit", fontWeight: commit.merge ? "bold" : "inherit" }}>{index}</td>
-                  <td className="table-collumn-graph">
-                    <GitGraph commit={commit} index={index} commitList={commitList} connectionStyle={connectionStyle} lanesAtRow={lanesAtRow} maxDepth={maxDepth} />
-                  </td>
-                  <td>{commit.commit}</td>
-                  {/* <td>{commit.parent}</td>
-                  <td>
-                    {commit.dad?.parentIndex}
-                    {commit.merge ? `-${commit.merge?.parentIndex}` : ""}
-                  </td>
-                  <td>
-                    {commit.dad?.parentDistance}
-                    {commit.merge ? ` - ${commit.merge?.parentDistance}` : ""}
-                  </td>
-                  <td>{commit.depth + ""}</td>
-                  <td>{commit.sonsNumber} {commit.sonsMergeNumber ? `- ${commit.sonsMergeNumber}` : ""}</td>
-                  <td>{!isNaN(commit.maxDepth) ? commit.maxDepth + 1 : ""}</td> */}
-                  <td>{commit.message}</td>
-                  <td>{commit.decoration}</td>
-                  <td>{commit.author}</td>
-                  <td>{commit.date}</td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
-    </>
+    <TableContainer component={Paper} variant="outlined" sx={{ height: "100%", overflow: "auto" }}>
+      <Table size="small" stickyHeader sx={{ minWidth: 650 }}>
+        <TableHead>
+          <TableRow>
+            <TableCell sx={{ width: 40, textAlign: "center", fontWeight: 600, color: "text.secondary", fontSize: "0.75rem" }}>
+              #
+            </TableCell>
+            <TableCell sx={{ fontWeight: 600, fontSize: "0.75rem", color: "text.secondary" }}>
+              Graph
+            </TableCell>
+            <TableCell sx={{ fontWeight: 600, fontSize: "0.75rem", color: "text.secondary" }}>
+              Hash
+            </TableCell>
+            <TableCell sx={{ fontWeight: 600, fontSize: "0.75rem", color: "text.secondary" }}>
+              Message
+            </TableCell>
+            <TableCell sx={{ fontWeight: 600, fontSize: "0.75rem", color: "text.secondary" }}>
+              Decoration
+            </TableCell>
+            <TableCell sx={{ fontWeight: 600, fontSize: "0.75rem", color: "text.secondary" }}>
+              Author
+            </TableCell>
+            <TableCell sx={{ fontWeight: 600, fontSize: "0.75rem", color: "text.secondary" }}>
+              Date
+            </TableCell>
+          </TableRow>
+        </TableHead>
+        <TableBody>
+          {commitList.map((commit, index) => (
+            <TableRow
+              key={commit.commit}
+              hover
+              sx={{ "&:last-child td": { borderBottom: 0 } }}
+            >
+              <TableCell sx={{ textAlign: "center", color: commit.merge ? "error.main" : "text.secondary", fontWeight: commit.merge ? 700 : 400, fontSize: "0.75rem" }}>
+                {index}
+              </TableCell>
+              <TableCell sx={{ p: 0, verticalAlign: "middle" }}>
+                <GitGraph commit={commit} index={index} commitList={commitList} connectionStyle={connectionStyle} lanesAtRow={lanesAtRow} maxDepth={maxDepth} />
+              </TableCell>
+              <TableCell sx={{ fontFamily: "monospace", fontSize: "0.75rem", color: "text.secondary" }}>
+                {commit.commit}
+              </TableCell>
+              <TableCell sx={{ fontSize: "0.8125rem", maxWidth: 400, overflow: "hidden", textOverflow: "ellipsis" }}>
+                {commit.message}
+              </TableCell>
+              <TableCell sx={{ fontSize: "0.75rem" }}>
+                {commit.decoration}
+              </TableCell>
+              <TableCell sx={{ fontSize: "0.75rem" }}>
+                {commit.author}
+              </TableCell>
+              <TableCell sx={{ fontSize: "0.75rem", whiteSpace: "nowrap" }}>
+                {commit.date}
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </TableContainer>
   );
 }

@@ -1,54 +1,65 @@
 import {
   AppBar,
   Box,
-  Button,
   IconButton,
   Toolbar,
   Typography,
+  Tooltip,
 } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
 import Brightness4Icon from "@mui/icons-material/Brightness4";
 import Brightness7Icon from "@mui/icons-material/Brightness7";
+import FolderOpenIcon from "@mui/icons-material/FolderOpen";
+import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import React, { useContext, useState } from "react";
 import { OrchidContext } from "../OrchidContext.jsx";
 import CloneDialog from "./CloneDialog.jsx";
-import "./AppMenu.css"
 
 export default function AppMenu({ onToggleMenu }) {
   const { directory, setDirectory, themeMode, toggleTheme } = useContext(OrchidContext);
   const [showClone, setShowClone] = useState(false);
-  
+
   function selectDirectory() {
     window.api.selectDirectory("").then((data) => {
-      if(!data.canceled){
+      if (!data.canceled) {
         const path = data.filePaths[0];
         setDirectory(path)
       }
     })
   }
-  
+
   return (
-    <Box sx={{ flexGrow: 1 }} className="app-menu">
+    <Box>
       <AppBar position="relative" >
-        <Toolbar>
+        <Toolbar variant="dense">
           <IconButton
-            size="large"
+            size="medium"
             edge="start"
             color="inherit"
             aria-label="menu"
-            sx={{ mr: 2 }}
+            sx={{ mr: 1 }}
             onClick={onToggleMenu}
           >
             <MenuIcon />
           </IconButton>
-          <Typography variant="h5" component="div" sx={{ flexGrow: 1 }}>
+          <Typography variant="h6" component="div" sx={{ flexGrow: 1, fontWeight: 600 }}>
             Orchid
           </Typography>
-          <IconButton color="inherit" onClick={toggleTheme} sx={{ mr: 1 }}>
-            {themeMode === "dark" ? <Brightness7Icon /> : <Brightness4Icon />}
-          </IconButton>
-          <Button color="inherit" onClick={() => setShowClone(true)} sx={{ mr: 1 }}>Clone</Button>
-          <Button color="inherit" onClick={() => {selectDirectory()}}>Open Project</Button>
+          <Tooltip title="Toggle theme">
+            <IconButton color="inherit" onClick={toggleTheme} sx={{ mr: 0.5 }}>
+              {themeMode === "dark" ? <Brightness7Icon /> : <Brightness4Icon />}
+            </IconButton>
+          </Tooltip>
+          <Tooltip title="Clone repository">
+            <IconButton color="inherit" onClick={() => setShowClone(true)} sx={{ mr: 0.5 }}>
+              <ContentCopyIcon />
+            </IconButton>
+          </Tooltip>
+          <Tooltip title="Open project">
+            <IconButton color="inherit" onClick={selectDirectory}>
+              <FolderOpenIcon />
+            </IconButton>
+          </Tooltip>
         </Toolbar>
       </AppBar>
       {showClone && <CloneDialog onClose={() => setShowClone(false)} />}

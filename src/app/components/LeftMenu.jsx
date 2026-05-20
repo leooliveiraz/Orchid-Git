@@ -1,33 +1,66 @@
 import React, { useContext, useState, useCallback, useEffect } from "react";
-import { Drawer, IconButton, Snackbar, Alert } from "@mui/material";
+import {
+  Drawer, Snackbar, Alert, Accordion, AccordionSummary, AccordionDetails,
+  List, ListItem, ListItemIcon, ListItemText, IconButton, Typography, Box,
+} from "@mui/material";
 import RefreshIcon from "@mui/icons-material/Refresh";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import FiberManualRecordIcon from "@mui/icons-material/FiberManualRecord";
+import RadioButtonUncheckedIcon from "@mui/icons-material/RadioButtonUnchecked";
 import "./LeftMenu.css";
 import { OrchidContext } from "../OrchidContext.jsx";
 
 function Section({ title, count, children, defaultOpen }) {
-  const [open, setOpen] = useState(defaultOpen !== false);
   return (
-    <div className="lm-section">
-      <div className="lm-section-header" onClick={() => setOpen(!open)}>
-        <span className="lm-arrow">{open ? "▼" : "▶"}</span>
-        <span className="lm-title">{title}</span>
-        <span className="lm-count">{count}</span>
-      </div>
-      {open && <div className="lm-section-body">{children}</div>}
-    </div>
+    <Accordion defaultExpanded={defaultOpen !== false} disableGutters>
+      <AccordionSummary expandIcon={<ExpandMoreIcon sx={{ fontSize: 16, color: "text.secondary" }} />}>
+        <Typography variant="body2" sx={{ fontWeight: 600, flex: 1 }}>{title}</Typography>
+        <Box component="span" sx={{
+          fontSize: "0.6875rem", color: "text.secondary",
+          bgcolor: "action.selected", px: 0.75, borderRadius: 2,
+          display: "inline-flex", alignItems: "center", justifyContent: "center",
+          minWidth: 20, lineHeight: 1,
+        }}>
+          {count}
+        </Box>
+      </AccordionSummary>
+      <AccordionDetails sx={{ p: 0 }}>
+        <List dense>
+          {children}
+        </List>
+      </AccordionDetails>
+    </Accordion>
   );
 }
 
 function Item({ label, active, onDoubleClick }) {
   return (
-    <div
-      className={`lm-item ${active ? "lm-item-active" : ""}`}
+    <ListItem
+      dense
       onDoubleClick={onDoubleClick}
+      sx={{
+        cursor: "pointer", py: 0.25,
+        "&:hover": { bgcolor: "action.hover", borderRadius: 1 },
+        ...(active ? { fontWeight: 700 } : {}),
+      }}
       title={label}
     >
-      <span className="lm-bullet">{active ? "●" : "○"}</span>
-      <span className="lm-label">{label}</span>
-    </div>
+      <ListItemIcon sx={{ minWidth: 24 }}>
+        {active ? (
+          <FiberManualRecordIcon sx={{ fontSize: 10, color: "success.main" }} />
+        ) : (
+          <RadioButtonUncheckedIcon sx={{ fontSize: 10, color: "text.secondary" }} />
+        )}
+      </ListItemIcon>
+      <ListItemText
+        primary={label}
+        primaryTypographyProps={{
+          variant: "body2",
+          noWrap: true,
+          sx: { fontSize: "0.75rem", ...(active ? { fontWeight: 700 } : {}) },
+        }}
+      />
+    </ListItem>
   );
 }
 
@@ -101,14 +134,16 @@ export default function LeftMenu({ open, onRefresh }) {
         },
       }}
     >
-      <div className="lm-header">
+      <Box sx={{ display: "flex", alignItems: "center", gap: 1, p: 1, borderBottom: 1, borderColor: "divider" }}>
         <IconButton size="small" onClick={onRefresh} title="Refresh (F5)">
           <RefreshIcon fontSize="small" />
         </IconButton>
-        <span className={checking ? "lm-checking" : ""}>
-          {checking ? "Working..." : ""}
-        </span>
-      </div>
+        {checking && (
+          <Typography variant="caption" sx={{ color: "text.secondary", animation: "pulse 1s infinite" }}>
+            Working...
+          </Typography>
+        )}
+      </Box>
 
       {repoData ? (
         <>
@@ -142,7 +177,9 @@ export default function LeftMenu({ open, onRefresh }) {
           </Section>
         </>
       ) : (
-        <div className="lm-empty">Select a directory to view branches</div>
+        <Typography variant="body2" sx={{ color: "text.secondary", textAlign: "center", py: 4, px: 2 }}>
+          Select a directory to view branches
+        </Typography>
       )}
 
       <Snackbar open={!!message} autoHideDuration={4000} onClose={() => setMessage(null)}
