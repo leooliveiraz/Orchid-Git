@@ -19,6 +19,7 @@ import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import CloudDownloadIcon from "@mui/icons-material/CloudDownload";
 import SyncIcon from "@mui/icons-material/Sync";
 import MergeIcon from "@mui/icons-material/Merge";
+import AutorenewIcon from "@mui/icons-material/Autorenew";
 import ContentPasteIcon from "@mui/icons-material/ContentPaste";
 import React, { useContext, useState } from "react";
 import { OrchidContext } from "../OrchidContext.jsx";
@@ -27,6 +28,7 @@ import SettingsDialog from "./SettingsDialog.jsx";
 import CreateBranchDialog from "./CreateBranchDialog.jsx";
 import MergeDialog from "./MergeDialog.jsx";
 import CherryPickDialog from "./CherryPickDialog.jsx";
+import RebaseDialog from "./RebaseDialog.jsx";
 import SuccessSnackbar from "./SuccessSnackbar.jsx";
 
 const OVERLAY_STYLE = {
@@ -47,6 +49,7 @@ export default function AppMenu({ onToggleMenu }) {
   const [showNewBranch, setShowNewBranch] = useState(false);
   const [showMerge, setShowMerge] = useState(false);
   const [showCherryPick, setShowCherryPick] = useState(false);
+  const [showRebase, setShowRebase] = useState(false);
   const [syncAction, setSyncAction] = useState(null);
   const [syncError, setSyncError] = useState(null);
   const [syncSuccess, setSyncSuccess] = useState(null);
@@ -168,6 +171,13 @@ export default function AppMenu({ onToggleMenu }) {
               </IconButton>
             </Tooltip>
           )}
+          {directory && (
+            <Tooltip title="Interactive rebase">
+              <IconButton color="inherit" onClick={() => setShowRebase(true)} sx={{ mr: 0.5 }}>
+                <AutorenewIcon />
+              </IconButton>
+            </Tooltip>
+          )}
           <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.4)", userSelect: "none", mx: 0.5 }}>|</Typography>
           {directory && (
             <Tooltip title="Refresh (F5)">
@@ -195,6 +205,7 @@ export default function AppMenu({ onToggleMenu }) {
       {showNewBranch && <CreateBranchDialog onClose={() => setShowNewBranch(false)} />}
       {showMerge && <MergeDialog onClose={() => setShowMerge(false)} />}
       {showCherryPick && <CherryPickDialog onClose={() => setShowCherryPick(false)} />}
+      {showRebase && <RebaseDialog onClose={() => setShowRebase(false)} />}
 
       {syncAction === "push" && (
         <Box sx={OVERLAY_STYLE}>

@@ -159,6 +159,45 @@ ipcMain.handle("cherry-pick", (event, directory, commitHash) => {
   return runGit(["cherry-pick", commitHash], directory);
 });
 
+ipcMain.handle("get-rebase-commits", (event, directory, targetBranch) => {
+  const output = runGit(["log", "--reverse", "--format=%h|%s", targetBranch + "..HEAD"], directory);
+  return output.trim().split("\n").filter(Boolean).map(line => {
+    const [hash, ...msgParts] = line.split("|");
+    return { hash, message: msgParts.join("|") };
+  });
+});
+
+ipcMain.handle("execute-rebase", (event, directory, targetBranch, todoList) => {
+  const os = require("os");
+  const path = require("path");
+  const fs = require("fs");
+
+  const todoContent = todoList.map(item => `${item.action} ${item.hash} ${item.message}`).join("\n") + "\n";
+  const todoFile = path.join(os.tmpdir(), `orchid-rebase-todo-${Date.now()}.txt`);
+  fs.writeFileSync(todoFile, todoContent, "utf8");
+
+  const scriptFile = path.join(os.tmpdir(), `orchid-rebase-editor-${Date.now()}${process.platform === "win32" ? ".bat" : ".sh"}`);
+  if (process.platform === "win32") {
+    fs.writeFileSync(scriptFile, `@echo off\ncopy /y "${todoFile}" %1 >nul\n`, "utf8");
+  } else {
+    fs.writeFileSync(scriptFile, `#!/bin/sh\ncp "${todoFile}" "$1"\n`, "utf8");
+    fs.chmodSync(scriptFile, 0o755);
+  }
+
+  const result = childProcess.spawnSync("git", ["rebase", "-i", targetBranch], {
+    cwd: directory,
+    encoding: "utf8",
+    env: { ...process.env, GIT_SEQUENCE_EDITOR: scriptFile },
+  });
+
+  try { fs.unlinkSync(scriptFile); } catch(e) {}
+  try { fs.unlinkSync(todoFile); } catch(e) {}
+
+  if (result.error) throw result.error;
+  if (result.status !== 0) throw new Error(result.stderr || "Rebase failed");
+  return result.stdout;
+});
+
 ipcMain.handle("stash-apply", (event, directory, stashId) => {
   return runGit(["stash", "apply", stashId], directory);
 });

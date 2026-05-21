@@ -19,6 +19,8 @@ contextBridge.exposeInMainWorld("api", {
   createTag: (directory, tagName) => ipcRenderer.invoke("create-tag", directory, tagName),
   merge: (directory, branch, strategy) => ipcRenderer.invoke("merge", directory, branch, strategy),
   cherryPick: (directory, commitHash) => ipcRenderer.invoke("cherry-pick", directory, commitHash),
+  getRebaseCommits: (directory, targetBranch) => ipcRenderer.invoke("get-rebase-commits", directory, targetBranch),
+  executeRebase: (directory, targetBranch, todoList) => ipcRenderer.invoke("execute-rebase", directory, targetBranch, todoList),
   stashApply: (directory, stashId) => ipcRenderer.invoke("stash-apply", directory, stashId),
   stashDrop: (directory, stashId) => ipcRenderer.invoke("stash-drop", directory, stashId),
   stashPush: (directory, message) => ipcRenderer.invoke("stash-push", directory, message),
