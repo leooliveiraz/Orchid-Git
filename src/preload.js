@@ -39,6 +39,8 @@ contextBridge.exposeInMainWorld("api", {
   getUserConfig: (directory) => ipcRenderer.invoke("get-user-config", directory),
   setUserConfig: (directory, name, email) => ipcRenderer.invoke("set-user-config", directory, name, email),
   clone: (url, destPath) => ipcRenderer.invoke("clone", url, destPath),
+  getRepoMetrics: (directory) => ipcRenderer.invoke("get-repo-metrics", directory),
+  getRepoMetricsExtra: (directory) => ipcRenderer.invoke("get-repo-metrics-extra", directory),
   // Send Methods
   testSend: (args) => ipcRenderer.send("test-send", args),
   openDevTools: (args) => ipcRenderer.send("open-dev-tools", args),

@@ -3,6 +3,7 @@ import "./Repository.css";
 import CommitTable from "./CommitTable.jsx";
 import ChangesPanel from "./ChangesPanel.jsx";
 import DiffViewer from "./DiffViewer.jsx";
+import MetricsPanel from "./MetricsPanel.jsx";
 import SuccessSnackbar from "./SuccessSnackbar.jsx";
 import SearchText from "./SearchText.jsx";
 import {
@@ -257,6 +258,7 @@ export default function Repository({ repositoryDirectory }) {
       <Tabs value={tab} onChange={(e, v) => setTab(v)} sx={{ mb: 1 }}>
         <Tab label="Graph" value="graph" />
         <Tab label="Changes" value="changes" />
+        <Tab label="Metrics" value="metrics" />
       </Tabs>
 
       {tab === "graph" && (
@@ -305,6 +307,12 @@ export default function Repository({ repositoryDirectory }) {
       {tab === "changes" && (
         <Box sx={{ flex: 1, overflow: "auto" }}>
           <ChangesPanel directory={repositoryDirectory} />
+        </Box>
+      )}
+
+      {tab === "metrics" && (
+        <Box sx={{ flex: 1, overflow: "auto" }}>
+          <MetricsPanel directory={repositoryDirectory} />
         </Box>
       )}
 

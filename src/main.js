@@ -194,6 +194,53 @@ ipcMain.handle("get-status", (event, directory) => {
   return parseStatusOutput(output);
 });
 
+ipcMain.handle("get-repo-metrics", (event, directory) => {
+  const output = runGit(["log", "--format=%an|%ad", "--date=short", "-n", "5000"], directory);
+  return output.trim().split("\n").filter(Boolean).map(line => {
+    const [author, date] = line.split("|");
+    return { author: author || "Unknown", date: date || "0000-00-00" };
+  });
+});
+
+ipcMain.handle("get-repo-metrics-extra", (event, directory) => {
+  let hourData = [], topFiles = [], totalAdded = 0, totalDeleted = 0;
+
+  try {
+    const hourOutput = runGit(["log", "--format=%ad", "--date=format:%H", "-n", "5000"], directory);
+    const hours = hourOutput.trim().split("\n").filter(Boolean).map(Number);
+    const hourCounts = {};
+    hours.forEach(h => { hourCounts[h] = (hourCounts[h] || 0) + 1; });
+    hourData = Object.entries(hourCounts).sort((a, b) => a[0] - b[0]).map(([h, c]) => ({ hour: `${h}:00`, count: c }));
+  } catch(e) {}
+
+  try {
+    const fileOutput = runGit(["log", "--diff-filter=AMDR", "--name-only", "--oneline", "-n", "2000"], directory);
+    const fileCounts = {};
+    fileOutput.trim().split("\n").filter(Boolean).forEach(line => {
+      if (/^[0-9a-f]{7,}\s/i.test(line)) return;
+      fileCounts[line] = (fileCounts[line] || 0) + 1;
+    });
+    topFiles = Object.entries(fileCounts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 15)
+      .map(([path, count]) => ({ path, count }));
+  } catch(e) {}
+
+  try {
+    const numstatOutput = runGit(["log", "--numstat", "--oneline", "-n", "2000"], directory);
+    numstatOutput.trim().split("\n").filter(Boolean).forEach(line => {
+      const clean = line.replace(/\r$/, "");
+      const parts = clean.split("\t");
+      if (parts.length >= 2 && /^\d+$/.test(parts[0]) && /^\d+$/.test(parts[1])) {
+        totalAdded += parseInt(parts[0], 10);
+        totalDeleted += parseInt(parts[1], 10);
+      }
+    });
+  } catch(e) {}
+
+  return { hourData, topFiles, totalAdded, totalDeleted };
+});
+
 ipcMain.handle("get-commit-files", (event, directory, commitHash) => {
   const statusOutput = runGit(["diff-tree", "--no-commit-id", "-r", "--name-status", commitHash], directory);
   const numstatOutput = runGit(["diff-tree", "--no-commit-id", "-r", "--numstat", commitHash], directory);
