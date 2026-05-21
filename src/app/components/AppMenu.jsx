@@ -18,11 +18,13 @@ import CallSplitIcon from "@mui/icons-material/CallSplit";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import CloudDownloadIcon from "@mui/icons-material/CloudDownload";
 import SyncIcon from "@mui/icons-material/Sync";
+import MergeIcon from "@mui/icons-material/Merge";
 import React, { useContext, useState } from "react";
 import { OrchidContext } from "../OrchidContext.jsx";
 import CloneDialog from "./CloneDialog.jsx";
 import SettingsDialog from "./SettingsDialog.jsx";
 import CreateBranchDialog from "./CreateBranchDialog.jsx";
+import MergeDialog from "./MergeDialog.jsx";
 import SuccessSnackbar from "./SuccessSnackbar.jsx";
 
 const OVERLAY_STYLE = {
@@ -41,6 +43,7 @@ export default function AppMenu({ onToggleMenu }) {
   const [showClone, setShowClone] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showNewBranch, setShowNewBranch] = useState(false);
+  const [showMerge, setShowMerge] = useState(false);
   const [syncAction, setSyncAction] = useState(null);
   const [syncError, setSyncError] = useState(null);
   const [syncSuccess, setSyncSuccess] = useState(null);
@@ -150,6 +153,13 @@ export default function AppMenu({ onToggleMenu }) {
             </Tooltip>
           )}
           {directory && (
+            <Tooltip title="Merge branch">
+              <IconButton color="inherit" onClick={() => setShowMerge(true)} sx={{ mr: 0.5 }}>
+                <MergeIcon />
+              </IconButton>
+            </Tooltip>
+          )}
+          {directory && (
             <Tooltip title="Create branch">
               <IconButton color="inherit" onClick={() => setShowNewBranch(true)} sx={{ mr: 0.5 }}>
                 <CallSplitIcon />
@@ -166,6 +176,7 @@ export default function AppMenu({ onToggleMenu }) {
       {showClone && <CloneDialog onClose={() => setShowClone(false)} />}
       {showSettings && <SettingsDialog onClose={() => setShowSettings(false)} />}
       {showNewBranch && <CreateBranchDialog onClose={() => setShowNewBranch(false)} />}
+      {showMerge && <MergeDialog onClose={() => setShowMerge(false)} />}
 
       {syncAction === "push" && (
         <Box sx={OVERLAY_STYLE}>
