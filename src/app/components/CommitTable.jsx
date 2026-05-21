@@ -36,6 +36,13 @@ export default function CommitTable({ commitList, connectionStyle, onCommitClick
     }
   };
 
+  const handleCopyHash = () => {
+    setContextMenu(null);
+    if (contextCommit) {
+      navigator.clipboard.writeText(contextCommit.commit);
+    }
+  };
+
   const { lanesAtRow, maxDepth } = useMemo(() => {
     const lanesAtRow = {};
     commitList.forEach((commit, index) => {
@@ -171,6 +178,12 @@ export default function CommitTable({ commitList, connectionStyle, onCommitClick
             <ContentPasteIcon fontSize="small" />
           </ListItemIcon>
           <ListItemText primary="Cherry-pick this commit" primaryTypographyProps={{ variant: "body2" }} />
+        </MenuItem>
+        <MenuItem onClick={handleCopyHash} dense>
+          <ListItemIcon sx={{ minWidth: 28 }}>
+            <ContentPasteIcon fontSize="small" />
+          </ListItemIcon>
+          <ListItemText primary="Copy hash" primaryTypographyProps={{ variant: "body2" }} />
         </MenuItem>
       </Menu>
     </>

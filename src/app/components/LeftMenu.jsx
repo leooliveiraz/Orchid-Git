@@ -4,7 +4,7 @@ import {
   List, ListItem, ListItemIcon, ListItemText,
   Typography, Box, Button, TextField,
   Dialog, DialogTitle, DialogContent, DialogActions,
-  FormControlLabel, Checkbox,
+  FormControlLabel, Checkbox, Menu, MenuItem,
 } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import AddIcon from "@mui/icons-material/Add";
@@ -52,12 +52,13 @@ function Section({ title, count, children, defaultOpen, onAdd, onMerge }) {
   );
 }
 
-function Item({ label, active, onDoubleClick, onClick, onDelete }) {
+function Item({ label, active, onDoubleClick, onClick, onDelete, onContextMenu }) {
   return (
     <ListItem
       dense
       onClick={onClick}
       onDoubleClick={onDoubleClick}
+      onContextMenu={onContextMenu}
       secondaryAction={onDelete ? (
         <Box component="span" onClick={(e) => { e.stopPropagation(); onDelete(); }}
           sx={{ display: "flex", lineHeight: 1, cursor: "pointer", color: "text.disabled", "&:hover": { color: "error.main" }, mr: 0.5 }}
@@ -106,6 +107,8 @@ export default function LeftMenu({ open }) {
   const [stashMessage, setStashMessage] = useState("");
   const [creatingStash, setCreatingStash] = useState(false);
   const [showMerge, setShowMerge] = useState(false);
+  const [mergeBranch, setMergeBranch] = useState(null);
+  const [branchContext, setBranchContext] = useState(null);
   const [pendingRecentDir, setPendingRecentDir] = useState(null);
   const [skipRecentConfirm, setSkipRecentConfirm] = useState(() => localStorage.getItem("orchid-skip-repo-switch") === "true");
 
@@ -140,6 +143,26 @@ export default function LeftMenu({ open }) {
     setMessageType("info");
     setMessage("Double-click to switch branch");
   }, [repoData]);
+
+  const handleBranchContext = useCallback((e, branch) => {
+    e.preventDefault();
+    setBranchContext({ left: e.clientX, top: e.clientY, branch });
+  }, []);
+
+  const handleContextCheckout = useCallback(() => {
+    const branch = branchContext?.branch;
+    setBranchContext(null);
+    if (branch) handleBranchDblClick(branch);
+  }, [branchContext, handleBranchDblClick]);
+
+  const handleContextMerge = useCallback(() => {
+    const branch = branchContext?.branch;
+    setBranchContext(null);
+    if (branch) {
+      setMergeBranch(branch);
+      setShowMerge(true);
+    }
+  }, [branchContext]);
 
   const handleStashDblClick = useCallback(async (stashId) => {
     if (!directory || !window.api) return;
@@ -340,6 +363,7 @@ export default function LeftMenu({ open }) {
                   active={b === repoData.currentBranch}
                   onClick={() => handleBranchClick(b)}
                   onDoubleClick={() => handleBranchDblClick(b)}
+                  onContextMenu={(e) => handleBranchContext(e, b)}
                   onDelete={b !== repoData.currentBranch ? () => confirmDeleteBranch(b) : undefined}
                 />
               ))}
@@ -439,6 +463,20 @@ export default function LeftMenu({ open }) {
         </DialogActions>
       </Dialog>
 
+      <Menu
+        open={!!branchContext}
+        onClose={() => setBranchContext(null)}
+        anchorReference="anchorPosition"
+        anchorPosition={branchContext ? { left: branchContext.left, top: branchContext.top } : undefined}
+      >
+        <MenuItem onClick={handleContextCheckout} dense>
+          <ListItemText primary="Checkout" primaryTypographyProps={{ variant: "body2" }} />
+        </MenuItem>
+        <MenuItem onClick={handleContextMerge} dense>
+          <ListItemText primary="Merge into current branch" primaryTypographyProps={{ variant: "body2" }} />
+        </MenuItem>
+      </Menu>
+
       <Dialog open={!!pendingRecentDir} onClose={() => setPendingRecentDir(null)} maxWidth="xs" fullWidth>
         <DialogTitle>Switch repository</DialogTitle>
         <DialogContent>
@@ -463,7 +501,7 @@ export default function LeftMenu({ open }) {
         </DialogActions>
       </Dialog>
 
-      {showMerge && <MergeDialog onClose={() => setShowMerge(false)} />}
+      {showMerge && <MergeDialog onClose={() => { setShowMerge(false); setMergeBranch(null); }} defaultBranch={mergeBranch} />}
 
       <Dialog open={!!confirmDelete} onClose={() => setConfirmDelete(null)} maxWidth="xs" fullWidth>
         <DialogTitle>Confirm deletion</DialogTitle>

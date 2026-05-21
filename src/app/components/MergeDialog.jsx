@@ -12,9 +12,9 @@ const STRATEGIES = [
   { value: "ff-only", label: "Fast-forward only (abort if not possible)" },
 ];
 
-export default function MergeDialog({ onClose }) {
+export default function MergeDialog({ onClose, defaultBranch }) {
   const { directory, repoData, refresh } = useContext(OrchidContext);
-  const [source, setSource] = useState("");
+  const [source, setSource] = useState(defaultBranch || "");
   const [strategy, setStrategy] = useState("normal");
   const [merging, setMerging] = useState(false);
   const [error, setError] = useState(null);

@@ -112,14 +112,10 @@ export default function AppMenu({ onToggleMenu }) {
           <Typography variant="h6" component="div" sx={{ flexGrow: 1, fontWeight: 600 }}>
             Orchid
           </Typography>
-          <Tooltip title="Refresh (F5)">
-            <IconButton color="inherit" onClick={refresh} sx={{ mr: 0.5 }}>
-              <RefreshIcon />
-            </IconButton>
-          </Tooltip>
-          <Tooltip title="Toggle theme">
-            <IconButton color="inherit" onClick={toggleTheme} sx={{ mr: 0.5 }}>
-              {themeMode === "dark" ? <Brightness7Icon /> : <Brightness4Icon />}
+
+          <Tooltip title="Open repository">
+            <IconButton color="inherit" onClick={selectDirectory}>
+              <FolderOpenIcon />
             </IconButton>
           </Tooltip>
           <Tooltip title="Clone repository">
@@ -127,13 +123,8 @@ export default function AppMenu({ onToggleMenu }) {
               <ContentCopyIcon />
             </IconButton>
           </Tooltip>
-          {directory && (
-            <Tooltip title="Repository settings">
-              <IconButton color="inherit" onClick={() => setShowSettings(true)} sx={{ mr: 0.5 }}>
-                <SettingsIcon />
-              </IconButton>
-            </Tooltip>
-          )}
+
+          {directory && <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.4)", userSelect: "none", mx: 0.5 }}>|</Typography>}
           {directory && (
             <Tooltip title="Push">
               <IconButton color="inherit" onClick={() => setSyncAction("push")} sx={{ mr: 0.5 }}>
@@ -155,6 +146,14 @@ export default function AppMenu({ onToggleMenu }) {
               </IconButton>
             </Tooltip>
           )}
+          {directory && <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.4)", userSelect: "none", mx: 0.5 }}>|</Typography>}
+          {directory && (
+            <Tooltip title="Create branch">
+              <IconButton color="inherit" onClick={() => setShowNewBranch(true)} sx={{ mr: 0.5 }}>
+                <CallSplitIcon />
+              </IconButton>
+            </Tooltip>
+          )}
           {directory && (
             <Tooltip title="Merge branch">
               <IconButton color="inherit" onClick={() => setShowMerge(true)} sx={{ mr: 0.5 }}>
@@ -169,18 +168,26 @@ export default function AppMenu({ onToggleMenu }) {
               </IconButton>
             </Tooltip>
           )}
+          <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.4)", userSelect: "none", mx: 0.5 }}>|</Typography>
           {directory && (
-            <Tooltip title="Create branch">
-              <IconButton color="inherit" onClick={() => setShowNewBranch(true)} sx={{ mr: 0.5 }}>
-                <CallSplitIcon />
+            <Tooltip title="Refresh (F5)">
+              <IconButton color="inherit" onClick={refresh} sx={{ mr: 0.5 }}>
+                <RefreshIcon />
               </IconButton>
             </Tooltip>
           )}
-          <Tooltip title="Open repository">
-            <IconButton color="inherit" onClick={selectDirectory}>
-              <FolderOpenIcon />
+          <Tooltip title="Toggle theme">
+            <IconButton color="inherit" onClick={toggleTheme} sx={{ mr: 0.5 }}>
+              {themeMode === "dark" ? <Brightness7Icon /> : <Brightness4Icon />}
             </IconButton>
           </Tooltip>
+          {directory && (
+            <Tooltip title="Repository settings">
+              <IconButton color="inherit" onClick={() => setShowSettings(true)} sx={{ mr: 0.5 }}>
+                <SettingsIcon />
+              </IconButton>
+            </Tooltip>
+          )}
         </Toolbar>
       </AppBar>
       {showClone && <CloneDialog onClose={() => setShowClone(false)} />}
