@@ -1,17 +1,40 @@
-import React, { useMemo, useRef, useEffect } from "react";
+import React, { useMemo, useRef, useEffect, useState } from "react";
 import GitGraph from "./GitGraph.jsx";
 import {
   TableContainer, Table, TableHead, TableBody, TableRow, TableCell, Paper,
+  Menu, MenuItem, ListItemIcon, ListItemText, Dialog, DialogTitle, DialogContent, DialogActions, Button, Typography,
 } from "@mui/material";
+import ContentPasteIcon from "@mui/icons-material/ContentPaste";
 
-export default function CommitTable({ commitList, connectionStyle, onCommitClick, highlightIndex }) {
+export default function CommitTable({ commitList, connectionStyle, onCommitClick, highlightIndex, onCherryPick }) {
   const containerRef = useRef(null);
+  const [contextMenu, setContextMenu] = useState(null);
+  const [contextCommit, setContextCommit] = useState(null);
+  const [confirmCherry, setConfirmCherry] = useState(false);
 
   useEffect(() => {
     if (highlightIndex == null || !containerRef.current) return;
     const rowHeight = 24;
     containerRef.current.scrollTo({ top: highlightIndex * rowHeight, behavior: "smooth" });
   }, [highlightIndex]);
+
+  const handleContextMenu = (e, commit) => {
+    e.preventDefault();
+    setContextMenu({ left: e.clientX, top: e.clientY });
+    setContextCommit(commit);
+  };
+
+  const handleCherryPick = () => {
+    setContextMenu(null);
+    setConfirmCherry(true);
+  };
+
+  const handleConfirmCherry = () => {
+    setConfirmCherry(false);
+    if (contextCommit && onCherryPick) {
+      onCherryPick(contextCommit.commit);
+    }
+  };
 
   const { lanesAtRow, maxDepth } = useMemo(() => {
     const lanesAtRow = {};
@@ -51,7 +74,8 @@ export default function CommitTable({ commitList, connectionStyle, onCommitClick
   const headIdx = commitList.findIndex(c => c.decoration && c.decoration.includes("HEAD"));
 
   return (
-    <TableContainer ref={containerRef} component={Paper} variant="outlined" sx={{ height: "100%", overflow: "auto" }}>
+    <>
+      <TableContainer ref={containerRef} component={Paper} variant="outlined" sx={{ height: "100%", overflow: "auto" }}>
       <Table size="small" stickyHeader sx={{ minWidth: 650 }}>
         <TableHead>
           <TableRow>
@@ -81,6 +105,7 @@ export default function CommitTable({ commitList, connectionStyle, onCommitClick
               key={commit.commit}
               hover
               onClick={(e) => onCommitClick?.(commit, e)}
+              onContextMenu={(e) => handleContextMenu(e, commit)}
               sx={{
                 cursor: "pointer",
                 "&:last-child td": { borderBottom: 0 },
@@ -117,6 +142,37 @@ export default function CommitTable({ commitList, connectionStyle, onCommitClick
           ))}
         </TableBody>
       </Table>
-    </TableContainer>
+      </TableContainer>
+
+      <Dialog open={confirmCherry} onClose={() => setConfirmCherry(false)} maxWidth="xs" fullWidth>
+        <DialogTitle>Cherry-pick commit</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2">
+            Cherry-pick <strong>{contextCommit?.commit}</strong> into the current branch?
+          </Typography>
+          <Typography variant="body2" sx={{ mt: 1, color: "text.secondary" }}>
+            {contextCommit?.message}
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setConfirmCherry(false)}>Cancel</Button>
+          <Button variant="contained" onClick={handleConfirmCherry}>Cherry-pick</Button>
+        </DialogActions>
+      </Dialog>
+
+      <Menu
+        open={!!contextMenu}
+        onClose={() => setContextMenu(null)}
+        anchorReference="anchorPosition"
+        anchorPosition={contextMenu}
+      >
+        <MenuItem onClick={handleCherryPick} dense>
+          <ListItemIcon sx={{ minWidth: 28 }}>
+            <ContentPasteIcon fontSize="small" />
+          </ListItemIcon>
+          <ListItemText primary="Cherry-pick this commit" primaryTypographyProps={{ variant: "body2" }} />
+        </MenuItem>
+      </Menu>
+    </>
   );
 }

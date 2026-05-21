@@ -155,6 +155,10 @@ ipcMain.handle("merge", (event, directory, branch, strategy) => {
   return runGit(args, directory);
 });
 
+ipcMain.handle("cherry-pick", (event, directory, commitHash) => {
+  return runGit(["cherry-pick", commitHash], directory);
+});
+
 ipcMain.handle("stash-apply", (event, directory, stashId) => {
   return runGit(["stash", "apply", stashId], directory);
 });

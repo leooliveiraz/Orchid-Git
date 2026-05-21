@@ -3,11 +3,12 @@ import "./Repository.css";
 import CommitTable from "./CommitTable.jsx";
 import ChangesPanel from "./ChangesPanel.jsx";
 import DiffViewer from "./DiffViewer.jsx";
+import SuccessSnackbar from "./SuccessSnackbar.jsx";
 import SearchText from "./SearchText.jsx";
 import {
   Typography, Box, Tabs, Tab, FormControlLabel, Checkbox,
   TextField, ToggleButtonGroup, ToggleButton, Paper,
-  Menu, MenuItem, ListItemIcon, ListItemText, Chip, Divider,
+  Menu, MenuItem, ListItemIcon, ListItemText, Chip, Divider, Alert,
 } from "@mui/material";
 import { OrchidContext } from "../OrchidContext.jsx";
 
@@ -25,6 +26,8 @@ export default function Repository({ repositoryDirectory }) {
   const [showSearch, setShowSearch] = useState(false);
   const [connectionStyle, setConnectionStyle] = useState(() => localStorage.getItem("orchid-connection-style") || "bezier");
   const [highlightIndex, setHighlightIndex] = useState(null);
+  const [success, setSuccess] = useState(null);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     localStorage.setItem("orchid-connection-style", connectionStyle);
@@ -213,6 +216,17 @@ export default function Repository({ repositoryDirectory }) {
     setTimeout(() => setHighlightIndex(null), 3000);
   };
 
+  const handleCherryPick = async (commitHash) => {
+    if (!window.api) return;
+    try {
+      await window.api.cherryPick(repositoryDirectory, commitHash);
+      setSuccess("Cherry-picked " + commitHash);
+      refresh();
+    } catch (e) {
+      setError(e.message || String(e));
+    }
+  };
+
   const getParentCommits = () => {
     if (!selectedCommit || !commitList.length) return [];
     const result = [];
@@ -283,7 +297,7 @@ export default function Repository({ repositoryDirectory }) {
           )}
 
           <Box sx={{ flex: 1, minHeight: 0 }}>
-            <CommitTable commitList={commitList} connectionStyle={connectionStyle} onCommitClick={handleCommitClick} highlightIndex={highlightIndex} />
+            <CommitTable commitList={commitList} connectionStyle={connectionStyle} onCommitClick={handleCommitClick} highlightIndex={highlightIndex} onCherryPick={handleCherryPick} />
           </Box>
         </>
       )}
@@ -397,6 +411,8 @@ export default function Repository({ repositoryDirectory }) {
           </MenuItem>
         )}
       </Menu>
+      {error && <Alert severity="error" sx={{ position: "fixed", bottom: 60, left: "50%", transform: "translateX(-50%)", zIndex: 2000 }} onClose={() => setError(null)}>{error}</Alert>}
+      <SuccessSnackbar message={success} onClose={() => setSuccess(null)} />
     </Box>
   );
 }
