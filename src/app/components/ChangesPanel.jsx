@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback, useContext } from "react";
 import CommitDialog from "./CommitDialog.jsx";
 import DiffViewer from "./DiffViewer.jsx";
 import BlameViewer from "./BlameViewer.jsx";
+import ConflictResolver from "./ConflictResolver.jsx";
 import SuccessSnackbar from "./SuccessSnackbar.jsx";
 import {
   Box, Button, Typography, List, ListItem, ListItemIcon, ListItemText,
@@ -163,6 +164,7 @@ export default function ChangesPanel({ directory }) {
 
   const staged = statusList.filter(f => f.staged);
   const unstaged = statusList.filter(f => !f.staged);
+  const conflicted = statusList.filter(f => f.conflicted).map(f => f.path);
 
   return (
     <Box sx={{ py: 1 }}>
@@ -179,6 +181,12 @@ export default function ChangesPanel({ directory }) {
 
       {error && <Alert severity="error" sx={{ mb: 1 }}>{error}</Alert>}
 
+      {conflicted.length > 0 && (
+        <ConflictResolver directory={directory} conflictedFiles={conflicted} onRefresh={refresh} />
+      )}
+
+      {conflicted.length === 0 && (
+        <>
       <Typography variant="overline" sx={{ display: "block", color: "text.secondary", mb: 0.5 }}>
         Staged ({staged.length})
       </Typography>
@@ -224,6 +232,8 @@ export default function ChangesPanel({ directory }) {
       )}
 
       <SuccessSnackbar message={success} onClose={() => setSuccess(null)} />
+      </>
+    )}
     </Box>
   );
 }

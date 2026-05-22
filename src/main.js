@@ -280,6 +280,42 @@ ipcMain.handle("get-repo-metrics-extra", (event, directory) => {
   return { hourData, topFiles, totalAdded, totalDeleted };
 });
 
+ipcMain.handle("get-conflict-diff", (event, directory, filePath) => {
+  return runGit(["diff", "--", filePath], directory);
+});
+
+ipcMain.handle("checkout-ours", (event, directory, filePath) => {
+  return runGit(["checkout", "--ours", "--", filePath], directory);
+});
+
+ipcMain.handle("checkout-theirs", (event, directory, filePath) => {
+  return runGit(["checkout", "--theirs", "--", filePath], directory);
+});
+
+ipcMain.handle("resolve-file", (event, directory, filePath) => {
+  return runGit(["add", "--", filePath], directory);
+});
+
+ipcMain.handle("continue-merge", (event, directory) => {
+  const mergeMsg = require("path").join(directory, ".git", "MERGE_MSG");
+  const rebaseDir = require("path").join(directory, ".git", "rebase-merge");
+  const isMerge = require("fs").existsSync(mergeMsg);
+  const isRebase = require("fs").existsSync(rebaseDir);
+  if (isMerge) return runGit(["merge", "--continue"], directory);
+  if (isRebase) return runGit(["rebase", "--continue"], directory);
+  throw new Error("No merge or rebase in progress");
+});
+
+ipcMain.handle("abort-merge", (event, directory) => {
+  const mergeMsg = require("path").join(directory, ".git", "MERGE_MSG");
+  const rebaseDir = require("path").join(directory, ".git", "rebase-merge");
+  const isMerge = require("fs").existsSync(mergeMsg);
+  const isRebase = require("fs").existsSync(rebaseDir);
+  if (isMerge) return runGit(["merge", "--abort"], directory);
+  if (isRebase) return runGit(["rebase", "--abort"], directory);
+  throw new Error("No merge or rebase in progress");
+});
+
 ipcMain.handle("get-commit-files", (event, directory, commitHash) => {
   const statusOutput = runGit(["diff-tree", "--no-commit-id", "-r", "--name-status", commitHash], directory);
   const numstatOutput = runGit(["diff-tree", "--no-commit-id", "-r", "--numstat", commitHash], directory);

@@ -43,6 +43,12 @@ contextBridge.exposeInMainWorld("api", {
   clone: (url, destPath) => ipcRenderer.invoke("clone", url, destPath),
   getRepoMetrics: (directory) => ipcRenderer.invoke("get-repo-metrics", directory),
   getRepoMetricsExtra: (directory) => ipcRenderer.invoke("get-repo-metrics-extra", directory),
+  getConflictDiff: (directory, filePath) => ipcRenderer.invoke("get-conflict-diff", directory, filePath),
+  checkoutOurs: (directory, filePath) => ipcRenderer.invoke("checkout-ours", directory, filePath),
+  checkoutTheirs: (directory, filePath) => ipcRenderer.invoke("checkout-theirs", directory, filePath),
+  resolveFile: (directory, filePath) => ipcRenderer.invoke("resolve-file", directory, filePath),
+  continueMerge: (directory) => ipcRenderer.invoke("continue-merge", directory),
+  abortMerge: (directory) => ipcRenderer.invoke("abort-merge", directory),
   // Send Methods
   testSend: (args) => ipcRenderer.send("test-send", args),
   openDevTools: (args) => ipcRenderer.send("open-dev-tools", args),
