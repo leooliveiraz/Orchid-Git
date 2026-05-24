@@ -2,13 +2,16 @@ import React, { useContext, useState } from "react";
 import { Box, Typography, Button, Divider } from "@mui/material";
 import FolderOpenIcon from "@mui/icons-material/FolderOpen";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
+import NoteAddIcon from "@mui/icons-material/NoteAdd";
 import FolderIcon from "@mui/icons-material/Folder";
 import { OrchidContext } from "../OrchidContext.jsx";
 import CloneDialog from "./CloneDialog.jsx";
+import InitRepoDialog from "./InitRepoDialog.jsx";
 
 export default function NoDirectory() {
   const { setDirectory, recentDirs } = useContext(OrchidContext);
   const [showClone, setShowClone] = useState(false);
+  const [showInit, setShowInit] = useState(false);
 
   function selectDirectory() {
     window.api.selectDirectory("").then((data) => {
@@ -43,6 +46,12 @@ export default function NoDirectory() {
           Clone Repository
         </Button>
 
+        <Button variant="outlined" size="large" startIcon={<NoteAddIcon />}
+          onClick={() => setShowInit(true)} sx={{ minWidth: 220, justifyContent: "flex-start" }}
+        >
+          New Repository
+        </Button>
+
         {recentDirs?.length > 0 && (
           <Box sx={{ mt: 3, width: "100%", maxWidth: 360 }}>
             <Divider sx={{ mb: 2 }}>Recent</Divider>
@@ -66,6 +75,7 @@ export default function NoDirectory() {
       </Box>
 
       {showClone && <CloneDialog onClose={() => setShowClone(false)} />}
+      {showInit && <InitRepoDialog onClose={() => setShowInit(false)} />}
     </>
   );
 }

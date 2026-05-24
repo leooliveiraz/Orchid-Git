@@ -2,7 +2,7 @@ import React, { useState, useEffect, useContext } from "react";
 import {
   Dialog, DialogTitle, DialogContent, DialogActions,
   Button, TextField, Alert, LinearProgress,
-  FormControlLabel, Checkbox, Typography, Box,
+  FormControlLabel, Checkbox, Typography, Box, Divider,
 } from "@mui/material";
 import { OrchidContext } from "../OrchidContext.jsx";
 
@@ -10,6 +10,7 @@ export default function SettingsDialog({ onClose }) {
   const { directory } = useContext(OrchidContext);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [originUrl, setOriginUrl] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
@@ -19,9 +20,13 @@ export default function SettingsDialog({ onClose }) {
   useEffect(() => {
     if (!directory || !window.api) return;
     setLoading(true);
-    window.api.getUserConfig(directory).then(({ name, email }) => {
+    Promise.all([
+      window.api.getUserConfig(directory),
+      window.api.getOriginUrl(directory),
+    ]).then(([{ name, email }, origin]) => {
       setName(name || "");
       setEmail(email || "");
+      setOriginUrl(origin || "");
       setLoading(false);
     }).catch(() => setLoading(false));
   }, [directory]);
@@ -32,7 +37,10 @@ export default function SettingsDialog({ onClose }) {
     setSuccess(null);
     try {
       await window.api.setUserConfig(directory, name, email);
-      setSuccess("User config saved");
+      if (originUrl.trim()) {
+        await window.api.setOriginUrl(directory, originUrl.trim());
+      }
+      setSuccess("Settings saved");
     } catch (e) {
       setError(e.message || String(e));
     }
@@ -46,7 +54,7 @@ export default function SettingsDialog({ onClose }) {
       <DialogContent>
         {!loading && (
           <>
-            <br></br>
+            <Typography variant="overline" sx={{ display: "block", color: "text.secondary", mb: 1 }}>User</Typography>
             <TextField
               autoFocus
               fullWidth
@@ -64,18 +72,31 @@ export default function SettingsDialog({ onClose }) {
               value={email}
               onChange={e => setEmail(e.target.value)}
               disabled={saving}
+              sx={{ mb: 2 }}
             />
-            <Box sx={{ mt: 2 }}>
-              <FormControlLabel
-                control={<Checkbox checked={skipConfirm}
-                  onChange={e => {
-                    setSkipConfirm(e.target.checked);
-                    localStorage.setItem("orchid-skip-repo-switch", e.target.checked ? "true" : "false");
-                  }}
-                />}
-                label={<Typography variant="body2">Don't ask when switching repositories</Typography>}
-              />
-            </Box>
+
+            <Divider sx={{ my: 2 }} />
+            <Typography variant="overline" sx={{ display: "block", color: "text.secondary", mb: 1 }}>Remote</Typography>
+            <TextField
+              fullWidth
+              label="Origin URL"
+              placeholder="https://github.com/user/repo.git"
+              value={originUrl}
+              onChange={e => setOriginUrl(e.target.value)}
+              disabled={saving}
+              sx={{ mb: 2 }}
+            />
+
+            <Divider sx={{ mt: 2, mb: 1 }} />
+            <FormControlLabel
+              control={<Checkbox checked={skipConfirm}
+                onChange={e => {
+                  setSkipConfirm(e.target.checked);
+                  localStorage.setItem("orchid-skip-repo-switch", e.target.checked ? "true" : "false");
+                }}
+              />}
+              label={<Typography variant="body2">Don't ask when switching repositories</Typography>}
+            />
           </>
         )}
         {error && <Alert severity="error" sx={{ mt: 2 }}>{error}</Alert>}

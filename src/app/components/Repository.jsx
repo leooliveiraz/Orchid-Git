@@ -14,7 +14,7 @@ import {
 import { OrchidContext } from "../OrchidContext.jsx";
 
 export default function Repository({ repositoryDirectory }) {
-  const { refreshKey } = useContext(OrchidContext);
+  const { refreshKey, setNotRepo } = useContext(OrchidContext);
   const [commitList, setCommitList] = useState([]);
   const [tab, setTab] = useState("graph");
   const [commitFiles, setCommitFiles] = useState(null);
@@ -165,6 +165,8 @@ export default function Repository({ repositoryDirectory }) {
           });
 
           setCommitList(commits);
+        }).catch(er => {
+          er.message.includes("not a git repository") && setNoteRepo(true)
         });
     }
   }, [repositoryDirectory, useTopoOrder, allBranches, commitLimit, refreshKey]);

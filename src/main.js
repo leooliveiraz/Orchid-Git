@@ -138,8 +138,23 @@ ipcMain.handle("checkout-branch", (event, directory, branch) => {
   return runGit(["checkout", branch, "--"], directory);
 });
 
+ipcMain.handle("is-git-repo", (event, directory) => {
+  try {
+    runGit(["rev-parse", "--git-dir"], directory);
+    return true;
+  } catch {
+    return false;
+  }
+});
+
 ipcMain.handle("create-branch", (event, directory, branchName) => {
   return runGit(["checkout", "-b", branchName], directory);
+});
+
+ipcMain.handle("init-repo", (event, directory) => {
+  const fs = require("fs");
+  if (!fs.existsSync(directory)) fs.mkdirSync(directory, { recursive: true });
+  return runGit(["init"], directory);
 });
 
 ipcMain.handle("create-tag", (event, directory, tagName) => {
@@ -227,6 +242,20 @@ ipcMain.handle("delete-remote-branch", (event, directory, remoteName) => {
   return runGit(["push", "origin", "--delete", branch], directory);
 });
 
+ipcMain.handle("get-origin-url", (event, directory) => {
+  try { return runGit(["remote", "get-url", "origin"], directory).trim(); }
+  catch(e) { return ""; }
+});
+
+ipcMain.handle("set-origin-url", (event, directory, url) => {
+  try {
+    runGit(["remote", "set-url", "origin", url], directory);
+  } catch(e) {
+    runGit(["remote", "add", "origin", url], directory);
+  }
+  return "ok";
+});
+
 ipcMain.handle("get-status", (event, directory) => {
   const { parseStatusOutput } = require("./git");
   const output = runGit(["status", "--porcelain"], directory);
@@ -294,6 +323,54 @@ ipcMain.handle("checkout-theirs", (event, directory, filePath) => {
 
 ipcMain.handle("resolve-file", (event, directory, filePath) => {
   return runGit(["add", "--", filePath], directory);
+});
+
+ipcMain.handle("get-conflict-blocks", (event, directory, filePath) => {
+  const path = require("path");
+  const fs = require("fs");
+  const fullPath = path.join(directory, filePath);
+  if (!fs.existsSync(fullPath)) return { blocks: [] };
+  const content = fs.readFileSync(fullPath, "utf8");
+  const blocks = [];
+  const regex = /<<<<<<< .+\n([\s\S]*?)=======\n([\s\S]*?)>>>>>>> .+\n?/g;
+  let match;
+  let lastIndex = 0;
+  while ((match = regex.exec(content)) !== null) {
+    blocks.push({
+      index: blocks.length,
+      ours: match[1].replace(/\n$/, ""),
+      theirs: match[2].replace(/\n$/, ""),
+      start: match.index,
+      end: match.index + match[0].length,
+    });
+    lastIndex = match.index + match[0].length;
+  }
+  return { blocks, fullContent: content };
+});
+
+ipcMain.handle("resolve-conflict-blocks", (event, directory, filePath, resolutions, keepBothSeparator) => {
+  const path = require("path");
+  const fs = require("fs");
+  const fullPath = path.join(directory, filePath);
+  let content = fs.readFileSync(fullPath, "utf8");
+  const regex = /<<<<<<< .+\n([\s\S]*?)=======\n([\s\S]*?)>>>>>>> .+\n?/g;
+  const resolved = {};
+  resolutions.forEach(r => { resolved[r.blockIndex] = r; });
+  let blockIndex = 0;
+  content = content.replace(regex, (match, ours, theirs) => {
+    const r = resolved[blockIndex];
+    blockIndex++;
+    if (!r) return match;
+    if (r.choice === "ours") return ours.replace(/\n$/, "") + "\n";
+    if (r.choice === "theirs") return theirs.replace(/\n$/, "") + "\n";
+    if (r.choice === "both") {
+      const sep = keepBothSeparator || "\n// === kept both ===\n";
+      return ours.replace(/\n$/, "") + sep + theirs.replace(/\n$/, "") + "\n";
+    }
+    return match;
+  });
+  fs.writeFileSync(fullPath, content, "utf8");
+  return "ok";
 });
 
 ipcMain.handle("continue-merge", (event, directory) => {

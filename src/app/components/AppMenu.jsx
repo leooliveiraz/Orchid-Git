@@ -17,9 +17,13 @@ import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import CallSplitIcon from "@mui/icons-material/CallSplit";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import CloudDownloadIcon from "@mui/icons-material/CloudDownload";
+import CloudSyncIcon from '@mui/icons-material/CloudSync';
+import TaskAltIcon from '@mui/icons-material/TaskAlt';
 import SyncIcon from "@mui/icons-material/Sync";
 import MergeIcon from "@mui/icons-material/Merge";
 import AutorenewIcon from "@mui/icons-material/Autorenew";
+import NoteAddIcon from "@mui/icons-material/NoteAdd";
+import ChecklistIcon from '@mui/icons-material/Checklist';
 import ContentPasteIcon from "@mui/icons-material/ContentPaste";
 import React, { useContext, useState } from "react";
 import { OrchidContext } from "../OrchidContext.jsx";
@@ -29,6 +33,7 @@ import CreateBranchDialog from "./CreateBranchDialog.jsx";
 import MergeDialog from "./MergeDialog.jsx";
 import CherryPickDialog from "./CherryPickDialog.jsx";
 import RebaseDialog from "./RebaseDialog.jsx";
+import InitRepoDialog from "./InitRepoDialog.jsx";
 import SuccessSnackbar from "./SuccessSnackbar.jsx";
 
 const OVERLAY_STYLE = {
@@ -50,6 +55,7 @@ export default function AppMenu({ onToggleMenu }) {
   const [showMerge, setShowMerge] = useState(false);
   const [showCherryPick, setShowCherryPick] = useState(false);
   const [showRebase, setShowRebase] = useState(false);
+  const [showInit, setShowInit] = useState(false);
   const [syncAction, setSyncAction] = useState(null);
   const [syncError, setSyncError] = useState(null);
   const [syncSuccess, setSyncSuccess] = useState(null);
@@ -121,6 +127,11 @@ export default function AppMenu({ onToggleMenu }) {
               <FolderOpenIcon />
             </IconButton>
           </Tooltip>
+          <Tooltip title="New repository">
+            <IconButton color="inherit" onClick={() => setShowInit(true)} sx={{ mr: 0.5 }}>
+              <NoteAddIcon />
+            </IconButton>
+          </Tooltip>
           <Tooltip title="Clone repository">
             <IconButton color="inherit" onClick={() => setShowClone(true)} sx={{ mr: 0.5 }}>
               <ContentCopyIcon />
@@ -145,7 +156,7 @@ export default function AppMenu({ onToggleMenu }) {
           {directory && (
             <Tooltip title="Fetch">
               <IconButton color="inherit" onClick={handleFetch} sx={{ mr: 0.5 }}>
-                <SyncIcon />
+                <CloudSyncIcon />
               </IconButton>
             </Tooltip>
           )}
@@ -167,14 +178,14 @@ export default function AppMenu({ onToggleMenu }) {
           {directory && (
             <Tooltip title="Cherry-pick commit">
               <IconButton color="inherit" onClick={() => setShowCherryPick(true)} sx={{ mr: 0.5 }}>
-                <ContentPasteIcon />
+                <TaskAltIcon />
               </IconButton>
             </Tooltip>
           )}
           {directory && (
             <Tooltip title="Interactive rebase">
               <IconButton color="inherit" onClick={() => setShowRebase(true)} sx={{ mr: 0.5 }}>
-                <AutorenewIcon />
+                <ChecklistIcon />
               </IconButton>
             </Tooltip>
           )}
@@ -206,6 +217,7 @@ export default function AppMenu({ onToggleMenu }) {
       {showMerge && <MergeDialog onClose={() => setShowMerge(false)} />}
       {showCherryPick && <CherryPickDialog onClose={() => setShowCherryPick(false)} />}
       {showRebase && <RebaseDialog onClose={() => setShowRebase(false)} />}
+      {showInit && <InitRepoDialog onClose={() => setShowInit(false)} />}
 
       {syncAction === "push" && (
         <Box sx={OVERLAY_STYLE}>

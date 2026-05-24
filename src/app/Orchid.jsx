@@ -28,6 +28,7 @@ export default function Orchid() {
   const [menuOpen, setMenuOpen] = useState(true);
   const [repoData, setRepoData] = useState(null);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [notRepo, setNotRepo] = useState(null);
   const [recentDirs, setRecentDirs] = useState(() => {
     try { return JSON.parse(localStorage.getItem("orchid-recent-dirs") || "[]"); }
     catch { return []; }
@@ -59,7 +60,14 @@ export default function Orchid() {
   useEffect(() => {
     if (directory) {
       setRepoData(null);
-      fetchRepoData(directory).then(setRepoData);
+      setNotRepo(null);
+      (async () => {
+        const isRepo = window.api ? await window.api.isGitRepo(directory).catch(() => false) : false;
+        if (!isRepo) { setNotRepo(true); return; }
+        setNotRepo(false);
+        const data = await fetchRepoData(directory);
+        if (data) setRepoData(data);
+      })();
     }
   }, [directory, refreshKey]);
 
@@ -184,7 +192,7 @@ export default function Orchid() {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <OrchidContext.Provider value={{ directory, setDirectory, themeMode, toggleTheme, repoData, setRepoData, menuOpen, setMenuOpen, refresh, refreshKey, recentDirs }}>
+      <OrchidContext.Provider value={{ directory, setDirectory, themeMode, toggleTheme, repoData, setRepoData, menuOpen, setMenuOpen, refresh, refreshKey, recentDirs, notRepo, setNotRepo }}>
         <Box sx={{ height: "100vh", display: "flex", flexDirection: "column" }}>
           <AppMenu onToggleMenu={() => setMenuOpen(prev => !prev)} />
           <Box sx={{ display: "flex", flex: 1, overflow: "hidden" }}>
