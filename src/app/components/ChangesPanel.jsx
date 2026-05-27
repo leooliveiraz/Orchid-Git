@@ -163,6 +163,14 @@ export default function ChangesPanel({ directory }) {
     setHistoryViewer({ fileName: file.path });
   };
 
+  const handleCommitClose = (didCommit) => {
+    setShowCommit(false);
+    if (didCommit) {
+      setSuccess("Commit created successfully");
+      refresh();
+    }
+  };
+
   const staged = statusList.filter(f => f.staged);
   const unstaged = statusList.filter(f => !f.staged);
   const conflicted = statusList.filter(f => f.conflicted).map(f => f.path);
