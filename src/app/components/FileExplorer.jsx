@@ -9,7 +9,7 @@ import SearchIcon from "@mui/icons-material/Search";
 import UnfoldMoreIcon from "@mui/icons-material/UnfoldMore";
 import UnfoldLessIcon from "@mui/icons-material/UnfoldLess";
 import AccountTreeIcon from "@mui/icons-material/AccountTree";
-import FileHistoryDialog from "./FileHistoryDialog.jsx";
+import FileViewDialog from "./FileViewDialog.jsx";
 
 function buildTree(files) {
   const root = { name: "", children: {}, files: [] };
@@ -55,7 +55,7 @@ export default function FileExplorer({ directory }) {
   const [view, setView] = useState("tree");
   const [compact, setCompact] = useState(true);
   const [search, setSearch] = useState("");
-  const [historyFile, setHistoryFile] = useState(null);
+  const [viewFile, setViewFile] = useState(null);
   const [expanded, setExpanded] = useState(new Set());
 
   useEffect(() => {
@@ -165,7 +165,7 @@ export default function FileExplorer({ directory }) {
           return (
             <Box
               key={f}
-              onClick={() => setHistoryFile(fullPath)}
+              onClick={() => setViewFile(fullPath)}
               sx={{ display: "flex", alignItems: "center", gap: 0.5, py: 0.2, px: 1, cursor: "pointer", borderRadius: 1, "&:hover": { bgcolor: "action.hover" } }}
             >
               <InsertDriveFileIcon sx={{ fontSize: 14, color: "text.disabled" }} />
@@ -233,11 +233,11 @@ export default function FileExplorer({ directory }) {
         )}
       </Paper>
 
-      {historyFile && (
-        <FileHistoryDialog
+      {viewFile && (
+        <FileViewDialog
           directory={directory}
-          fileName={historyFile}
-          onClose={() => setHistoryFile(null)}
+          fileName={viewFile}
+          onClose={() => setViewFile(null)}
         />
       )}
     </Box>

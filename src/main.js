@@ -165,6 +165,25 @@ ipcMain.handle("create-tag", (event, directory, tagName) => {
   return runGit(["tag", tagName], directory);
 });
 
+ipcMain.handle("get-file-content", (event, directory, filePath) => {
+  const path = require("path");
+  const fs = require("fs");
+  const fullPath = path.join(directory, filePath);
+  return fs.readFileSync(fullPath, "utf8");
+});
+
+ipcMain.handle("save-file-content", (event, directory, filePath, content) => {
+  const path = require("path");
+  const fs = require("fs");
+  const fullPath = path.join(directory, filePath);
+  fs.writeFileSync(fullPath, content, "utf8");
+  return "ok";
+});
+
+ipcMain.handle("get-file-at-commit", (event, directory, commitHash, filePath) => {
+  return runGit(["show", `${commitHash}:${filePath}`], directory);
+});
+
 ipcMain.handle("merge", (event, directory, branch, strategy) => {
   const args = ["merge"];
   if (strategy === "squash") args.push("--squash");

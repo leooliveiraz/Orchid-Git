@@ -3,6 +3,7 @@ import CommitDialog from "./CommitDialog.jsx";
 import DiffViewer from "./DiffViewer.jsx";
 import BlameViewer from "./BlameViewer.jsx";
 import FileHistoryDialog from "./FileHistoryDialog.jsx";
+import FileViewDialog from "./FileViewDialog.jsx";
 import ConflictResolver from "./ConflictResolver.jsx";
 import SuccessSnackbar from "./SuccessSnackbar.jsx";
 import {
@@ -27,7 +28,7 @@ const STATUS_COLORS = {
   "??": "#6a737d", "!!": "#6a737d",
 };
 
-function StatusFile({ file, onStage, onUnstage, onViewDiff, onViewBlame, onViewHistory, onDiscard, onDiscardHunks }) {
+function StatusFile({ file, onStage, onUnstage, onViewDiff, onViewBlame, onViewHistory, onViewFile, onDiscard, onDiscardHunks }) {
   return (
     <ListItem
       secondaryAction={
@@ -43,6 +44,9 @@ function StatusFile({ file, onStage, onUnstage, onViewDiff, onViewBlame, onViewH
           )}
           <Button size="small" variant="text" onClick={(e) => { e.stopPropagation(); onViewDiff(file); }}>
             Diff
+          </Button>
+          <Button size="small" variant="text" onClick={(e) => { e.stopPropagation(); onViewFile(file); }}>
+            View
           </Button>
           <Button size="small" variant="text" onClick={(e) => { e.stopPropagation(); onViewBlame(file); }}>
             Blame
@@ -88,6 +92,7 @@ export default function ChangesPanel({ directory }) {
   const [diffViewer, setDiffViewer] = useState(null);
   const [blameViewer, setBlameViewer] = useState(null);
   const [historyViewer, setHistoryViewer] = useState(null);
+  const [fileViewer, setFileViewer] = useState(null);
   const [success, setSuccess] = useState(null);
   const [discardConfirm, setDiscardConfirm] = useState(null);
 
@@ -167,6 +172,10 @@ export default function ChangesPanel({ directory }) {
 
   const handleViewHistory = async (file) => {
     setHistoryViewer({ fileName: file.path });
+  };
+
+  const handleViewFile = async (file) => {
+    setFileViewer({ fileName: file.path });
   };
 
   const handleCommitClose = (didCommit) => {
@@ -256,7 +265,7 @@ export default function ChangesPanel({ directory }) {
       )}
       <List dense>
         {staged.map(f => (
-          <StatusFile key={"staged-" + f.path} file={f} onStage={handleStage} onUnstage={handleUnstage} onViewDiff={handleViewDiff} onViewBlame={handleViewBlame} onViewHistory={handleViewHistory} onDiscard={handleDiscardFile} onDiscardHunks={handleDiscardHunks} />
+          <StatusFile key={"staged-" + f.path} file={f} onStage={handleStage} onUnstage={handleUnstage} onViewDiff={handleViewDiff} onViewBlame={handleViewBlame} onViewHistory={handleViewHistory} onViewFile={handleViewFile} onDiscard={handleDiscardFile} onDiscardHunks={handleDiscardHunks} />
         ))}
       </List>
 
@@ -268,7 +277,7 @@ export default function ChangesPanel({ directory }) {
       )}
       <List dense>
         {unstaged.map(f => (
-          <StatusFile key={"unstaged-" + f.path} file={f} onStage={handleStage} onUnstage={handleUnstage} onViewDiff={handleViewDiff} onViewBlame={handleViewBlame} onViewHistory={handleViewHistory} />
+          <StatusFile key={"unstaged-" + f.path} file={f} onStage={handleStage} onUnstage={handleUnstage} onViewDiff={handleViewDiff} onViewBlame={handleViewBlame} onViewHistory={handleViewHistory} onViewFile={handleViewFile} />
         ))}
       </List>
 
@@ -297,6 +306,14 @@ export default function ChangesPanel({ directory }) {
           directory={directory}
           fileName={historyViewer.fileName}
           onClose={() => setHistoryViewer(null)}
+        />
+      )}
+
+      {fileViewer && (
+        <FileViewDialog
+          directory={directory}
+          fileName={fileViewer.fileName}
+          onClose={() => setFileViewer(null)}
         />
       )}
 
