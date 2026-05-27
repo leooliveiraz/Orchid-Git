@@ -21,10 +21,14 @@ if (started) {
 }
 
 const createWindow = () => {
+  const iconPath = app.isPackaged
+    ? path.join(process.resourcesPath, "icon.png")
+    : path.join(app.getAppPath(), "src", "assets", "icon.png");
   // Create the browser window.
   const mainWindow = new BrowserWindow({
     width: 1200,
     height: 600,
+    icon: iconPath,
     webPreferences: {
       preload: MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY,
     },
@@ -180,6 +184,22 @@ ipcMain.handle("get-rebase-commits", (event, directory, targetBranch) => {
     const [hash, ...msgParts] = line.split("|");
     return { hash, message: msgParts.join("|") };
   });
+});
+
+ipcMain.handle("get-file-history", (event, directory, filePath) => {
+  const output = runGit(["log", "--oneline", "--format=%h|%s|%ar|%an", "--", filePath], directory);
+  return output.trim().split("\n").filter(Boolean).map(line => {
+    const [hash, ...rest] = line.split("|");
+    const message = rest.slice(0, -2).join("|");
+    const date = rest[rest.length - 2] || "";
+    const author = rest[rest.length - 1] || "";
+    return { hash, message, date, author };
+  });
+});
+
+ipcMain.handle("get-repo-files", (event, directory) => {
+  const output = runGit(["ls-files"], directory);
+  return output.trim().split("\n").filter(Boolean).map(f => f.replace(/^"|"$/g, "")).sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }));
 });
 
 ipcMain.handle("execute-rebase", (event, directory, targetBranch, todoList) => {

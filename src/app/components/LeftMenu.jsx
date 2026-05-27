@@ -341,7 +341,7 @@ export default function LeftMenu({ open }) {
         }}
       >
         {recentDirs?.length > 0 && (
-          <Section title="Recent" count={recentDirs.length} defaultOpen={!repoData}>
+          <Section title="Recent" count={recentDirs.length} defaultOpen={true}>
             {recentDirs.map(dir => (
               <Item key={dir} label={dir.split(/[/\\]/).pop()}
                 title={dir}

@@ -84,6 +84,7 @@ export default function GitGraph({ commit, index, commitList, connectionStyle, l
     ? commitList[commit.merge.parentIndex].depth
     : null;
 
+  const hasParentAtDepth = (depth === parentDepth || depth === mergeDepth);
   function cx(d) { return Number.isFinite(d) ? d * LANE_WIDTH + 6 : 6; }
 
   const pd = commit.dad?.parentDistance;
@@ -146,9 +147,9 @@ export default function GitGraph({ commit, index, commitList, connectionStyle, l
           x={d * LANE_WIDTH + 5}
           y={d === depth ? (hasSonAtDepth ? 0 : ROW_HEIGHT / 2 - CIRCLE_R) : 0}
           width={2}
-          height={d === depth ? (hasSonAtDepth ? ROW_HEIGHT + 1 : ROW_HEIGHT / 2 + CIRCLE_R + 1) : ROW_HEIGHT + 1}
+          height={d === depth ? (hasParentAtDepth ? ROW_HEIGHT + 10 : 0) : ROW_HEIGHT + 10}
           fill={COLORS[d % COLORS.length]}
-          opacity={0.5}
+          opacity={1}
         />
       ))}
 

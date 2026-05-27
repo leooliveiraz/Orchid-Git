@@ -25,13 +25,16 @@ import AutorenewIcon from "@mui/icons-material/Autorenew";
 import NoteAddIcon from "@mui/icons-material/NoteAdd";
 import ChecklistIcon from '@mui/icons-material/Checklist';
 import ContentPasteIcon from "@mui/icons-material/ContentPaste";
+import AssignmentTurnedInIcon from '@mui/icons-material/AssignmentTurnedIn';
 import React, { useContext, useState } from "react";
+import appIcon from "../../assets/icon.png";
 import { OrchidContext } from "../OrchidContext.jsx";
 import CloneDialog from "./CloneDialog.jsx";
 import SettingsDialog from "./SettingsDialog.jsx";
 import CreateBranchDialog from "./CreateBranchDialog.jsx";
 import MergeDialog from "./MergeDialog.jsx";
 import CherryPickDialog from "./CherryPickDialog.jsx";
+import CommitDialog from "./CommitDialog.jsx";
 import RebaseDialog from "./RebaseDialog.jsx";
 import InitRepoDialog from "./InitRepoDialog.jsx";
 import SuccessSnackbar from "./SuccessSnackbar.jsx";
@@ -56,6 +59,8 @@ export default function AppMenu({ onToggleMenu }) {
   const [showCherryPick, setShowCherryPick] = useState(false);
   const [showRebase, setShowRebase] = useState(false);
   const [showInit, setShowInit] = useState(false);
+  const [showCommit, setShowCommit] = useState(false);
+  const [commitStaged, setCommitStaged] = useState([]);
   const [syncAction, setSyncAction] = useState(null);
   const [syncError, setSyncError] = useState(null);
   const [syncSuccess, setSyncSuccess] = useState(null);
@@ -104,6 +109,15 @@ export default function AppMenu({ onToggleMenu }) {
     }
   };
 
+  const handleOpenCommit = async () => {
+    if (!window.api || !directory) return;
+    try {
+      const status = await window.api.getStatus(directory);
+      setCommitStaged(status.filter(f => f.staged));
+      setShowCommit(true);
+    } catch(e) {}
+  };
+
   return (
     <Box>
       <AppBar position="relative" >
@@ -118,9 +132,12 @@ export default function AppMenu({ onToggleMenu }) {
           >
             <MenuIcon />
           </IconButton>
-          <Typography variant="h6" component="div" sx={{ flexGrow: 1, fontWeight: 600 }}>
-            Orchid
-          </Typography>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, mr: 1, flexGrow: 1 }}>
+            <img src={appIcon} alt="Orchid" width="22" height="22" style={{ borderRadius: 4 }} />
+            <Typography variant="h6" component="div" sx={{ fontWeight: 600 }}>
+              Orchid
+            </Typography>
+          </Box>
 
           <Tooltip title="Open repository">
             <IconButton color="inherit" onClick={selectDirectory}>
@@ -176,9 +193,16 @@ export default function AppMenu({ onToggleMenu }) {
             </Tooltip>
           )}
           {directory && (
+            <Tooltip title="Commit">
+              <IconButton color="inherit" onClick={handleOpenCommit} sx={{ mr: 0.5 }}>
+                <TaskAltIcon />
+              </IconButton>
+            </Tooltip>
+          )}
+          {directory && (
             <Tooltip title="Cherry-pick commit">
               <IconButton color="inherit" onClick={() => setShowCherryPick(true)} sx={{ mr: 0.5 }}>
-                <TaskAltIcon />
+                <AssignmentTurnedInIcon />
               </IconButton>
             </Tooltip>
           )}
@@ -218,6 +242,7 @@ export default function AppMenu({ onToggleMenu }) {
       {showCherryPick && <CherryPickDialog onClose={() => setShowCherryPick(false)} />}
       {showRebase && <RebaseDialog onClose={() => setShowRebase(false)} />}
       {showInit && <InitRepoDialog onClose={() => setShowInit(false)} />}
+      {showCommit && <CommitDialog directory={directory} stagedFiles={commitStaged} onClose={(did) => { setShowCommit(false); if (did) refresh(); }} />}
 
       {syncAction === "push" && (
         <Box sx={OVERLAY_STYLE}>

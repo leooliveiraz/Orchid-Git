@@ -5,6 +5,11 @@ rules.push({
   use: [{ loader: 'style-loader' }, { loader: 'css-loader' }],
 });
 
+rules.push({
+  test: /\.(png|jpg|gif|svg|ico)$/,
+  type: 'asset/resource',
+});
+
 module.exports = {
   // Put your normal webpack config below here
   module: {

@@ -1,0 +1,92 @@
+import React, { useState, useEffect, useCallback } from "react";
+import {
+  Dialog, DialogTitle, DialogContent, DialogActions,
+  Typography, Box, Button, LinearProgress, TableContainer, Table, TableHead, TableBody, TableRow, TableCell, Paper, IconButton,
+} from "@mui/material";
+import CloseIcon from "@mui/icons-material/Close";
+import DiffViewer from "./DiffViewer.jsx";
+import BlameViewer from "./BlameViewer.jsx";
+
+export default function FileHistoryDialog({ directory, fileName, onClose }) {
+  const [history, setHistory] = useState([]);
+  const [blameData, setBlameData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [tab, setTab] = useState("history");
+  const [diffViewer, setDiffViewer] = useState(null);
+  const [blameViewer, setBlameViewer] = useState(null);
+
+  useEffect(() => {
+    if (!directory || !window.api) return;
+    setLoading(true);
+    Promise.all([
+      window.api.getFileHistory(directory, fileName).catch(() => []),
+      window.api.getBlame(directory, fileName).catch(() => []),
+    ]).then(([hist, blame]) => {
+      setHistory(hist || []);
+      setBlameData(blame || []);
+      setLoading(false);
+    });
+  }, [directory, fileName]);
+
+  return (
+    <Dialog open onClose={onClose} maxWidth="lg" fullWidth>
+      <DialogTitle sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+        <Typography component="div" variant="body2" sx={{ fontFamily: "monospace", flex: 1, fontWeight: 600 }}>
+          {fileName}
+        </Typography>
+        <Box sx={{ display: "flex", gap: 0.5 }}>
+          <Button size="small" variant={tab === "history" ? "contained" : "outlined"} onClick={() => setTab("history")}>
+            History
+          </Button>
+          <Button size="small" variant={tab === "blame" ? "contained" : "outlined"} onClick={() => setTab("blame")}>
+            Blame
+          </Button>
+        </Box>
+        <IconButton size="small" onClick={onClose} aria-label="close">
+          <CloseIcon fontSize="small" />
+        </IconButton>
+      </DialogTitle>
+      <DialogContent sx={{ overflow: "auto", maxHeight: "70vh", p: tab === "blame" ? 0 : 1 }}>
+        {loading && <LinearProgress />}
+
+        {tab === "history" && !loading && (
+          <TableContainer component={Paper} variant="outlined" sx={{ maxHeight: "60vh", overflow: "auto" }}>
+            <Table size="small" stickyHeader>
+              <TableHead>
+                <TableRow>
+                  <TableCell sx={{ fontWeight: 600, fontSize: "0.7rem", color: "text.secondary", width: 80, fontFamily: "monospace" }}>Hash</TableCell>
+                  <TableCell sx={{ fontWeight: 600, fontSize: "0.7rem", color: "text.secondary" }}>Message</TableCell>
+                  <TableCell sx={{ fontWeight: 600, fontSize: "0.7rem", color: "text.secondary", width: 120 }}>Date</TableCell>
+                  <TableCell sx={{ fontWeight: 600, fontSize: "0.7rem", color: "text.secondary", width: 140 }}>Author</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {history.map((row, i) => (
+                  <TableRow key={i} hover sx={{ cursor: "pointer" }}
+                    onClick={() => setDiffViewer({ fileName: `${row.hash} - ${row.message}`, diffText: "" })}
+                  >
+                    <TableCell sx={{ fontFamily: "monospace", fontSize: "0.75rem", color: "primary.main" }}>{row.hash}</TableCell>
+                    <TableCell sx={{ fontSize: "0.8125rem" }}>{row.message}</TableCell>
+                    <TableCell sx={{ fontSize: "0.75rem", color: "text.secondary" }}>{row.date}</TableCell>
+                    <TableCell sx={{ fontSize: "0.75rem" }}>{row.author}</TableCell>
+                  </TableRow>
+                ))}
+                {history.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={4} sx={{ textAlign: "center", color: "text.secondary", fontSize: "0.75rem" }}>
+                      No history available
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        )}
+
+        {tab === "blame" && !loading && (
+          <BlameViewer fileName={fileName} blameData={blameData} onClose={onClose} />
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}

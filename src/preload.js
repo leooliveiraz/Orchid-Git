@@ -22,6 +22,8 @@ contextBridge.exposeInMainWorld("api", {
   merge: (directory, branch, strategy) => ipcRenderer.invoke("merge", directory, branch, strategy),
   cherryPick: (directory, commitHash) => ipcRenderer.invoke("cherry-pick", directory, commitHash),
   getRebaseCommits: (directory, targetBranch) => ipcRenderer.invoke("get-rebase-commits", directory, targetBranch),
+  getFileHistory: (directory, filePath) => ipcRenderer.invoke("get-file-history", directory, filePath),
+  getRepoFiles: (directory) => ipcRenderer.invoke("get-repo-files", directory),
   executeRebase: (directory, targetBranch, todoList) => ipcRenderer.invoke("execute-rebase", directory, targetBranch, todoList),
   stashApply: (directory, stashId) => ipcRenderer.invoke("stash-apply", directory, stashId),
   stashDrop: (directory, stashId) => ipcRenderer.invoke("stash-drop", directory, stashId),

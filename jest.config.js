@@ -9,6 +9,6 @@ module.exports = {
     }],
   },
   moduleNameMapper: {
-    "\\.(css|less)$": "<rootDir>/test/__mocks__/styleMock.js",
+    "\\.(css|less|png|jpg|gif|svg)$": "<rootDir>/test/__mocks__/styleMock.js",
   },
 };

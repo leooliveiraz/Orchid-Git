@@ -4,6 +4,7 @@ import CommitTable from "./CommitTable.jsx";
 import ChangesPanel from "./ChangesPanel.jsx";
 import DiffViewer from "./DiffViewer.jsx";
 import MetricsPanel from "./MetricsPanel.jsx";
+import FileExplorer from "./FileExplorer.jsx";
 import SuccessSnackbar from "./SuccessSnackbar.jsx";
 import SearchText from "./SearchText.jsx";
 import {
@@ -261,6 +262,7 @@ export default function Repository({ repositoryDirectory }) {
         <Tab label="Graph" value="graph" />
         <Tab label="Changes" value="changes" />
         <Tab label="Metrics" value="metrics" />
+        <Tab label="Files" value="files" />
       </Tabs>
 
       {tab === "graph" && (
@@ -315,6 +317,12 @@ export default function Repository({ repositoryDirectory }) {
       {tab === "metrics" && (
         <Box sx={{ flex: 1, overflow: "auto" }}>
           <MetricsPanel directory={repositoryDirectory} />
+        </Box>
+      )}
+
+      {tab === "files" && (
+        <Box sx={{ flex: 1, overflow: "auto" }}>
+          <FileExplorer directory={repositoryDirectory} />
         </Box>
       )}
 
