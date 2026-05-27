@@ -27,7 +27,7 @@ const STATUS_COLORS = {
   "??": "#6a737d", "!!": "#6a737d",
 };
 
-function StatusFile({ file, onStage, onUnstage, onViewDiff, onViewBlame, onViewHistory }) {
+function StatusFile({ file, onStage, onUnstage, onViewDiff, onViewBlame, onViewHistory, onDiscard, onDiscardHunks }) {
   return (
     <ListItem
       secondaryAction={
@@ -50,6 +50,11 @@ function StatusFile({ file, onStage, onUnstage, onViewDiff, onViewBlame, onViewH
           <Button size="small" variant="text" onClick={(e) => { e.stopPropagation(); onViewHistory(file); }}>
             History
           </Button>
+          {!file.staged && (
+            <Button size="small" variant="text" color="error" onClick={(e) => { e.stopPropagation(); onDiscard(file); }}>
+              Discard
+            </Button>
+          )}
         </Box>
       }
       sx={{ py: 0.5 }}
@@ -84,6 +89,7 @@ export default function ChangesPanel({ directory }) {
   const [blameViewer, setBlameViewer] = useState(null);
   const [historyViewer, setHistoryViewer] = useState(null);
   const [success, setSuccess] = useState(null);
+  const [discardConfirm, setDiscardConfirm] = useState(null);
 
   const refresh = useCallback(async () => {
     if (!directory || !window.api) return;
@@ -171,6 +177,47 @@ export default function ChangesPanel({ directory }) {
     }
   };
 
+  const handleDiscardFile = async (file) => {
+    setDiscardConfirm({ type: "file", path: file.path, action: async () => {
+      if (!window.api) return;
+      try {
+        await window.api.discardFile(directory, file.path);
+        setSuccess(`Discarded changes in ${file.path}`);
+        refresh();
+      } catch (e) {
+        setError(e.message || String(e));
+      }
+    }});
+  };
+
+  const handleDiscardAll = async () => {
+    setDiscardConfirm({ type: "all", path: "all changes", action: async () => {
+      if (!window.api) return;
+      try {
+        await window.api.discardAll(directory);
+        setSuccess("All changes discarded");
+        refresh();
+      } catch (e) {
+        setError(e.message || String(e));
+      }
+    }});
+  };
+
+  const handleDiscardHunks = async (file) => {
+    setDiscardConfirm({ type: "hunks", path: file.path, action: async () => {
+      if (!window.api) return;
+      try {
+        const hunks = await window.api.getDiscardHunks(directory, file.path);
+        if (!hunks?.length) { setError("No discardable hunks"); return; }
+        await window.api.discardHunks(directory, file.path, hunks.map(h => h.id));
+        setSuccess(`Discarded changes in ${file.path}`);
+        refresh();
+      } catch (e) {
+        setError(e.message || String(e));
+      }
+    }});
+  };
+
   const staged = statusList.filter(f => f.staged);
   const unstaged = statusList.filter(f => !f.staged);
   const conflicted = statusList.filter(f => f.conflicted).map(f => f.path);
@@ -186,6 +233,11 @@ export default function ChangesPanel({ directory }) {
         <Button size="small" variant="contained" onClick={() => setShowCommit(true)} disabled={staged.length === 0}>
           Commit
         </Button>
+        {unstaged.length > 0 && (
+          <Button size="small" variant="outlined" color="error" onClick={handleDiscardAll}>
+            Discard All
+          </Button>
+        )}
       </Box>
 
       {error && <Alert severity="error" sx={{ mb: 1 }}>{error}</Alert>}
@@ -204,7 +256,7 @@ export default function ChangesPanel({ directory }) {
       )}
       <List dense>
         {staged.map(f => (
-          <StatusFile key={"staged-" + f.path} file={f} onStage={handleStage} onUnstage={handleUnstage} onViewDiff={handleViewDiff} onViewBlame={handleViewBlame} onViewHistory={handleViewHistory} />
+          <StatusFile key={"staged-" + f.path} file={f} onStage={handleStage} onUnstage={handleUnstage} onViewDiff={handleViewDiff} onViewBlame={handleViewBlame} onViewHistory={handleViewHistory} onDiscard={handleDiscardFile} onDiscardHunks={handleDiscardHunks} />
         ))}
       </List>
 
@@ -249,6 +301,23 @@ export default function ChangesPanel({ directory }) {
       )}
 
       <SuccessSnackbar message={success} onClose={() => setSuccess(null)} />
+
+      {discardConfirm && (
+        <Box sx={OVERLAY_STYLE}>
+          <Box sx={MODAL_STYLE}>
+            <Typography variant="h6" sx={{ mb: 1 }}>Discard changes</Typography>
+            <Typography variant="body2" sx={{ mb: 2 }}>
+              Discard changes in <strong>{discardConfirm.path}</strong>? This cannot be undone.
+            </Typography>
+            <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 1 }}>
+              <Button onClick={() => setDiscardConfirm(null)}>Cancel</Button>
+              <Button color="error" variant="contained" onClick={() => { discardConfirm.action(); setDiscardConfirm(null); }}>
+                Discard
+              </Button>
+            </Box>
+          </Box>
+        </Box>
+      )}
       </>
     )}
     </Box>

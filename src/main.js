@@ -174,8 +174,62 @@ ipcMain.handle("merge", (event, directory, branch, strategy) => {
   return runGit(args, directory);
 });
 
-ipcMain.handle("cherry-pick", (event, directory, commitHash) => {
-  return runGit(["cherry-pick", commitHash], directory);
+ipcMain.handle("discard-file", (event, directory, filePath) => {
+  return runGit(["checkout", "--", filePath], directory);
+});
+
+ipcMain.handle("discard-all", (event, directory) => {
+  return runGit(["checkout", "--", "."], directory);
+});
+
+ipcMain.handle("get-discard-hunks", (event, directory, filePath) => {
+  const output = runGit(["diff", "--", filePath], directory);
+  const hunks = [];
+  const lines = output.split("\n");
+  let currentHunk = null;
+  let hunkId = 0;
+  for (const line of lines) {
+    if (line.startsWith("@@")) {
+      if (currentHunk) hunks.push(currentHunk);
+      currentHunk = { id: hunkId++, header: line, lines: [line] };
+    } else if (currentHunk) {
+      currentHunk.lines.push(line);
+    }
+  }
+  if (currentHunk) hunks.push(currentHunk);
+  return hunks;
+});
+
+ipcMain.handle("discard-hunks", (event, directory, filePath, hunkIds) => {
+  const os = require("os");
+  const path = require("path");
+  const fs = require("fs");
+  const fullOutput = runGit(["diff", "--", filePath], directory);
+  const allLines = fullOutput.split("\n");
+  const selectedPatch = [];
+  let currentHunkIdx = -1;
+  let inHeader = true;
+
+  for (const line of allLines) {
+    if (line.startsWith("@@")) {
+      currentHunkIdx++;
+      if (inHeader) inHeader = false;
+    }
+    if (inHeader || hunkIds.includes(currentHunkIdx)) {
+      selectedPatch.push(line);
+    }
+  }
+
+  if (selectedPatch.length < 3) return "no changes to discard";
+
+  const tmpFile = path.join(os.tmpdir(), `orchid-discard-${Date.now()}.patch`);
+  fs.writeFileSync(tmpFile, selectedPatch.join("\n"), "utf8");
+  try {
+    runGit(["apply", "-R", tmpFile], directory);
+  } finally {
+    try { fs.unlinkSync(tmpFile); } catch(e) {}
+  }
+  return "ok";
 });
 
 ipcMain.handle("get-rebase-commits", (event, directory, targetBranch) => {
