@@ -45,6 +45,14 @@ export default function Orchid() {
     });
   }, []);
 
+  const removeRecentDir = useCallback((dir) => {
+    setRecentDirs(prev => {
+      const next = prev.filter(d => d !== dir);
+      localStorage.setItem("orchid-recent-dirs", JSON.stringify(next));
+      return next;
+    });
+  }, []);
+
   useEffect(() => {
     if (directory) {
       localStorage.setItem("orchid-last-dir", directory);
@@ -192,7 +200,7 @@ export default function Orchid() {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <OrchidContext.Provider value={{ directory, setDirectory, themeMode, toggleTheme, repoData, setRepoData, menuOpen, setMenuOpen, refresh, refreshKey, recentDirs, notRepo, setNotRepo }}>
+      <OrchidContext.Provider value={{ directory, setDirectory, themeMode, toggleTheme, repoData, setRepoData, menuOpen, setMenuOpen, refresh, refreshKey, recentDirs, notRepo, setNotRepo, removeRecentDir }}>
         <Box sx={{ height: "100vh", display: "flex", flexDirection: "column" }}>
           <AppMenu onToggleMenu={() => setMenuOpen(prev => !prev)} />
           <Box sx={{ display: "flex", flex: 1, overflow: "hidden" }}>

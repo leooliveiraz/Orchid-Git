@@ -93,7 +93,7 @@ function Item({ label, active, onDoubleClick, onClick, onDelete, onContextMenu }
 }
 
 export default function LeftMenu({ open }) {
-  const { directory, repoData, refresh, recentDirs, setDirectory } = useContext(OrchidContext);
+  const { directory, repoData, refresh, recentDirs, setDirectory, removeRecentDir } = useContext(OrchidContext);
   const [message, setMessage] = useState(null);
   const [messageType, setMessageType] = useState("error");
   const [showNewBranch, setShowNewBranch] = useState(false);
@@ -319,6 +319,10 @@ export default function LeftMenu({ open }) {
     setConfirmDelete({ type: "remote branch", name: remoteName, action: () => handleDeleteRemoteBranch(remoteName) });
   }, [handleDeleteRemoteBranch]);
 
+  const confirmRemoveRecent = useCallback((dir) => {
+    setConfirmDelete({ type: "recent directory", name: dir, action: () => removeRecentDir(dir) });
+  }, [removeRecentDir]);
+
   return (
     <>
       <Drawer
@@ -349,6 +353,7 @@ export default function LeftMenu({ open }) {
                   if (skipRecentConfirm) { setDirectory(dir); }
                   else { setPendingRecentDir(dir); }
                 }}
+                onDelete={() => confirmRemoveRecent(dir)}
               />
             ))}
           </Section>

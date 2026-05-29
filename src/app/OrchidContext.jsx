@@ -14,4 +14,5 @@ export const OrchidContext = createContext({
   recentDirs: [],
   notRepo: null,
   setNotRepo: () => {},
+  removeRecentDir: () => {},
 });
