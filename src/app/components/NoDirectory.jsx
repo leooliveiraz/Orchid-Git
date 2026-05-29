@@ -1,16 +1,17 @@
-import React, { useContext, useState } from "react";
+import React, { useContext, useState, useMemo } from "react";
 import { Box, Typography, Button, Divider, IconButton, Dialog, DialogTitle, DialogContent } from "@mui/material";
 import FolderOpenIcon from "@mui/icons-material/FolderOpen";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import NoteAddIcon from "@mui/icons-material/NoteAdd";
 import FolderIcon from "@mui/icons-material/Folder";
 import CloseIcon from "@mui/icons-material/Close";
+import SwapVertIcon from "@mui/icons-material/SwapVert";
 import { OrchidContext } from "../OrchidContext.jsx";
 import CloneDialog from "./CloneDialog.jsx";
 import InitRepoDialog from "./InitRepoDialog.jsx";
 
 export default function NoDirectory() {
-  const { setDirectory, recentDirs, removeRecentDir } = useContext(OrchidContext);
+  const { setDirectory, recentDirs, removeRecentDir, recentSort, setRecentSort } = useContext(OrchidContext);
   const [showClone, setShowClone] = useState(false);
   const [showInit, setShowInit] = useState(false);
   const [confirmRemove, setConfirmRemove] = useState(null);
@@ -56,8 +57,24 @@ export default function NoDirectory() {
 
         {recentDirs?.length > 0 && (
           <Box sx={{ mt: 3, width: "100%", maxWidth: 360 }}>
-            <Divider sx={{ mb: 2 }}>Recent</Divider>
-            {recentDirs.map(dir => (
+            <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
+              <Typography variant="body2" sx={{ fontWeight: 600, color: "text.secondary", mr: 1 }}>Recent</Typography>
+              <IconButton size="small" onClick={() => {
+                const modes = ["recent", "name-asc", "name-desc"];
+                const idx = modes.indexOf(recentSort);
+                setRecentSort(modes[(idx + 1) % modes.length]);
+              }} sx={{ color: "text.disabled" }}>
+                <SwapVertIcon sx={{ fontSize: 16 }} />
+              </IconButton>
+              <Typography variant="caption" sx={{ color: "text.disabled" }}>
+                {recentSort === "recent" ? "last opened" : recentSort === "name-asc" ? "A-Z" : "Z-A"}
+              </Typography>
+            </Box>
+            {[...recentDirs].sort((a, b) => {
+              if (recentSort === "name-asc") return a.localeCompare(b);
+              if (recentSort === "name-desc") return b.localeCompare(a);
+              return 0;
+            }).map(dir => (
               <Box
                 key={dir}
                 onClick={() => setDirectory(dir)}

@@ -12,10 +12,11 @@ import MergeIcon from "@mui/icons-material/Merge";
 import DeleteIcon from "@mui/icons-material/Delete";
 import FiberManualRecordIcon from "@mui/icons-material/FiberManualRecord";
 import RadioButtonUncheckedIcon from "@mui/icons-material/RadioButtonUnchecked";
+import SwapVertIcon from "@mui/icons-material/SwapVert";
 import { OrchidContext } from "../OrchidContext.jsx";
 import MergeDialog from "./MergeDialog.jsx";
 
-function Section({ title, count, children, defaultOpen, onAdd, onMerge }) {
+function Section({ title, count, children, defaultOpen, onAdd, onMerge, onSort }) {
   return (
     <Accordion defaultExpanded={defaultOpen !== false} disableGutters>
       <AccordionSummary expandIcon={<ExpandMoreIcon sx={{ fontSize: 16, color: "text.secondary" }} />}>
@@ -32,6 +33,13 @@ function Section({ title, count, children, defaultOpen, onAdd, onMerge }) {
             sx={{ mr: 0.5, p: 0.25, lineHeight: 1, cursor: "pointer", borderRadius: 1, "&:hover": { bgcolor: "action.hover" } }}
           >
             <MergeIcon sx={{ fontSize: 16, color: "text.secondary", display: "block" }} />
+          </Box>
+        )}
+        {onSort && (
+          <Box component="span" onClick={(e) => { e.stopPropagation(); onSort(); }}
+            sx={{ mr: 0.5, p: 0.25, lineHeight: 1, cursor: "pointer", borderRadius: 1, "&:hover": { bgcolor: "action.hover" } }}
+          >
+            <SwapVertIcon sx={{ fontSize: 16, color: "text.secondary", display: "block" }} />
           </Box>
         )}
         <Box component="span" sx={{
@@ -93,7 +101,7 @@ function Item({ label, active, onDoubleClick, onClick, onDelete, onContextMenu }
 }
 
 export default function LeftMenu({ open }) {
-  const { directory, repoData, refresh, recentDirs, setDirectory, removeRecentDir } = useContext(OrchidContext);
+  const { directory, repoData, refresh, recentDirs, setDirectory, removeRecentDir, recentSort, setRecentSort } = useContext(OrchidContext);
   const [message, setMessage] = useState(null);
   const [messageType, setMessageType] = useState("error");
   const [showNewBranch, setShowNewBranch] = useState(false);
@@ -345,8 +353,18 @@ export default function LeftMenu({ open }) {
         }}
       >
         {recentDirs?.length > 0 && (
-          <Section title="Recent" count={recentDirs.length} defaultOpen={true}>
-            {recentDirs.map(dir => (
+          <Section title="Recent" count={recentDirs.length} defaultOpen={true}
+            onSort={() => {
+              const modes = ["recent", "name-asc", "name-desc"];
+              const idx = modes.indexOf(recentSort);
+              setRecentSort(modes[(idx + 1) % modes.length]);
+            }}
+          >
+            {[...recentDirs].sort((a, b) => {
+              if (recentSort === "name-asc") return a.localeCompare(b);
+              if (recentSort === "name-desc") return b.localeCompare(a);
+              return 0;
+            }).map(dir => (
               <Item key={dir} label={dir.split(/[/\\]/).pop()}
                 title={dir}
                 onClick={() => {
