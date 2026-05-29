@@ -560,6 +560,19 @@ ipcMain.handle("get-diff", (event, directory, filePath) => {
   return runGit(["diff", "--", filePath], directory);
 });
 
+ipcMain.handle("get-diff-lines", (event, directory, filePath) => {
+  try {
+    const out = runGit(["diff", "-U0", "--", filePath], directory);
+    const lines = [];
+    for (const m of out.matchAll(/^@@ -\d+(?:,\d+)? \+(\d+)(?:,(\d+))? @@/gm)) {
+      const start = parseInt(m[1], 10);
+      const count = m[2] !== undefined ? parseInt(m[2], 10) : 1;
+      for (let i = 0; i < count; i++) lines.push(start + i);
+    }
+    return lines;
+  } catch(e) { return []; }
+});
+
 ipcMain.handle("get-staged-diff", (event, directory, filePath) => {
   return runGit(["diff", "--cached", "--", filePath], directory);
 });

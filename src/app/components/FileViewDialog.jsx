@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
-  Dialog, DialogTitle, DialogContent, DialogActions,
+  Dialog, DialogTitle, DialogContent,
   Typography, Box, Button, ToggleButtonGroup, ToggleButton, IconButton, Alert, Paper,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
@@ -17,6 +17,27 @@ export default function FileViewDialog({ directory, fileName, commitHash, onClos
   const [success, setSuccess] = useState(null);
   const [diffContent, setDiffContent] = useState("");
   const [historyDialog, setHistoryDialog] = useState(false);
+  const [gitDiffLines, setGitDiffLines] = useState([]);
+
+  useEffect(() => {
+    if (commitHash || !window.api) return;
+    window.api.getDiffLines(directory, fileName)
+      .then(lines => setGitDiffLines(lines || []))
+      .catch(() => { });
+  }, [directory, fileName, commitHash]);
+
+  const highlightLines = useMemo(() => {
+    const set = new Set(gitDiffLines || []);
+    if (originalContent !== content) {
+      const orig = originalContent.split("\n");
+      const curr = content.split("\n");
+      const max = Math.max(orig.length, curr.length);
+      for (let i = 0; i < max; i++) {
+        if (orig[i] !== curr[i]) set.add(i + 1);
+      }
+    }
+    return [...set].sort((a, b) => a - b);
+  }, [originalContent, content, gitDiffLines]);
 
   useEffect(() => {
     if (!directory || !window.api) return;
@@ -71,12 +92,12 @@ export default function FileViewDialog({ directory, fileName, commitHash, onClos
         {loading && <Typography sx={{ color: "text.secondary", textAlign: "center", py: 4 }}>Loading...</Typography>}
 
         {!loading && tab === "view" && (
-          <CodeEditor value={content} filename={fileName} readOnly height="65vh" />
+          <CodeEditor value={content} filename={fileName} readOnly height="65vh" highlightLines={highlightLines} />
         )}
 
         {!loading && tab === "edit" && (
           <>
-            <CodeEditor value={content} onChange={v => { setContent(v); setDirty(v !== originalContent); }} filename={fileName} readOnly={false} height="55vh" />
+            <CodeEditor value={content} onChange={v => { setContent(v); setDirty(v !== originalContent); }} filename={fileName} readOnly={false} height="55vh" highlightLines={highlightLines} />
             <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 1, gap: 1 }}>
               {dirty && <Button onClick={() => { setContent(originalContent); setDirty(false); }}>Revert</Button>}
               <Button variant="contained" onClick={handleSave} disabled={!dirty}>Save</Button>
@@ -85,10 +106,20 @@ export default function FileViewDialog({ directory, fileName, commitHash, onClos
         )}
 
         {tab === "diff" && diffContent && (
-          <Paper variant="outlined" sx={{ p: 1, m: 1 }}>
-            <Typography variant="caption" sx={{ fontFamily: "monospace", whiteSpace: "pre-wrap", display: "block", fontSize: "0.75rem", lineHeight: 1.5 }}>
-              {diffContent}
-            </Typography>
+          <Paper variant="outlined" sx={{ fontFamily: "monospace", fontSize: "0.75rem", lineHeight: 1.5, m: 1, overflow: "auto" }}>
+            {diffContent.split("\n").map((line, i) => {
+              const ch = line[0];
+              let bg = "transparent";
+              let color = "inherit";
+              if (ch === "+") { bg = "rgba(76, 175, 80, 0.2)"; color = "#81c784"; }
+              else if (ch === "-") { bg = "rgba(244, 67, 54, 0.2)"; color = "#ef9a9a"; }
+              else if (ch === "@") { bg = "rgba(33, 150, 243, 0.15)"; color = "#90caf9"; }
+              return (
+                <div key={i} style={{ background: bg, color, padding: "0 8px", whiteSpace: "pre-wrap" }}>
+                  {line || "\u00A0"}
+                </div>
+              );
+            })}
           </Paper>
         )}
 
