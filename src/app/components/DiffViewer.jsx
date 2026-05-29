@@ -162,7 +162,7 @@ export default function DiffViewer({ fileName, diffText, onClose }) {
         )}
 
         {viewType === "unified" && hasContent && (
-          <Box sx={{ fontFamily: "monospace", fontSize: "0.75rem" }}>
+          <Box sx={{ fontFamily: "monospace", fontSize: "13px" }}>
             {unifiedLines.map((line, i) => (
               <UnifiedRow key={i} oldNum={line.oldNum} newNum={line.newNum} content={line.content} type={line.type} />
             ))}
@@ -170,7 +170,7 @@ export default function DiffViewer({ fileName, diffText, onClose }) {
         )}
 
         {viewType === "split" && hasContent && (
-          <Box sx={{ display: "flex", fontFamily: "monospace", fontSize: "0.75rem" }}>
+          <Box sx={{ display: "flex", fontFamily: "monospace", fontSize: "13px" }}>
             <Box ref={leftRef} sx={{ flex: 1, overflow: "auto", maxHeight: "65vh", borderRight: "1px solid", borderColor: "divider" }}
               onScroll={() => handleSyncScroll(leftRef, rightRef)}
             >

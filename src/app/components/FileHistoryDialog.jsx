@@ -5,7 +5,7 @@ import {
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import DiffViewer from "./DiffViewer.jsx";
-import BlameViewer from "./BlameViewer.jsx";
+import CodeEditor from "./CodeEditor.jsx";
 
 export default function FileHistoryDialog({ directory, fileName, onClose }) {
   const [history, setHistory] = useState([]);
@@ -14,6 +14,7 @@ export default function FileHistoryDialog({ directory, fileName, onClose }) {
   const [tab, setTab] = useState("history");
   const [diffViewer, setDiffViewer] = useState(null);
   const [compareLoading, setCompareLoading] = useState(null);
+  const [blameContent, setBlameContent] = useState("");
 
   useEffect(() => {
     if (!directory || !window.api) return;
@@ -21,9 +22,11 @@ export default function FileHistoryDialog({ directory, fileName, onClose }) {
     Promise.all([
       window.api.getFileHistory(directory, fileName).catch(() => []),
       window.api.getBlame(directory, fileName).catch(() => []),
-    ]).then(([hist, blame]) => {
+      window.api.getFileContent(directory, fileName).catch(() => ""),
+    ]).then(([hist, blame, fcontent]) => {
       setHistory(hist || []);
       setBlameData(blame || []);
+      setBlameContent(fcontent || "");
       setLoading(false);
     });
   }, [directory, fileName]);
@@ -103,7 +106,13 @@ export default function FileHistoryDialog({ directory, fileName, onClose }) {
         )}
 
         {tab === "blame" && !loading && (
-          <BlameViewer fileName={fileName} blameData={blameData} onClose={onClose} />
+          <CodeEditor
+            value={blameContent}
+            filename={fileName}
+            readOnly
+            height="55vh"
+            blameAnnotations={blameData}
+          />
         )}
       </DialogContent>
 

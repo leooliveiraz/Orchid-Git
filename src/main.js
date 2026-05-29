@@ -169,7 +169,7 @@ ipcMain.handle("get-file-content", (event, directory, filePath) => {
   const path = require("path");
   const fs = require("fs");
   const fullPath = path.join(directory, filePath);
-  return fs.readFileSync(fullPath, "utf8");
+  return fs.readFileSync(fullPath, "utf8").replace(/\r\n/g, "\n").replace(/\r/g, "\n");
 });
 
 ipcMain.handle("save-file-content", (event, directory, filePath, content) => {
@@ -181,7 +181,7 @@ ipcMain.handle("save-file-content", (event, directory, filePath, content) => {
 });
 
 ipcMain.handle("get-file-at-commit", (event, directory, commitHash, filePath) => {
-  return runGit(["show", `${commitHash}:${filePath}`], directory);
+  return runGit(["show", `${commitHash}:${filePath}`], directory).replace(/\r\n/g, "\n").replace(/\r/g, "\n");
 });
 
 ipcMain.handle("merge", (event, directory, branch, strategy) => {

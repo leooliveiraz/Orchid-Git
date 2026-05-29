@@ -1,15 +1,16 @@
 import React, { useEffect, useState, useCallback, useContext } from "react";
 import CommitDialog from "./CommitDialog.jsx";
 import DiffViewer from "./DiffViewer.jsx";
-import BlameViewer from "./BlameViewer.jsx";
+import CodeEditor from "./CodeEditor.jsx";
 import FileHistoryDialog from "./FileHistoryDialog.jsx";
 import FileViewDialog from "./FileViewDialog.jsx";
 import ConflictResolver from "./ConflictResolver.jsx";
 import SuccessSnackbar from "./SuccessSnackbar.jsx";
 import {
   Box, Button, Typography, List, ListItem, ListItemIcon, ListItemText,
-  Chip, Alert,
+  Chip, Alert, Dialog, DialogTitle, DialogContent, IconButton,
 } from "@mui/material";
+import CloseIcon from "@mui/icons-material/Close";
 import { OrchidContext } from "../OrchidContext.jsx";
 
 const OVERLAY_STYLE = {
@@ -159,9 +160,12 @@ export default function ChangesPanel({ directory }) {
 
   const handleViewBlame = async (file) => {
     try {
-      const data = await window.api.getBlame(directory, file.path);
+      const [data, fileContent] = await Promise.all([
+        window.api.getBlame(directory, file.path),
+        window.api.getFileContent(directory, file.path),
+      ]);
       if (data && data.length) {
-        setBlameViewer({ fileName: file.path, blameData: data });
+        setBlameViewer({ fileName: file.path, blameData: data, fileContent: fileContent || "" });
       } else {
         setError("No blame data available");
       }
@@ -294,11 +298,25 @@ export default function ChangesPanel({ directory }) {
       )}
 
       {blameViewer && (
-        <BlameViewer
-          fileName={blameViewer.fileName}
-          blameData={blameViewer.blameData}
-          onClose={() => setBlameViewer(null)}
-        />
+        <Dialog open onClose={() => setBlameViewer(null)} maxWidth="lg" fullWidth>
+          <DialogTitle sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+            <Typography component="div" variant="body2" sx={{ fontFamily: "monospace", flex: 1, fontWeight: 600 }}>
+              {blameViewer.fileName}
+            </Typography>
+            <IconButton size="small" onClick={() => setBlameViewer(null)} aria-label="close">
+              <CloseIcon fontSize="small" />
+            </IconButton>
+          </DialogTitle>
+          <DialogContent sx={{ overflow: "auto", maxHeight: "70vh", p: 0 }}>
+            <CodeEditor
+              value={blameViewer.fileContent}
+              filename={blameViewer.fileName}
+              readOnly
+              height="55vh"
+              blameAnnotations={blameViewer.blameData}
+            />
+          </DialogContent>
+        </Dialog>
       )}
 
       {historyViewer && (

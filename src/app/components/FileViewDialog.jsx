@@ -106,7 +106,7 @@ export default function FileViewDialog({ directory, fileName, commitHash, onClos
         )}
 
         {tab === "diff" && diffContent && (
-          <Box sx={{ fontFamily: "monospace", fontSize: "0.75rem", lineHeight: 1.5 }}>
+          <Box sx={{ fontFamily: "monospace", fontSize: "13px", lineHeight: 1.5 }}>
             {(() => {
               const lines = diffContent.split("\n");
               const result = [];
