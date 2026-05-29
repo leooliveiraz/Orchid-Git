@@ -1,6 +1,6 @@
 import React from "react";
 import {
-  Dialog, DialogTitle, DialogContent, IconButton, Typography, Box, TableContainer, Table, TableHead, TableBody, TableRow, TableCell, Paper,
+  Dialog, DialogTitle, DialogContent, IconButton, Typography,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 
@@ -16,30 +16,45 @@ export default function BlameViewer({ fileName, blameData, onClose }) {
         </IconButton>
       </DialogTitle>
       <DialogContent sx={{ overflow: "auto", maxHeight: "70vh", p: 0 }}>
-        <TableContainer component={Paper} variant="outlined" sx={{ maxHeight: "70vh", overflow: "auto" }}>
-          <Table size="small" stickyHeader>
-            <TableHead>
-              <TableRow>
-                <TableCell sx={{ fontWeight: 600, fontSize: "0.7rem", color: "text.secondary", width: 60, fontFamily: "monospace" }}>Line</TableCell>
-                <TableCell sx={{ fontWeight: 600, fontSize: "0.7rem", color: "text.secondary", width: 74, fontFamily: "monospace" }}>Hash</TableCell>
-                <TableCell sx={{ fontWeight: 600, fontSize: "0.7rem", color: "text.secondary", width: 130 }}>Author</TableCell>
-                <TableCell sx={{ fontWeight: 600, fontSize: "0.7rem", color: "text.secondary", width: 86 }}>Date</TableCell>
-                <TableCell sx={{ fontWeight: 600, fontSize: "0.7rem", color: "text.secondary" }}>Content</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {blameData.map((row, i) => (
-                <TableRow key={i} hover>
-                  <TableCell sx={{ fontFamily: "monospace", fontSize: "0.75rem", color: "text.secondary" }}>{row.lineNum}</TableCell>
-                  <TableCell sx={{ fontFamily: "monospace", fontSize: "0.75rem", color: "primary.main" }}>{row.hash}</TableCell>
-                  <TableCell sx={{ fontSize: "0.8125rem" }}>{row.author}</TableCell>
-                  <TableCell sx={{ fontSize: "0.75rem", color: "text.secondary" }}>{row.date}</TableCell>
-                  <TableCell sx={{ fontFamily: '"Cascadia Code","Fira Code","Consolas",monospace', fontSize: "0.8125rem", whiteSpace: "pre-wrap", lineHeight: 1.5 }}>{row.content}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
+        {blameData.map((row, i) => (
+          <div key={i} style={{ display: "flex", fontFamily: "monospace", fontSize: "0.75rem", lineHeight: 1.5 }}>
+            <div style={{
+              textAlign: "right", padding: "0 6px 0 8px", minWidth: 32, userSelect: "none",
+              color: "var(--text-secondary)",
+            }}>
+              {row.lineNum}
+            </div>
+            <div style={{
+              padding: "0 4px", minWidth: 62, userSelect: "none",
+              color: "primary.main",
+            }}>
+              {(row.hash || "").slice(0, 7)}
+            </div>
+            <div style={{
+              padding: "0 8px", minWidth: 120, userSelect: "none", overflow: "hidden",
+              textOverflow: "ellipsis", whiteSpace: "nowrap",
+            }}>
+              {row.author}
+            </div>
+            <div style={{
+              padding: "0 8px", minWidth: 76, userSelect: "none", whiteSpace: "nowrap",
+              color: "var(--text-secondary)",
+            }}>
+              {row.date}
+            </div>
+            <div style={{
+              flex: 1, padding: "0 8px", whiteSpace: "pre-wrap",
+              color: "inherit",
+            }}>
+              {row.content || "\u00A0"}
+            </div>
+          </div>
+        ))}
+        {blameData.length === 0 && (
+          <Typography variant="body2" sx={{ color: "text.secondary", textAlign: "center", py: 3 }}>
+            No blame data available
+          </Typography>
+        )}
       </DialogContent>
     </Dialog>
   );

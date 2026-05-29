@@ -22,15 +22,6 @@ test("calls onClose when close button clicked", () => {
   expect(onClose).toHaveBeenCalled();
 });
 
-test("renders column headers", () => {
-  render(<BlameViewer fileName="file.js" blameData={mockBlame} onClose={() => {}} />);
-  expect(screen.getByText("Line")).toBeInTheDocument();
-  expect(screen.getByText("Hash")).toBeInTheDocument();
-  expect(screen.getByText("Author")).toBeInTheDocument();
-  expect(screen.getByText("Date")).toBeInTheDocument();
-  expect(screen.getByText("Content")).toBeInTheDocument();
-});
-
 test("renders all blame rows", () => {
   render(<BlameViewer fileName="file.js" blameData={mockBlame} onClose={() => {}} />);
   expect(screen.getByText("const x = 1;")).toBeInTheDocument();
@@ -49,12 +40,16 @@ test("renders line numbers and authors", () => {
 
 test("renders empty state when no data", () => {
   render(<BlameViewer fileName="file.js" blameData={[]} onClose={() => {}} />);
-  expect(screen.getByText("Line")).toBeInTheDocument();
+  expect(screen.getByText("No blame data available")).toBeInTheDocument();
 });
 
-test("renders hashes in monospace", () => {
+test("renders truncated hashes", () => {
   render(<BlameViewer fileName="file.js" blameData={mockBlame} onClose={() => {}} />);
-  const hashes = screen.getAllByText("a1b2c3d4");
+  const hashes = screen.getAllByText("a1b2c3d");
   expect(hashes.length).toBe(2);
-  expect(hashes[0].tagName).toBe("TD");
+});
+
+test("renders zero hash for uncommitted lines", () => {
+  render(<BlameViewer fileName="file.js" blameData={mockBlame} onClose={() => {}} />);
+  expect(screen.getByText("0000000")).toBeInTheDocument();
 });
