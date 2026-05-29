@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useContext } from "react";
+import React, { useEffect, useState, useCallback, useContext, useMemo } from "react";
 import CommitDialog from "./CommitDialog.jsx";
 import DiffViewer from "./DiffViewer.jsx";
 import CodeEditor from "./CodeEditor.jsx";
@@ -11,6 +11,8 @@ import {
   Chip, Alert, Dialog, DialogTitle, DialogContent, IconButton,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
+import AccountTreeIcon from "@mui/icons-material/AccountTree";
+import ListIcon from "@mui/icons-material/List";
 import { OrchidContext } from "../OrchidContext.jsx";
 
 const OVERLAY_STYLE = {
@@ -24,12 +26,77 @@ const MODAL_STYLE = {
   width: 400, maxWidth: "90vw", boxShadow: 24, p: 3,
 };
 
+function buildTree(files) {
+  const root = {};
+  for (const f of files) {
+    const parts = f.path.replace(/\\/g, "/").split("/");
+    let node = root;
+    for (let i = 0; i < parts.length; i++) {
+      const part = parts[i];
+      if (i === parts.length - 1) {
+        if (!node._files) node._files = [];
+        node._files.push(f);
+      } else {
+        if (!node[part]) node[part] = {};
+        node = node[part];
+      }
+    }
+  }
+  return root;
+}
+
+function TreeDir({ name, node, depth, ...handlers }) {
+  const [open, setOpen] = useState(true);
+  const dirs = Object.keys(node).filter(k => k !== "_files");
+  const files = node._files || [];
+
+  return (
+    <>
+      <ListItem dense sx={{ pl: 1 + depth * 2, py: 0.25, cursor: "pointer" }}
+        onClick={() => setOpen(!open)}
+      >
+        <ListItemIcon sx={{ minWidth: 24 }}>
+          <Typography variant="body2" sx={{ color: "text.secondary", fontSize: "0.7rem" }}>
+            {open ? "▼" : "▶"}
+          </Typography>
+        </ListItemIcon>
+        <ListItemText primary={name} primaryTypographyProps={{ variant: "body2", sx: { fontWeight: 600, fontSize: "0.75rem", color: "text.secondary" } }} />
+      </ListItem>
+      {open && (
+        <>
+          {dirs.map(d => (
+            <TreeDir key={d} name={d} node={node[d]} depth={depth + 1} {...handlers} />
+          ))}
+          {files.map(f => (
+            <StatusFile key={f.path} file={f} depth={depth + 1} {...handlers} />
+          ))}
+        </>
+      )}
+    </>
+  );
+}
+
+function TreeList({ tree, handlers }) {
+  const dirs = Object.keys(tree).filter(k => k !== "_files").sort();
+  const files = tree._files || [];
+  return (
+    <List dense>
+      {dirs.map(d => (
+        <TreeDir key={d} name={d} node={tree[d]} depth={0} {...handlers} />
+      ))}
+      {files.map(f => (
+        <StatusFile key={f.path} file={f} depth={0} {...handlers} />
+      ))}
+    </List>
+  );
+}
+
 const STATUS_COLORS = {
   M: "#e6a817", A: "#28a745", D: "#d73a49", R: "#6f42c1",
   "??": "#6a737d", "!!": "#6a737d",
 };
 
-function StatusFile({ file, onStage, onUnstage, onViewDiff, onViewBlame, onViewHistory, onViewFile, onDiscard, onDiscardHunks }) {
+function StatusFile({ file, onStage, onUnstage, onViewDiff, onViewBlame, onViewHistory, onViewFile, onDiscard, onDiscardHunks, depth = 0 }) {
   return (
     <ListItem
       secondaryAction={
@@ -62,7 +129,7 @@ function StatusFile({ file, onStage, onUnstage, onViewDiff, onViewBlame, onViewH
           )}
         </Box>
       }
-      sx={{ py: 0.5 }}
+      sx={{ py: 0.5, pl: depth > 0 ? 1 + depth * 2 : undefined }}
     >
       <ListItemIcon sx={{ minWidth: 32 }}>
         <Chip label={file.type} size="small"
@@ -96,6 +163,7 @@ export default function ChangesPanel({ directory }) {
   const [fileViewer, setFileViewer] = useState(null);
   const [success, setSuccess] = useState(null);
   const [discardConfirm, setDiscardConfirm] = useState(null);
+  const [viewMode, setViewMode] = useState(() => localStorage.getItem("orchid-changes-view") || "flat");
 
   const refresh = useCallback(async () => {
     if (!directory || !window.api) return;
@@ -234,6 +302,13 @@ export default function ChangesPanel({ directory }) {
   const staged = statusList.filter(f => f.staged);
   const unstaged = statusList.filter(f => !f.staged);
   const conflicted = statusList.filter(f => f.conflicted).map(f => f.path);
+  const treeStaged = useMemo(() => buildTree(staged), [staged]);
+  const treeUnstaged = useMemo(() => buildTree(unstaged), [unstaged]);
+
+  const handleViewMode = useCallback((mode) => {
+    setViewMode(mode);
+    localStorage.setItem("orchid-changes-view", mode);
+  }, []);
 
   return (
     <Box sx={{ py: 1 }}>
@@ -251,6 +326,12 @@ export default function ChangesPanel({ directory }) {
             Discard All
           </Button>
         )}
+        <IconButton size="small" onClick={() => handleViewMode(viewMode === "flat" ? "tree" : "flat")}
+          sx={{ ml: "auto", color: "text.secondary" }}
+          title={viewMode === "flat" ? "Tree view" : "Flat view"}
+        >
+          {viewMode === "flat" ? <AccountTreeIcon fontSize="small" /> : <ListIcon fontSize="small" />}
+        </IconButton>
       </Box>
 
       {error && <Alert severity="error" sx={{ mb: 1 }}>{error}</Alert>}
@@ -267,11 +348,20 @@ export default function ChangesPanel({ directory }) {
       {staged.length === 0 && (
         <Typography variant="body2" sx={{ color: "text.secondary", py: 1 }}>No staged files</Typography>
       )}
-      <List dense>
-        {staged.map(f => (
-          <StatusFile key={"staged-" + f.path} file={f} onStage={handleStage} onUnstage={handleUnstage} onViewDiff={handleViewDiff} onViewBlame={handleViewBlame} onViewHistory={handleViewHistory} onViewFile={handleViewFile} onDiscard={handleDiscardFile} onDiscardHunks={handleDiscardHunks} />
-        ))}
-      </List>
+      {staged.length > 0 && viewMode === "tree" ? (
+        <TreeList tree={treeStaged} handlers={{
+          onStage: handleStage, onUnstage: handleUnstage,
+          onViewDiff: handleViewDiff, onViewBlame: handleViewBlame,
+          onViewHistory: handleViewHistory, onViewFile: handleViewFile,
+          onDiscard: handleDiscardFile, onDiscardHunks: handleDiscardHunks,
+        }} />
+      ) : (
+        <List dense>
+          {staged.map(f => (
+            <StatusFile key={"staged-" + f.path} file={f} onStage={handleStage} onUnstage={handleUnstage} onViewDiff={handleViewDiff} onViewBlame={handleViewBlame} onViewHistory={handleViewHistory} onViewFile={handleViewFile} onDiscard={handleDiscardFile} onDiscardHunks={handleDiscardHunks} />
+          ))}
+        </List>
+      )}
 
       <Typography variant="overline" sx={{ display: "block", color: "text.secondary", mt: 2, mb: 0.5 }}>
         Changes ({unstaged.length})
@@ -279,11 +369,20 @@ export default function ChangesPanel({ directory }) {
       {unstaged.length === 0 && (
         <Typography variant="body2" sx={{ color: "text.secondary", py: 1 }}>No changes</Typography>
       )}
-      <List dense>
-        {unstaged.map(f => (
-          <StatusFile key={"unstaged-" + f.path} file={f} onStage={handleStage} onUnstage={handleUnstage} onViewDiff={handleViewDiff} onViewBlame={handleViewBlame} onViewHistory={handleViewHistory} onViewFile={handleViewFile} />
-        ))}
-      </List>
+      {unstaged.length > 0 && viewMode === "tree" ? (
+        <TreeList tree={treeUnstaged} handlers={{
+          onStage: handleStage, onUnstage: handleUnstage,
+          onViewDiff: handleViewDiff, onViewBlame: handleViewBlame,
+          onViewHistory: handleViewHistory, onViewFile: handleViewFile,
+          onDiscard: handleDiscardFile, onDiscardHunks: handleDiscardHunks,
+        }} />
+      ) : (
+        <List dense>
+          {unstaged.map(f => (
+            <StatusFile key={"unstaged-" + f.path} file={f} onStage={handleStage} onUnstage={handleUnstage} onViewDiff={handleViewDiff} onViewBlame={handleViewBlame} onViewHistory={handleViewHistory} onViewFile={handleViewFile} />
+          ))}
+        </List>
+      )}
 
       {showCommit && (
         <CommitDialog directory={directory} stagedFiles={staged} onClose={handleCommitClose} />
