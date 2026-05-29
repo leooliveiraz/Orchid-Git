@@ -47,6 +47,7 @@ contextBridge.exposeInMainWorld("api", {
   getBlame: (directory, filePath) => ipcRenderer.invoke("get-blame", directory, filePath),
   commit: (directory, message) => ipcRenderer.invoke("commit", directory, message),
   getDiff: (directory, filePath) => ipcRenderer.invoke("get-diff", directory, filePath),
+  getDiffCommit: (directory, commitHash, filePath) => ipcRenderer.invoke("get-diff-commit", directory, commitHash, filePath),
   getDiffLines: (directory, filePath) => ipcRenderer.invoke("get-diff-lines", directory, filePath),
   getStagedDiff: (directory, filePath) => ipcRenderer.invoke("get-staged-diff", directory, filePath),
   push: (directory) => ipcRenderer.invoke("push", directory),

@@ -560,6 +560,10 @@ ipcMain.handle("get-diff", (event, directory, filePath) => {
   return runGit(["diff", "--", filePath], directory);
 });
 
+ipcMain.handle("get-diff-commit", (event, directory, commitHash, filePath) => {
+  return runGit(["diff", commitHash, "--", filePath], directory);
+});
+
 ipcMain.handle("get-diff-lines", (event, directory, filePath) => {
   try {
     const out = runGit(["diff", "-U0", "--", filePath], directory);

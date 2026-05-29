@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect } from "react";
 import {
-  Dialog, DialogTitle, DialogContent, DialogActions,
+  Dialog, DialogTitle, DialogContent,
   Typography, Box, Button, LinearProgress, TableContainer, Table, TableHead, TableBody, TableRow, TableCell, Paper, IconButton,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
@@ -13,7 +13,7 @@ export default function FileHistoryDialog({ directory, fileName, onClose }) {
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState("history");
   const [diffViewer, setDiffViewer] = useState(null);
-  const [blameViewer, setBlameViewer] = useState(null);
+  const [compareLoading, setCompareLoading] = useState(null);
 
   useEffect(() => {
     if (!directory || !window.api) return;
@@ -27,6 +27,18 @@ export default function FileHistoryDialog({ directory, fileName, onClose }) {
       setLoading(false);
     });
   }, [directory, fileName]);
+
+  const handleCompare = async (commit) => {
+    if (!window.api) return;
+    setCompareLoading(commit.hash);
+    try {
+      const diffText = await window.api.getDiffCommit(directory, commit.hash, fileName);
+      setDiffViewer({ fileName: `${commit.hash} - ${commit.message}`, diffText });
+    } catch(e) {
+      setDiffViewer({ fileName: `${commit.hash} - ${commit.message}`, diffText: `Error: ${e.message}` });
+    }
+    setCompareLoading(null);
+  };
 
   return (
     <Dialog open onClose={onClose} maxWidth="lg" fullWidth>
@@ -58,22 +70,29 @@ export default function FileHistoryDialog({ directory, fileName, onClose }) {
                   <TableCell sx={{ fontWeight: 600, fontSize: "0.7rem", color: "text.secondary" }}>Message</TableCell>
                   <TableCell sx={{ fontWeight: 600, fontSize: "0.7rem", color: "text.secondary", width: 120 }}>Date</TableCell>
                   <TableCell sx={{ fontWeight: 600, fontSize: "0.7rem", color: "text.secondary", width: 140 }}>Author</TableCell>
+                  <TableCell sx={{ fontWeight: 600, fontSize: "0.7rem", color: "text.secondary", width: 80 }}>Compare</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
                 {history.map((row, i) => (
-                  <TableRow key={i} hover sx={{ cursor: "pointer" }}
-                    onClick={() => setDiffViewer({ fileName: `${row.hash} - ${row.message}`, diffText: "" })}
-                  >
+                  <TableRow key={i} hover>
                     <TableCell sx={{ fontFamily: "monospace", fontSize: "0.75rem", color: "primary.main" }}>{row.hash}</TableCell>
                     <TableCell sx={{ fontSize: "0.8125rem" }}>{row.message}</TableCell>
                     <TableCell sx={{ fontSize: "0.75rem", color: "text.secondary" }}>{row.date}</TableCell>
                     <TableCell sx={{ fontSize: "0.75rem" }}>{row.author}</TableCell>
+                    <TableCell>
+                      <Button size="small" variant="outlined" sx={{ fontSize: "0.65rem", py: 0.25 }}
+                        onClick={() => handleCompare(row)}
+                        disabled={compareLoading === row.hash}
+                      >
+                        {compareLoading === row.hash ? "..." : "Diff"}
+                      </Button>
+                    </TableCell>
                   </TableRow>
                 ))}
                 {history.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={4} sx={{ textAlign: "center", color: "text.secondary", fontSize: "0.75rem" }}>
+                    <TableCell colSpan={5} sx={{ textAlign: "center", color: "text.secondary", fontSize: "0.75rem" }}>
                       No history available
                     </TableCell>
                   </TableRow>
@@ -87,6 +106,14 @@ export default function FileHistoryDialog({ directory, fileName, onClose }) {
           <BlameViewer fileName={fileName} blameData={blameData} onClose={onClose} />
         )}
       </DialogContent>
+
+      {diffViewer && (
+        <DiffViewer
+          fileName={diffViewer.fileName}
+          diffText={diffViewer.diffText}
+          onClose={() => setDiffViewer(null)}
+        />
+      )}
     </Dialog>
   );
 }

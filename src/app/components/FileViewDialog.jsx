@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import {
   Dialog, DialogTitle, DialogContent,
-  Typography, Box, Button, ToggleButtonGroup, ToggleButton, IconButton, Alert, Paper,
+  Typography, Box, Button, ToggleButtonGroup, ToggleButton, IconButton, Alert,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import CodeEditor from "./CodeEditor.jsx";
@@ -106,21 +106,41 @@ export default function FileViewDialog({ directory, fileName, commitHash, onClos
         )}
 
         {tab === "diff" && diffContent && (
-          <Paper variant="outlined" sx={{ fontFamily: "monospace", fontSize: "0.75rem", lineHeight: 1.5, m: 1, overflow: "auto" }}>
-            {diffContent.split("\n").map((line, i) => {
-              const ch = line[0];
-              let bg = "transparent";
-              let color = "inherit";
-              if (ch === "+") { bg = "rgba(76, 175, 80, 0.2)"; color = "#81c784"; }
-              else if (ch === "-") { bg = "rgba(244, 67, 54, 0.2)"; color = "#ef9a9a"; }
-              else if (ch === "@") { bg = "rgba(33, 150, 243, 0.15)"; color = "#90caf9"; }
-              return (
-                <div key={i} style={{ background: bg, color, padding: "0 8px", whiteSpace: "pre-wrap" }}>
-                  {line || "\u00A0"}
-                </div>
-              );
-            })}
-          </Paper>
+          <Box sx={{ fontFamily: "monospace", fontSize: "0.75rem", lineHeight: 1.5 }}>
+            {(() => {
+              const lines = diffContent.split("\n");
+              const result = [];
+              let oldLine = 0, newLine = 0;
+              for (const line of lines) {
+                if (line.startsWith("@@")) {
+                  const m = line.match(/@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@/);
+                  if (m) { oldLine = parseInt(m[1], 10); newLine = parseInt(m[3], 10); }
+                  continue;
+                }
+                if (line.startsWith("diff") || line.startsWith("index") || line.startsWith("---") || line.startsWith("+++")) continue;
+                const isDel = line.startsWith("-");
+                const isAdd = line.startsWith("+");
+                const content = isDel || isAdd || line.startsWith(" ") ? line.slice(1) : line;
+                const oNum = isDel ? oldLine++ : (!isAdd ? oldLine++ : null);
+                const nNum = isAdd ? newLine++ : (!isDel ? newLine++ : null);
+                let bg = "transparent", color = "inherit";
+                if (isAdd) { bg = "rgba(76,175,80,0.2)"; color = "#81c784"; }
+                else if (isDel) { bg = "rgba(244,67,54,0.2)"; color = "#ef9a9a"; }
+                result.push(
+                  <div key={result.length} style={{ display: "flex", background: bg, color }}>
+                    <div style={{ textAlign: "right", padding: "0 4px", minWidth: 36, userSelect: "none", color: oNum != null ? "var(--text-secondary)" : "transparent" }}>
+                      {oNum != null ? oNum : ""}
+                    </div>
+                    <div style={{ textAlign: "right", padding: "0 4px", minWidth: 36, userSelect: "none", color: nNum != null ? "var(--text-secondary)" : "transparent" }}>
+                      {nNum != null ? nNum : ""}
+                    </div>
+                    <div style={{ flex: 1, padding: "0 8px", whiteSpace: "pre-wrap" }}>{content || "\u00A0"}</div>
+                  </div>
+                );
+              }
+              return result;
+            })()}
+          </Box>
         )}
 
         {tab === "history" && historyDialog && (

@@ -8,6 +8,7 @@ import {
   Button,
   TextField,
   Alert,
+  CircularProgress,
 } from "@mui/material";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import SettingsIcon from "@mui/icons-material/Settings";
@@ -68,6 +69,7 @@ export default function AppMenu({ onToggleMenu }) {
   const [stashMessage, setStashMessage] = useState("");
   const [stashPushing, setStashPushing] = useState(false);
   const [syncAction, setSyncAction] = useState(null);
+  const [syncLoading, setSyncLoading] = useState(false);
   const [syncError, setSyncError] = useState(null);
   const [syncSuccess, setSyncSuccess] = useState(null);
 
@@ -81,30 +83,37 @@ export default function AppMenu({ onToggleMenu }) {
   }
 
   const handlePush = async () => {
-    setSyncAction(null);
+    setSyncLoading(true);
     setSyncError(null);
     try {
       await window.api.push(directory);
       setSyncSuccess("Pushed successfully");
+      setSyncAction(null);
       refresh();
     } catch (e) {
       setSyncError(e.message || String(e));
+      setSyncAction(null);
     }
+    setSyncLoading(false);
   };
 
   const handlePull = async () => {
-    setSyncAction(null);
+    setSyncLoading(true);
     setSyncError(null);
     try {
       await window.api.pull(directory);
       setSyncSuccess("Pull completed");
+      setSyncAction(null);
       refresh();
     } catch (e) {
       setSyncError(e.message || String(e));
+      setSyncAction(null);
     }
+    setSyncLoading(false);
   };
 
   const handleFetch = async () => {
+    setSyncLoading(true);
     setSyncError(null);
     try {
       await window.api.fetch(directory);
@@ -113,6 +122,7 @@ export default function AppMenu({ onToggleMenu }) {
     } catch (e) {
       setSyncError(e.message || String(e));
     }
+    setSyncLoading(false);
   };
 
   const handleStashPush = async () => {
@@ -303,10 +313,17 @@ export default function AppMenu({ onToggleMenu }) {
         <Box sx={OVERLAY_STYLE}>
           <Box sx={MODAL_STYLE}>
             <Typography variant="h6" sx={{ mb: 1 }}>Push</Typography>
-            <Typography variant="body2" sx={{ mb: 2 }}>Push commits to the remote repository?</Typography>
+            {syncLoading ? (
+              <Box sx={{ display: "flex", alignItems: "center", gap: 2, py: 2 }}>
+                <CircularProgress size={24} />
+                <Typography variant="body2">Pushing...</Typography>
+              </Box>
+            ) : (
+              <Typography variant="body2" sx={{ mb: 2 }}>Push commits to the remote repository?</Typography>
+            )}
             <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 1 }}>
-              <Button onClick={() => setSyncAction(null)}>Cancel</Button>
-              <Button variant="contained" onClick={handlePush}>Push</Button>
+              <Button onClick={() => { setSyncAction(null); setSyncLoading(false); }} disabled={syncLoading}>Cancel</Button>
+              <Button variant="contained" onClick={handlePush} disabled={syncLoading}>Push</Button>
             </Box>
           </Box>
         </Box>
@@ -316,10 +333,17 @@ export default function AppMenu({ onToggleMenu }) {
         <Box sx={OVERLAY_STYLE}>
           <Box sx={MODAL_STYLE}>
             <Typography variant="h6" sx={{ mb: 1 }}>Pull</Typography>
-            <Typography variant="body2" sx={{ mb: 2 }}>Pull latest changes from the remote repository?</Typography>
+            {syncLoading ? (
+              <Box sx={{ display: "flex", alignItems: "center", gap: 2, py: 2 }}>
+                <CircularProgress size={24} />
+                <Typography variant="body2">Pulling...</Typography>
+              </Box>
+            ) : (
+              <Typography variant="body2" sx={{ mb: 2 }}>Pull latest changes from the remote repository?</Typography>
+            )}
             <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 1 }}>
-              <Button onClick={() => setSyncAction(null)}>Cancel</Button>
-              <Button variant="contained" onClick={handlePull}>Pull</Button>
+              <Button onClick={() => { setSyncAction(null); setSyncLoading(false); }} disabled={syncLoading}>Cancel</Button>
+              <Button variant="contained" onClick={handlePull} disabled={syncLoading}>Pull</Button>
             </Box>
           </Box>
         </Box>

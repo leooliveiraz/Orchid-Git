@@ -1,18 +1,138 @@
-import React from "react";
-import { Diff, Hunk, parseDiff } from "react-diff-view";
+import React, { useState, useRef, useCallback, useMemo } from "react";
 import {
-  Dialog, DialogTitle, DialogContent, IconButton, Typography, Box, Chip,
+  Dialog, DialogTitle, DialogContent, IconButton, Typography, Box, Chip, ToggleButtonGroup, ToggleButton,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 
-export default function DiffViewer({ fileName, diffText, onClose }) {
-  const files = parseDiff(diffText || "");
-  const hasContent = files.some(f => f.hunks?.length > 0);
+function splitDiff(diffText) {
+  const lines = diffText.split("\n");
+  const hunks = [];
+  let currentHunk = null;
 
-  const totalAdded = files.reduce((sum, f) =>
-    sum + f.hunks.reduce((s, h) => s + h.changes.filter(c => c.type === "insert").length, 0), 0);
-  const totalDeleted = files.reduce((sum, f) =>
-    sum + f.hunks.reduce((s, h) => s + h.changes.filter(c => c.type === "delete").length, 0), 0);
+  for (const raw of lines) {
+    if (raw.startsWith("@@")) {
+      if (currentHunk) hunks.push(currentHunk);
+      const m = raw.match(/@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@/);
+      currentHunk = {
+        oldStart: m ? parseInt(m[1], 10) : 1,
+        newStart: m ? parseInt(m[3], 10) : 1,
+        lines: [],
+      };
+    } else if (currentHunk) {
+      if (raw.startsWith("diff") || raw.startsWith("index") || raw.startsWith("---") || raw.startsWith("+++")) {
+        if (currentHunk.lines.length === 0) { currentHunk = null; }
+        continue;
+      }
+      currentHunk.lines.push(raw);
+    }
+  }
+  if (currentHunk) hunks.push(currentHunk);
+
+  const oldLines = [];
+  const newLines = [];
+  for (const hunk of hunks) {
+    let oN = hunk.oldStart;
+    let nN = hunk.newStart;
+    for (const line of hunk.lines) {
+      if (line.startsWith(" ")) {
+        const c = line.slice(1);
+        oldLines.push({ num: oN++, content: c, type: "context" });
+        newLines.push({ num: nN++, content: c, type: "context" });
+      } else if (line.startsWith("-")) {
+        oldLines.push({ num: oN++, content: line.slice(1), type: "delete" });
+        newLines.push({ num: null, content: "", type: "blank" });
+      } else if (line.startsWith("+")) {
+        oldLines.push({ num: null, content: "", type: "blank" });
+        newLines.push({ num: nN++, content: line.slice(1), type: "add" });
+      }
+    }
+  }
+  return { oldLines, newLines };
+}
+
+function parseUnifiedLines(diffText) {
+  const lines = diffText.split("\n");
+  const result = [];
+  let oldLine = 0, newLine = 0;
+
+  for (const line of lines) {
+    if (line.startsWith("@@")) {
+      const m = line.match(/@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@/);
+      if (m) { oldLine = parseInt(m[1], 10); newLine = parseInt(m[3], 10); }
+      continue;
+    }
+    if (line.startsWith("diff") || line.startsWith("index") || line.startsWith("---") || line.startsWith("+++")) continue;
+    if (line.startsWith(" ")) {
+      result.push({ oldNum: oldLine++, newNum: newLine++, content: line.slice(1), type: "context" });
+    } else if (line.startsWith("-")) {
+      result.push({ oldNum: oldLine++, newNum: null, content: line.slice(1), type: "delete" });
+    } else if (line.startsWith("+")) {
+      result.push({ oldNum: null, newNum: newLine++, content: line.slice(1), type: "add" });
+    }
+  }
+  return result;
+}
+
+function LineRow({ num, content, type, isLeft }) {
+  let bg = "transparent";
+  let color = "inherit";
+  if (type === "delete") { bg = "rgba(244,67,54,0.2)"; color = "#ef9a9a"; }
+  else if (type === "add") { bg = "rgba(76,175,80,0.2)"; color = "#81c784"; }
+  else if (type === "blank" && !isLeft) { color = "transparent"; }
+  return (
+    <div style={{ display: "flex", background: bg, color, fontFamily: "inherit", fontSize: "inherit", lineHeight: 1.5 }}>
+      <div style={{
+        textAlign: "right", padding: "0 6px 0 8px", minWidth: 36, userSelect: "none",
+        color: num != null ? "var(--text-secondary)" : "transparent",
+        background: type === "blank" ? "transparent" : bg,
+      }}>
+        {num != null ? num : ""}
+      </div>
+      <div style={{ flex: 1, padding: "0 8px", whiteSpace: "pre-wrap", background: type === "blank" ? "transparent" : bg }}>
+        {content || "\u00A0"}
+      </div>
+    </div>
+  );
+}
+
+function UnifiedRow({ oldNum, newNum, content, type }) {
+  let bg = "transparent";
+  let color = "inherit";
+  if (type === "delete") { bg = "rgba(244,67,54,0.2)"; color = "#ef9a9a"; }
+  else if (type === "add") { bg = "rgba(76,175,80,0.2)"; color = "#81c784"; }
+  return (
+    <div style={{ display: "flex", background: bg, color, fontFamily: "inherit", fontSize: "inherit", lineHeight: 1.5 }}>
+      <div style={{ textAlign: "right", padding: "0 4px", minWidth: 36, userSelect: "none", color: oldNum != null ? "var(--text-secondary)" : "transparent" }}>
+        {oldNum != null ? oldNum : ""}
+      </div>
+      <div style={{ textAlign: "right", padding: "0 4px", minWidth: 36, userSelect: "none", color: newNum != null ? "var(--text-secondary)" : "transparent" }}>
+        {newNum != null ? newNum : ""}
+      </div>
+      <div style={{ flex: 1, padding: "0 8px", whiteSpace: "pre-wrap" }}>{content || "\u00A0"}</div>
+    </div>
+  );
+}
+
+export default function DiffViewer({ fileName, diffText, onClose }) {
+  const [viewType, setViewType] = useState("unified");
+  const leftRef = useRef(null);
+  const rightRef = useRef(null);
+  const syncing = useRef(false);
+
+  const parsed = splitDiff(diffText || "");
+  const unifiedLines = useMemo(() => parseUnifiedLines(diffText || ""), [diffText]);
+  const hasContent = parsed.oldLines.length > 0 || parsed.newLines.length > 0;
+
+  let totalAdded = 0, totalDeleted = 0;
+  for (const line of parsed.newLines) { if (line.type === "add") totalAdded++; }
+  for (const line of parsed.oldLines) { if (line.type === "delete") totalDeleted++; }
+
+  const handleSyncScroll = useCallback((source, target) => {
+    if (syncing.current) return;
+    syncing.current = true;
+    if (target.current) target.current.scrollTop = source.current.scrollTop;
+    requestAnimationFrame(() => { syncing.current = false; });
+  }, []);
 
   return (
     <Dialog open onClose={onClose} maxWidth="lg" fullWidth>
@@ -20,6 +140,10 @@ export default function DiffViewer({ fileName, diffText, onClose }) {
         <Typography component="div" variant="body2" sx={{ fontFamily: "monospace", flex: 1, fontWeight: 600 }}>
           {fileName}
         </Typography>
+        <ToggleButtonGroup size="small" value={viewType} exclusive onChange={(e, v) => v && setViewType(v)} sx={{ mr: 1 }}>
+          <ToggleButton value="unified" sx={{ fontSize: "0.65rem", py: 0.25 }}>Unified</ToggleButton>
+          <ToggleButton value="split" sx={{ fontSize: "0.65rem", py: 0.25 }}>Split</ToggleButton>
+        </ToggleButtonGroup>
         {totalAdded > 0 && (
           <Chip label={`+${totalAdded}`} size="small" sx={{ color: "#28a745", fontWeight: 700, fontSize: "0.7rem" }} variant="outlined" />
         )}
@@ -30,35 +154,39 @@ export default function DiffViewer({ fileName, diffText, onClose }) {
           <CloseIcon fontSize="small" />
         </IconButton>
       </DialogTitle>
-      <DialogContent sx={{ overflow: "auto", maxHeight: "70vh" }}>
+      <DialogContent sx={{ overflow: "auto", maxHeight: "70vh", p: 0 }}>
         {!hasContent && (
           <Typography variant="body2" sx={{ color: "text.secondary", textAlign: "center", py: 3 }}>
             No changes
           </Typography>
         )}
-        {hasContent && files.map((file, fi) => (
-          <Box key={file.newPath || file.oldPath} sx={{ mb: 2 }}>
-            {files.length > 1 && (
-              <Typography variant="caption" sx={{
-                fontWeight: 600, color: "text.secondary", display: "block", mb: 0.5,
-                px: 1.5, py: 0.75, bgcolor: "action.hover", borderRadius: 1,
-                fontFamily: "monospace", fontSize: "0.75rem",
-              }}>
-                {file.newPath || file.oldPath}
-              </Typography>
-            )}
-            <Diff
-              className="dv-diff"
-              diffType={file.type}
-              hunks={file.hunks}
-              viewType="unified"
-            >
-              {hunks => hunks.map(hunk => (
-                <Hunk key={hunk.content} hunk={hunk} />
-              ))}
-            </Diff>
+
+        {viewType === "unified" && hasContent && (
+          <Box sx={{ fontFamily: "monospace", fontSize: "0.75rem" }}>
+            {unifiedLines.map((line, i) => (
+              <UnifiedRow key={i} oldNum={line.oldNum} newNum={line.newNum} content={line.content} type={line.type} />
+            ))}
           </Box>
-        ))}
+        )}
+
+        {viewType === "split" && hasContent && (
+          <Box sx={{ display: "flex", fontFamily: "monospace", fontSize: "0.75rem" }}>
+            <Box ref={leftRef} sx={{ flex: 1, overflow: "auto", maxHeight: "65vh", borderRight: "1px solid", borderColor: "divider" }}
+              onScroll={() => handleSyncScroll(leftRef, rightRef)}
+            >
+              {parsed.oldLines.map((line, i) => (
+                <LineRow key={i} num={line.num} content={line.content} type={line.type} isLeft />
+              ))}
+            </Box>
+            <Box ref={rightRef} sx={{ flex: 1, overflow: "auto", maxHeight: "65vh" }}
+              onScroll={() => handleSyncScroll(rightRef, leftRef)}
+            >
+              {parsed.newLines.map((line, i) => (
+                <LineRow key={i} num={line.num} content={line.content} type={line.type} isLeft={false} />
+              ))}
+            </Box>
+          </Box>
+        )}
       </DialogContent>
     </Dialog>
   );
