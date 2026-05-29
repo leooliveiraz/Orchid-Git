@@ -6,6 +6,8 @@ import {
   Typography,
   Tooltip,
   Button,
+  TextField,
+  Alert,
 } from "@mui/material";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import SettingsIcon from "@mui/icons-material/Settings";
@@ -26,6 +28,7 @@ import NoteAddIcon from "@mui/icons-material/NoteAdd";
 import ChecklistIcon from '@mui/icons-material/Checklist';
 import ContentPasteIcon from "@mui/icons-material/ContentPaste";
 import AssignmentTurnedInIcon from '@mui/icons-material/AssignmentTurnedIn';
+import WatchLaterIcon from '@mui/icons-material/WatchLater';
 import React, { useContext, useState } from "react";
 import appIcon from "../../assets/icon.png";
 import { OrchidContext } from "../OrchidContext.jsx";
@@ -61,6 +64,9 @@ export default function AppMenu({ onToggleMenu }) {
   const [showInit, setShowInit] = useState(false);
   const [showCommit, setShowCommit] = useState(false);
   const [commitStaged, setCommitStaged] = useState([]);
+  const [showStashPush, setShowStashPush] = useState(false);
+  const [stashMessage, setStashMessage] = useState("");
+  const [stashPushing, setStashPushing] = useState(false);
   const [syncAction, setSyncAction] = useState(null);
   const [syncError, setSyncError] = useState(null);
   const [syncSuccess, setSyncSuccess] = useState(null);
@@ -107,6 +113,22 @@ export default function AppMenu({ onToggleMenu }) {
     } catch (e) {
       setSyncError(e.message || String(e));
     }
+  };
+
+  const handleStashPush = async () => {
+    if (!stashMessage.trim() || !window.api || !directory) return;
+    setStashPushing(true);
+    setSyncError(null);
+    try {
+      await window.api.stashPush(directory, stashMessage.trim());
+      setSyncSuccess("Stash created");
+      setShowStashPush(false);
+      setStashMessage("");
+      refresh();
+    } catch (e) {
+      setSyncError(e.message || String(e));
+    }
+    setStashPushing(false);
   };
 
   const handleOpenCommit = async () => {
@@ -213,6 +235,13 @@ export default function AppMenu({ onToggleMenu }) {
               </IconButton>
             </Tooltip>
           )}
+          {directory && (
+            <Tooltip title="Stash">
+              <IconButton color="inherit" onClick={() => setShowStashPush(true)} sx={{ mr: 0.5 }}>
+                <WatchLaterIcon />
+              </IconButton>
+            </Tooltip>
+          )}
           <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.4)", userSelect: "none", mx: 0.5 }}>|</Typography>
           {directory && (
             <Tooltip title="Refresh (F5)">
@@ -243,6 +272,32 @@ export default function AppMenu({ onToggleMenu }) {
       {showRebase && <RebaseDialog onClose={() => setShowRebase(false)} />}
       {showInit && <InitRepoDialog onClose={() => setShowInit(false)} />}
       {showCommit && <CommitDialog directory={directory} stagedFiles={commitStaged} onClose={(did) => { setShowCommit(false); if (did) refresh(); }} />}
+
+      {showStashPush && (
+        <Box sx={OVERLAY_STYLE}>
+          <Box sx={MODAL_STYLE}>
+            <Typography variant="h6" sx={{ mb: 1 }}>Create stash</Typography>
+            <TextField
+              autoFocus
+              fullWidth
+              label="Stash message"
+              placeholder="e.g. WIP: working on feature"
+              value={stashMessage}
+              onChange={e => setStashMessage(e.target.value)}
+              disabled={stashPushing}
+              onKeyDown={e => { if (e.key === "Enter") handleStashPush(); }}
+              sx={{ mb: 2 }}
+            />
+            {syncError && <Alert severity="error" sx={{ mb: 1 }}>{syncError}</Alert>}
+            <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 1 }}>
+              <Button onClick={() => { setShowStashPush(false); setStashMessage(""); setSyncError(null); }} disabled={stashPushing}>Cancel</Button>
+              <Button variant="contained" onClick={handleStashPush} disabled={!stashMessage.trim() || stashPushing}>
+                {stashPushing ? "Creating..." : "Create"}
+              </Button>
+            </Box>
+          </Box>
+        </Box>
+      )}
 
       {syncAction === "push" && (
         <Box sx={OVERLAY_STYLE}>
