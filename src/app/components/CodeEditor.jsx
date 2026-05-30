@@ -120,6 +120,8 @@ export default function CodeEditor({ value, onChange, filename, readOnly = false
               padding: "0 8px",
               background: highlightSet.has(i + 1) ? "rgba(76, 175, 80, 0.35)" : "transparent",
               whiteSpace: "pre",
+              fontFamily: "monospace",
+              fontSize: "13px",
             }}>
               {line || "\u00A0"}
             </div>

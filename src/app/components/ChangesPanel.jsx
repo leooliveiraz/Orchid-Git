@@ -228,12 +228,13 @@ export default function ChangesPanel({ directory }) {
 
   const handleViewBlame = async (file) => {
     try {
-      const [data, fileContent] = await Promise.all([
+      const [data, fileContent, diffLines] = await Promise.all([
         window.api.getBlame(directory, file.path),
         window.api.getFileContent(directory, file.path),
+        window.api.getDiffLines(directory, file.path).catch(() => []),
       ]);
       if (data && data.length) {
-        setBlameViewer({ fileName: file.path, blameData: data, fileContent: fileContent || "" });
+        setBlameViewer({ fileName: file.path, blameData: data, fileContent: fileContent || "", highlightLines: diffLines || [] });
       } else {
         setError("No blame data available");
       }
@@ -413,6 +414,7 @@ export default function ChangesPanel({ directory }) {
               readOnly
               height="55vh"
               blameAnnotations={blameViewer.blameData}
+              highlightLines={blameViewer.highlightLines}
             />
           </DialogContent>
         </Dialog>
