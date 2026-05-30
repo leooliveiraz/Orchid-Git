@@ -251,12 +251,14 @@ export default function Repository({ repositoryDirectory }) {
 
   return (
     <Box sx={{ p: 2, height: "100%", display: "flex", flexDirection: "column", overflow: "hidden" }}>
-      <Typography variant="h5" sx={{ fontWeight: 600 }}>
-        {repositoryDirectory.split(/[/\\]/).pop()}
-      </Typography>
-      <Typography variant="body2" sx={{ color: "text.secondary", mb: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-        {repositoryDirectory}
-      </Typography>
+      <Box sx={{ mb: 2, borderBottom: "1px solid", borderColor: "divider", pb: 1.5 }}>
+        <Typography variant="h6" sx={{ fontWeight: 400, letterSpacing: "-0.02em", color: "text.primary", lineHeight: 1.3 }}>
+          {repositoryDirectory.split(/[/\\]/).pop()}
+        </Typography>
+        <Typography variant="caption" sx={{ color: "text.secondary", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "block", mt: 0.25 }}>
+          {repositoryDirectory}
+        </Typography>
+      </Box>
 
       <Tabs value={tab} onChange={(e, v) => setTab(v)} sx={{ mb: 1 }}>
         <Tab label="Graph" value="graph" />

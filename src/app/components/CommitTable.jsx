@@ -1,10 +1,17 @@
 import React, { useMemo, useRef, useEffect, useState } from "react";
-import GitGraph from "./GitGraph.jsx";
+import GitGraph, { parseLabels } from "./GitGraph.jsx";
 import {
   TableContainer, Table, TableHead, TableBody, TableRow, TableCell, Paper,
   Menu, MenuItem, ListItemIcon, ListItemText, Dialog, DialogTitle, DialogContent, DialogActions, Button, Typography,
+  Chip, Tooltip, Box,
 } from "@mui/material";
 import ContentPasteIcon from "@mui/icons-material/ContentPaste";
+
+const COLORS = [
+  "#2D3AC9", "#B041FD", "#FD63CE", "#FD3C2F",
+  "#FC9E25", "#FAFF90", "#3B8C33", "#00BCD4",
+  "#FF5722", "#607D8B", "#795548", "#9C27B0",
+];
 
 export default function CommitTable({ commitList, connectionStyle, onCommitClick, highlightIndex, onCherryPick }) {
   const containerRef = useRef(null);
@@ -92,6 +99,9 @@ export default function CommitTable({ commitList, connectionStyle, onCommitClick
             <TableCell sx={{ fontWeight: 600, fontSize: "0.75rem", color: "text.secondary" }}>
               Graph
             </TableCell>
+            <TableCell sx={{ fontWeight: 600, fontSize: "0.75rem", color: "text.secondary", minWidth: 140 }}>
+              Branches
+            </TableCell>
             <TableCell sx={{ fontWeight: 600, fontSize: "0.75rem", color: "text.secondary" }}>
               Hash
             </TableCell>
@@ -132,6 +142,45 @@ export default function CommitTable({ commitList, connectionStyle, onCommitClick
               </TableCell>
               <TableCell sx={{ p: 0, verticalAlign: "middle" }}>
                 <GitGraph commit={commit} index={index} commitList={commitList} connectionStyle={connectionStyle} lanesAtRow={lanesAtRow} maxDepth={maxDepth} />
+              </TableCell>
+              <TableCell sx={{ py: 0, px: 1, verticalAlign: "middle" }}>
+                {(() => {
+                  const labels = parseLabels(commit?.decoration);
+                  const maxLabels = 3;
+                  const depth = Number.isFinite(commit?.depth) ? commit.depth : 0;
+                  const color = COLORS[depth % COLORS.length];
+                  return (
+                    <Box sx={{ display: "flex", gap: 0.5, flexWrap: "wrap", alignItems: "center" }}>
+                      {labels.slice(0, maxLabels).map((label, i) => (
+                        <Chip
+                          key={i}
+                          label={label.name}
+                          size="small"
+                          icon={label.hasRemote ? <Box component="span" sx={{ fontSize: "0.7rem", ml: 0.5, opacity: 0.85 }}>☁</Box> : undefined}
+                          sx={{
+                            backgroundColor: color,
+                            color: "#fff",
+                            fontWeight: label.type === "head" ? 700 : 400,
+                            height: 20,
+                            fontSize: "0.65rem",
+                            "& .MuiChip-label": { px: 0.75 },
+                            "& .MuiChip-icon": { ml: 0.5, mr: -0.25 },
+                          }}
+                        />
+                      ))}
+                      {labels.length > maxLabels && (
+                        <Tooltip title={labels.slice(maxLabels).map(l => l.name).join(", ")} arrow>
+                          <Chip
+                            label={`+${labels.length - maxLabels}`}
+                            size="small"
+                            variant="outlined"
+                            sx={{ height: 20, fontSize: "0.65rem" }}
+                          />
+                        </Tooltip>
+                      )}
+                    </Box>
+                  );
+                })()}
               </TableCell>
               <TableCell sx={{ fontFamily: "monospace", fontSize: "0.75rem", color: "text.secondary" }}>
                 {commit.commit}
