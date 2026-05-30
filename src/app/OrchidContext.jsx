@@ -17,4 +17,6 @@ export const OrchidContext = createContext({
   notRepo: null,
   setNotRepo: () => {},
   removeRecentDir: () => {},
+  tabSignal: null,
+  setTabSignal: () => {},
 });

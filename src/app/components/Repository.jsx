@@ -15,7 +15,7 @@ import {
 import { OrchidContext } from "../OrchidContext.jsx";
 
 export default function Repository({ repositoryDirectory }) {
-  const { refreshKey, setNotRepo } = useContext(OrchidContext);
+  const { refreshKey, setNotRepo, tabSignal, setTabSignal } = useContext(OrchidContext);
   const [commitList, setCommitList] = useState([]);
   const [tab, setTab] = useState("graph");
   const [commitFiles, setCommitFiles] = useState(null);
@@ -30,6 +30,13 @@ export default function Repository({ repositoryDirectory }) {
   const [highlightIndex, setHighlightIndex] = useState(null);
   const [success, setSuccess] = useState(null);
   const [error, setError] = useState(null);
+
+  useEffect(() => {
+    if (tabSignal) {
+      setTab(tabSignal);
+      setTabSignal(null);
+    }
+  }, [tabSignal, setTabSignal]);
 
   useEffect(() => {
     localStorage.setItem("orchid-connection-style", connectionStyle);

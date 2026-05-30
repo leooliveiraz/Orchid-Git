@@ -7,7 +7,7 @@ const CIRCLE_R = 5;
 
 const COLORS = [
   "#2D3AC9", "#B041FD", "#FD63CE", "#FD3C2F",
-  "#FC9E25", "#FAFF90", "#3B8C33", "#00BCD4",
+  "#fc8225", "#3B8C33", "#F9A825", "#00BCD4",
   "#FF5722", "#607D8B", "#795548", "#9C27B0",
 ];
 

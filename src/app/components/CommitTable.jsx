@@ -9,7 +9,7 @@ import ContentPasteIcon from "@mui/icons-material/ContentPaste";
 
 const COLORS = [
   "#2D3AC9", "#B041FD", "#FD63CE", "#FD3C2F",
-  "#FC9E25", "#FAFF90", "#3B8C33", "#00BCD4",
+  "#fc8225", "#3B8C33", "#F9A825", "#00BCD4",
   "#FF5722", "#607D8B", "#795548", "#9C27B0",
 ];
 
@@ -137,7 +137,7 @@ export default function CommitTable({ commitList, connectionStyle, onCommitClick
                 ...(index === headIdx && index !== highlightIndex ? { outline: "2px solid", outlineColor: "primary.main", outlineOffset: -1 } : {}),
               }}
             >
-              <TableCell sx={{ textAlign: "center", color: commit.merge ? "error.main" : "text.secondary", fontWeight: commit.merge ? 700 : 400, fontSize: "0.75rem" }}>
+              <TableCell sx={{ textAlign: "center", fontWeight: commit.merge ? 700 : 400, fontSize: "0.75rem", color: commit.merge ? (() => { const md = commit.merge?.parentIndex != null ? commitList[commit.merge.parentIndex]?.depth : null; return Number.isFinite(md) ? COLORS[md % COLORS.length] : "text.secondary"; })() : "text.secondary" }}>
                 {index}
               </TableCell>
               <TableCell sx={{ p: 0, verticalAlign: "middle" }}>

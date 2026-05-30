@@ -30,6 +30,7 @@ import ChecklistIcon from '@mui/icons-material/Checklist';
 import ContentPasteIcon from "@mui/icons-material/ContentPaste";
 import AssignmentTurnedInIcon from '@mui/icons-material/AssignmentTurnedIn';
 import WatchLaterIcon from '@mui/icons-material/WatchLater';
+import ClearIcon from "@mui/icons-material/Clear";
 import React, { useContext, useState } from "react";
 import appIcon from "../../assets/icon.png";
 import { OrchidContext } from "../OrchidContext.jsx";
@@ -55,7 +56,7 @@ const MODAL_STYLE = {
 };
 
 export default function AppMenu({ onToggleMenu }) {
-  const { directory, setDirectory, themeMode, toggleTheme, refresh } = useContext(OrchidContext);
+  const { directory, setDirectory, themeMode, toggleTheme, refresh, setTabSignal } = useContext(OrchidContext);
   const [showClone, setShowClone] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showNewBranch, setShowNewBranch] = useState(false);
@@ -145,7 +146,12 @@ export default function AppMenu({ onToggleMenu }) {
     if (!window.api || !directory) return;
     try {
       const status = await window.api.getStatus(directory);
-      setCommitStaged(status.filter(f => f.staged));
+      const staged = status.filter(f => f.staged);
+      if (staged.length === 0) {
+        setTabSignal("changes");
+        return;
+      }
+      setCommitStaged(staged);
       setShowCommit(true);
     } catch(e) {}
   };
@@ -269,6 +275,13 @@ export default function AppMenu({ onToggleMenu }) {
             <Tooltip title="Repository settings">
               <IconButton color="inherit" onClick={() => setShowSettings(true)} sx={{ mr: 0.5 }}>
                 <SettingsIcon />
+              </IconButton>
+            </Tooltip>
+          )}
+          {directory && (
+            <Tooltip title="Close repository">
+              <IconButton color="inherit" onClick={() => setDirectory("")}>
+                <ClearIcon />
               </IconButton>
             </Tooltip>
           )}

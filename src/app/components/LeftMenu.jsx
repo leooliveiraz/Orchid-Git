@@ -10,9 +10,10 @@ import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import AddIcon from "@mui/icons-material/Add";
 import MergeIcon from "@mui/icons-material/Merge";
 import DeleteIcon from "@mui/icons-material/Delete";
+import SwapVertIcon from "@mui/icons-material/SwapVert";
 import FiberManualRecordIcon from "@mui/icons-material/FiberManualRecord";
 import RadioButtonUncheckedIcon from "@mui/icons-material/RadioButtonUnchecked";
-import SwapVertIcon from "@mui/icons-material/SwapVert";
+import Tooltip from "@mui/material/Tooltip";
 import { OrchidContext } from "../OrchidContext.jsx";
 import MergeDialog from "./MergeDialog.jsx";
 
@@ -22,25 +23,31 @@ function Section({ title, count, children, defaultOpen, onAdd, onMerge, onSort }
       <AccordionSummary expandIcon={<ExpandMoreIcon sx={{ fontSize: 16, color: "text.secondary" }} />}>
         <Typography variant="body2" sx={{ fontWeight: 600, flex: 1 }}>{title}</Typography>
         {onAdd && (
-          <Box component="span" onClick={(e) => { e.stopPropagation(); onAdd(); }}
-            sx={{ mr: 0.5, p: 0.25, lineHeight: 1, cursor: "pointer", borderRadius: 1, "&:hover": { bgcolor: "action.hover" } }}
-          >
-            <AddIcon sx={{ fontSize: 16, color: "text.secondary", display: "block" }} />
-          </Box>
+          <Tooltip title={title === "Branches" ? "Create branch" : title === "Stash" ? "Create stash" : "Create"} arrow>
+            <Box component="span" onClick={(e) => { e.stopPropagation(); onAdd(); }}
+              sx={{ mr: 0.5, p: 0.25, lineHeight: 1, cursor: "pointer", borderRadius: 1, "&:hover": { bgcolor: "action.hover" } }}
+            >
+              <AddIcon sx={{ fontSize: 16, color: "text.secondary", display: "block" }} />
+            </Box>
+          </Tooltip>
         )}
         {onMerge && (
-          <Box component="span" onClick={(e) => { e.stopPropagation(); onMerge(); }}
-            sx={{ mr: 0.5, p: 0.25, lineHeight: 1, cursor: "pointer", borderRadius: 1, "&:hover": { bgcolor: "action.hover" } }}
-          >
-            <MergeIcon sx={{ fontSize: 16, color: "text.secondary", display: "block" }} />
-          </Box>
+          <Tooltip title="Merge branch into current" arrow>
+            <Box component="span" onClick={(e) => { e.stopPropagation(); onMerge(); }}
+              sx={{ mr: 0.5, p: 0.25, lineHeight: 1, cursor: "pointer", borderRadius: 1, "&:hover": { bgcolor: "action.hover" } }}
+            >
+              <MergeIcon sx={{ fontSize: 16, color: "text.secondary", display: "block" }} />
+            </Box>
+          </Tooltip>
         )}
         {onSort && (
-          <Box component="span" onClick={(e) => { e.stopPropagation(); onSort(); }}
-            sx={{ mr: 0.5, p: 0.25, lineHeight: 1, cursor: "pointer", borderRadius: 1, "&:hover": { bgcolor: "action.hover" } }}
-          >
-            <SwapVertIcon sx={{ fontSize: 16, color: "text.secondary", display: "block" }} />
-          </Box>
+          <Tooltip title="Sort recent directories" arrow>
+            <Box component="span" onClick={(e) => { e.stopPropagation(); onSort(); }}
+              sx={{ mr: 0.5, p: 0.25, lineHeight: 1, cursor: "pointer", borderRadius: 1, "&:hover": { bgcolor: "action.hover" } }}
+            >
+              <SwapVertIcon sx={{ fontSize: 16, color: "text.secondary", display: "block" }} />
+            </Box>
+          </Tooltip>
         )}
         <Box component="span" sx={{
           fontSize: "0.6875rem", color: "text.secondary",
@@ -367,6 +374,7 @@ export default function LeftMenu({ open }) {
             }).map(dir => (
               <Item key={dir} label={dir.split(/[/\\]/).pop()}
                 title={dir}
+                active={dir === directory}
                 onClick={() => {
                   if (skipRecentConfirm) { setDirectory(dir); }
                   else { setPendingRecentDir(dir); }

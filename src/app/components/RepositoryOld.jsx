@@ -9,7 +9,7 @@ const COLOR_LIST = [
   "#FD63CE",
   "#FD3C2F",
   "#FC9E25",
-  "#FAFF90",
+  "#FC9E25", "#F9A825", "#3B8C33", "#00BCD4",
   "#3B8C33",
 ];
 
