@@ -6,6 +6,7 @@ import NoteAddIcon from "@mui/icons-material/NoteAdd";
 import FolderIcon from "@mui/icons-material/Folder";
 import CloseIcon from "@mui/icons-material/Close";
 import SwapVertIcon from "@mui/icons-material/SwapVert";
+import appIcon from "../../assets/icon.png";
 import { OrchidContext } from "../OrchidContext.jsx";
 import CloneDialog from "./CloneDialog.jsx";
 import InitRepoDialog from "./InitRepoDialog.jsx";
@@ -30,6 +31,7 @@ export default function NoDirectory() {
         flex: 1, display: "flex", flexDirection: "column",
         alignItems: "center", justifyContent: "center", gap: 2, p: 4,
       }}>
+        <img src={appIcon} alt="Orchid" width="80" height="80" style={{ borderRadius: 12, marginBottom: 8 }} />
         <Typography variant="h3" sx={{ fontWeight: 300, color: "text.primary" }}>
           Orchid Git
         </Typography>

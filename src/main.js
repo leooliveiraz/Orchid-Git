@@ -38,11 +38,14 @@ const createWindow = () => {
   // and load the index.html of the app.
   mainWindow.loadURL(MAIN_WINDOW_WEBPACK_ENTRY);
 
-  // Open the DevTools.
-  mainWindow.webContents.openDevTools();
+  // Open the DevTools only in development mode.
+  if (!app.isPackaged) {
+    mainWindow.webContents.openDevTools();
+  }
   win = mainWindow;
 
   mainWindow.webContents.on("context-menu", (event, params) => {
+    if (app.isPackaged) return;
     const menu = new Menu();
     menu.append(new MenuItem({
       label: "Inspect Element",
