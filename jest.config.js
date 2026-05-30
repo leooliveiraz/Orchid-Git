@@ -1,5 +1,6 @@
 module.exports = {
   testEnvironment: "jsdom",
+  testPathIgnorePatterns: ["/node_modules/", "/test/e2e/"],
   transform: {
     "^.+\\.jsx?$": ["babel-jest", {
       presets: [

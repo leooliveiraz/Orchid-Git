@@ -91,3 +91,5 @@ typings/
 
 # Electron-Forge
 out/
+
+test/e2e/screenshots
