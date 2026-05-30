@@ -19,4 +19,6 @@ export const OrchidContext = createContext({
   removeRecentDir: () => {},
   tabSignal: null,
   setTabSignal: () => {},
+  syncWarning: null,
+  setSyncWarning: () => {},
 });

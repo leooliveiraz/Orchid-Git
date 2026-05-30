@@ -9,6 +9,7 @@ const isWindows = process.platform === "win32";
 function runGit(args, cwd) {
   const result = childProcess.spawnSync("git", args, { cwd, encoding: "utf8" });
   if (result.error) throw result.error;
+  if(result.status === 1 && result.stdout.toLowerCase().indexOf("conflict" > -1)) throw new Error(result.stderr || `git merge failed: merge conflict`); 
   if (result.status !== 0) throw new Error(result.stderr || `git command failed: ${args.join(" ")}`);
   return result.stdout;
 }

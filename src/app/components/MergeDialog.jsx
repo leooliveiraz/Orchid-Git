@@ -13,7 +13,7 @@ const STRATEGIES = [
 ];
 
 export default function MergeDialog({ onClose, defaultBranch }) {
-  const { directory, repoData, refresh } = useContext(OrchidContext);
+  const { directory, repoData, refresh, setSyncWarning, setTabSignal } = useContext(OrchidContext);
   const [source, setSource] = useState(defaultBranch || "");
   const [strategy, setStrategy] = useState("normal");
   const [merging, setMerging] = useState(false);
@@ -28,11 +28,20 @@ export default function MergeDialog({ onClose, defaultBranch }) {
     setError(null);
     setSuccess(null);
     try {
-      const output = await window.api.merge(directory, source, strategy);
+      await window.api.merge(directory, source, strategy);
       setSuccess(`Merged ${source} into ${repoData.currentBranch}`);
       refresh();
     } catch (e) {
-      setError(e.message || String(e));
+      const msg = (e.message || String(e)).toLowerCase();
+      console.log(msg)
+      if (msg.includes("conflict") || msg.includes("fix conflicts") || msg.includes("merge failed")) {
+        onClose();
+        refresh();
+        setSyncWarning({ title: "Merge Conflict", message: `Merge conflict when merging ${source}. Resolve conflicts in the Changes tab.` });
+        setTabSignal("changes");
+      } else {
+        setError(e.message || String(e));
+      }
     }
     setMerging(false);
   };

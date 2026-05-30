@@ -34,9 +34,9 @@ export default function Repository({ repositoryDirectory }) {
   useEffect(() => {
     if (tabSignal) {
       setTab(tabSignal);
-      setTabSignal(null);
+      setTimeout(() => { setTabSignal(null) }, 1000);
     }
-  }, [tabSignal, setTabSignal]);
+  }, [tabSignal]);
 
   useEffect(() => {
     localStorage.setItem("orchid-connection-style", connectionStyle);

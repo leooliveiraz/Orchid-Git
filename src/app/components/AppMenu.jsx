@@ -56,7 +56,7 @@ const MODAL_STYLE = {
 };
 
 export default function AppMenu({ onToggleMenu }) {
-  const { directory, setDirectory, themeMode, toggleTheme, refresh, setTabSignal } = useContext(OrchidContext);
+  const { directory, setDirectory, themeMode, toggleTheme, refresh, setTabSignal, syncWarning, setSyncWarning } = useContext(OrchidContext);
   const [showClone, setShowClone] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showNewBranch, setShowNewBranch] = useState(false);
@@ -357,6 +357,18 @@ export default function AppMenu({ onToggleMenu }) {
             <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 1 }}>
               <Button onClick={() => { setSyncAction(null); setSyncLoading(false); }} disabled={syncLoading}>Cancel</Button>
               <Button variant="contained" onClick={handlePull} disabled={syncLoading}>Pull</Button>
+            </Box>
+          </Box>
+        </Box>
+      )}
+
+      {syncWarning && (
+        <Box sx={OVERLAY_STYLE}>
+          <Box sx={MODAL_STYLE}>
+            <Typography variant="h6" sx={{ mb: 1, color: "warning.main" }}>{syncWarning.title || "Warning"}</Typography>
+            <Typography variant="body2" sx={{ mb: 2 }}>{syncWarning.message || ""}</Typography>
+            <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 1 }}>
+              <Button onClick={() => setSyncWarning(null)}>Dismiss</Button>
             </Box>
           </Box>
         </Box>
