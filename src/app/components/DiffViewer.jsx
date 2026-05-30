@@ -76,8 +76,8 @@ function parseUnifiedLines(diffText) {
 function LineRow({ num, content, type, isLeft }) {
   let bg = "transparent";
   let color = "inherit";
-  if (type === "delete") { bg = "rgba(244,67,54,0.2)"; color = "#ef9a9a"; }
-  else if (type === "add") { bg = "rgba(76,175,80,0.2)"; color = "#81c784"; }
+  if (type === "delete") { bg = "rgba(244,67,54,0.35)"; color = "var(--diff-del-text)"; }
+  else if (type === "add") { bg = "rgba(76,175,80,0.35)"; color = "var(--diff-add-text)"; }
   else if (type === "blank" && !isLeft) { color = "transparent"; }
   return (
     <div style={{ display: "flex", background: bg, color, fontFamily: "inherit", fontSize: "inherit", lineHeight: 1.5 }}>
@@ -98,8 +98,8 @@ function LineRow({ num, content, type, isLeft }) {
 function UnifiedRow({ oldNum, newNum, content, type }) {
   let bg = "transparent";
   let color = "inherit";
-  if (type === "delete") { bg = "rgba(244,67,54,0.2)"; color = "#ef9a9a"; }
-  else if (type === "add") { bg = "rgba(76,175,80,0.2)"; color = "#81c784"; }
+  if (type === "delete") { bg = "rgba(244,67,54,0.35)"; color = "var(--diff-del-text)"; }
+  else if (type === "add") { bg = "rgba(76,175,80,0.35)"; color = "var(--diff-add-text)"; }
   return (
     <div style={{ display: "flex", background: bg, color, fontFamily: "inherit", fontSize: "inherit", lineHeight: 1.5 }}>
       <div style={{ textAlign: "right", padding: "0 4px", minWidth: 36, userSelect: "none", color: oldNum != null ? "var(--text-secondary)" : "transparent" }}>

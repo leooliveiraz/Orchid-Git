@@ -47,8 +47,8 @@ export default function CodeEditor({ value, onChange, filename, readOnly = false
             {displayLines.map((_, i) => (
               <div key={i} style={{
                 padding: "0 6px 0 8px",
-                background: highlightSet.has(i + 1) ? "rgba(76, 175, 80, 0.35)" : "transparent",
-                color: highlightSet.has(i + 1) ? "#81c784" : "var(--text-secondary)",
+                background: highlightSet.has(i + 1) ? "rgba(76, 175, 80, 0.45)" : "transparent",
+                color: highlightSet.has(i + 1) ? "var(--diff-add-text)" : "var(--text-secondary)",
                 fontWeight: highlightSet.has(i + 1) ? 600 : 400,
               }}>
                 {i + 1}
@@ -63,7 +63,7 @@ export default function CodeEditor({ value, onChange, filename, readOnly = false
             {displayLines.map((line, i) => (
               <div key={i} style={{
                 padding: "0 8px",
-                background: highlightSet.has(i + 1) ? "rgba(76, 175, 80, 0.25)" : "transparent",
+                background: highlightSet.has(i + 1) ? "rgba(76, 175, 80, 0.35)" : "transparent",
                 whiteSpace: "pre",
                 fontFamily: "monospace",
                 fontSize: "13px",
@@ -100,8 +100,8 @@ export default function CodeEditor({ value, onChange, filename, readOnly = false
                 )}
                 <div style={{
                   textAlign: "right", padding: "0 6px 0 8px", minWidth: 32, userSelect: "none",
-                  background: highlightSet.has(i + 1) ? "rgba(76, 175, 80, 0.35)" : "transparent",
-                  color: highlightSet.has(i + 1) ? "#81c784" : "var(--text-secondary)",
+                  background: highlightSet.has(i + 1) ? "rgba(76, 175, 80, 0.45)" : "transparent",
+                  color: highlightSet.has(i + 1) ? "var(--diff-add-text)" : "var(--text-secondary)",
                   fontWeight: highlightSet.has(i + 1) ? 600 : 400,
                 }}>
                   {i + 1}
@@ -118,7 +118,7 @@ export default function CodeEditor({ value, onChange, filename, readOnly = false
           {displayLines.map((line, i) => (
             <div key={i} style={{
               padding: "0 8px",
-              background: highlightSet.has(i + 1) ? "rgba(76, 175, 80, 0.25)" : "transparent",
+              background: highlightSet.has(i + 1) ? "rgba(76, 175, 80, 0.35)" : "transparent",
               whiteSpace: "pre",
             }}>
               {line || "\u00A0"}
@@ -142,8 +142,8 @@ export default function CodeEditor({ value, onChange, filename, readOnly = false
       }}>
         {Array.from({ length: lineCount }, (_, i) => (
           <div key={i} style={{
-            background: highlightSet.has(i + 1) ? "rgba(76, 175, 80, 0.35)" : "transparent",
-            color: highlightSet.has(i + 1) ? "#81c784" : "inherit",
+            background: highlightSet.has(i + 1) ? "rgba(76, 175, 80, 0.45)" : "transparent",
+            color: highlightSet.has(i + 1) ? "var(--diff-add-text)" : "inherit",
             fontWeight: highlightSet.has(i + 1) ? 600 : 400,
           }}>
             {i + 1}
@@ -163,7 +163,7 @@ export default function CodeEditor({ value, onChange, filename, readOnly = false
       }}>
         {lines.map((line, i) => (
           <div key={i} style={{
-            background: highlightSet.has(i + 1) ? "rgba(76, 175, 80, 0.2)" : "transparent",
+            background: highlightSet.has(i + 1) ? "rgba(76, 175, 80, 0.3)" : "transparent",
             whiteSpace: "pre",
           }}>
             {line || "\u00A0"}

@@ -124,8 +124,8 @@ export default function FileViewDialog({ directory, fileName, commitHash, onClos
                 const oNum = isDel ? oldLine++ : (!isAdd ? oldLine++ : null);
                 const nNum = isAdd ? newLine++ : (!isDel ? newLine++ : null);
                 let bg = "transparent", color = "inherit";
-                if (isAdd) { bg = "rgba(76,175,80,0.2)"; color = "#81c784"; }
-                else if (isDel) { bg = "rgba(244,67,54,0.2)"; color = "#ef9a9a"; }
+                if (isAdd) { bg = "rgba(76,175,80,0.35)"; color = "var(--diff-add-text)"; }
+                else if (isDel) { bg = "rgba(244,67,54,0.35)"; color = "var(--diff-del-text)"; }
                 result.push(
                   <div key={result.length} style={{ display: "flex", background: bg, color }}>
                     <div style={{ textAlign: "right", padding: "0 4px", minWidth: 36, userSelect: "none", color: oNum != null ? "var(--text-secondary)" : "transparent" }}>

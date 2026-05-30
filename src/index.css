@@ -11,6 +11,8 @@
   --graph-lane: #d0d0d0;
   --scrollbar-bg: #f1f1f1;
   --scrollbar-thumb: #c1c1c1;
+  --diff-add-text: #2e7d32;
+  --diff-del-text: #c62828;
 }
 
 :root.dark {
@@ -26,6 +28,8 @@
   --graph-lane: #555;
   --scrollbar-bg: #2a2a2a;
   --scrollbar-thumb: #555;
+  --diff-add-text: #ffffff;
+  --diff-del-text: #ffffff;
 }
 
 html, body {
