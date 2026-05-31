@@ -16,15 +16,21 @@ export default function ConflictResolverDialog({ directory, conflictedFiles, onC
   const [blockIndex, setBlockIndex] = useState(0);
   const [applied, setApplied] = useState({});
   const [saving, setSaving] = useState(false);
-  const [syncScrollTop, setSyncScrollTop] = useState(0);
-  const syncing = useRef(false);
+  const scrollTargets = useRef([null, null, null]);
+  const syncingScroll = useRef(false);
 
-  const handleScroll = useCallback((scrollTop) => {
-    if (syncing.current) return;
-    syncing.current = true;
-    setSyncScrollTop(scrollTop);
-    requestAnimationFrame(() => { syncing.current = false; });
+  const handleScroll = useCallback((sourceIndex, scrollTop) => {
+    if (syncingScroll.current) return;
+    syncingScroll.current = true;
+    scrollTargets.current.forEach((el, i) => {
+      if (el && i !== sourceIndex) el.scrollTop = scrollTop;
+    });
+    syncingScroll.current = false;
   }, []);
+
+  const ourScrollRef = useCallback((el) => { scrollTargets.current[0] = el; }, []);
+  const mergedScrollRef = useCallback((el) => { scrollTargets.current[1] = el; }, []);
+  const theirScrollRef = useCallback((el) => { scrollTargets.current[2] = el; }, []);
 
   const currentFile = conflictedFiles?.[fileIndex];
 
@@ -234,7 +240,7 @@ export default function ConflictResolverDialog({ directory, conflictedFiles, onC
                   OUR
                 </Typography>
                 <Box sx={{ flex: 1, minHeight: 0 }}>
-                  <CodeEditor value={ourContent} filename={currentFile} readOnly height="100%" highlightRanges={ourHighlights} onScroll={handleScroll} externalScrollTop={syncScrollTop} />
+                  <CodeEditor value={ourContent} filename={currentFile} readOnly height="100%" highlightRanges={ourHighlights} onScroll={(st) => handleScroll(0, st)} scrollContainerRef={ourScrollRef} />
                 </Box>
               </Box>
 
@@ -244,7 +250,7 @@ export default function ConflictResolverDialog({ directory, conflictedFiles, onC
                   MERGED (editável)
                 </Typography>
                 <Box sx={{ flex: 1, minHeight: 0 }}>
-                  <CodeEditor value={mergedContent} filename={currentFile} readOnly={false} height="100%" highlightRanges={mergedHighlights} onChange={setMergedContent} onScroll={handleScroll} externalScrollTop={syncScrollTop} />
+                  <CodeEditor value={mergedContent} filename={currentFile} readOnly={false} height="100%" highlightRanges={mergedHighlights} onChange={setMergedContent} onScroll={(st) => handleScroll(1, st)} scrollContainerRef={mergedScrollRef} />
                 </Box>
               </Box>
 
@@ -254,7 +260,7 @@ export default function ConflictResolverDialog({ directory, conflictedFiles, onC
                   THEIR
                 </Typography>
                 <Box sx={{ flex: 1, minHeight: 0 }}>
-                  <CodeEditor value={theirContent} filename={currentFile} readOnly height="100%" highlightRanges={theirHighlights} onScroll={handleScroll} externalScrollTop={syncScrollTop} />
+                  <CodeEditor value={theirContent} filename={currentFile} readOnly height="100%" highlightRanges={theirHighlights} onScroll={(st) => handleScroll(2, st)} scrollContainerRef={theirScrollRef} />
                 </Box>
               </Box>
             </Box>

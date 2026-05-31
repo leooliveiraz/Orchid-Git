@@ -1,6 +1,6 @@
 import React, { useRef, useCallback, useEffect, useState, useMemo } from "react";
 
-export default function CodeEditor({ value, onChange, filename, readOnly = false, height = "60vh", highlightLines, blameAnnotations, highlightRanges, onScroll, externalScrollTop }) {
+export default function CodeEditor({ value, onChange, filename, readOnly = false, height = "60vh", highlightLines, blameAnnotations, highlightRanges, onScroll, scrollContainerRef }) {
   const textareaRef = useRef(null);
   const gutterRef = useRef(null);
   const containerRef = useRef(null);
@@ -15,13 +15,13 @@ export default function CodeEditor({ value, onChange, filename, readOnly = false
     setLineCount(Math.max(lineCountForReal, 1));
   }, [lineCountForReal]);
 
+  // Expose scroll container to parent
   useEffect(() => {
-    if (externalScrollTop != null && !syncing.current) {
-      if (containerRef.current) containerRef.current.scrollTop = externalScrollTop;
-      if (textareaRef.current) textareaRef.current.scrollTop = externalScrollTop;
-      if (gutterRef.current) gutterRef.current.scrollTop = externalScrollTop;
+    if (scrollContainerRef) {
+      const el = containerRef.current || textareaRef.current;
+      if (el) scrollContainerRef(el);
     }
-  }, [externalScrollTop]);
+  }, [scrollContainerRef]);
 
   const handleScroll = useCallback(() => {
     if (syncing.current) return;
@@ -67,7 +67,7 @@ export default function CodeEditor({ value, onChange, filename, readOnly = false
   if (readOnly) {
     if (!hasBlame) {
       return (
-        <div ref={containerRef} style={{
+        <div ref={containerRef} onScroll={handleScroll} style={{
           display: "flex", height,
           overflow: "auto", fontFamily: "monospace", fontSize: "13px", lineHeight: 1.5, padding: "8px 0"
         }}>
@@ -112,7 +112,7 @@ export default function CodeEditor({ value, onChange, filename, readOnly = false
     }
 
     return (
-      <div ref={containerRef} style={{ display: "flex", height, overflow: "auto", fontFamily: "monospace", fontSize: "13px", lineHeight: 1.5, padding: "8px 0" }}>
+      <div ref={containerRef} onScroll={handleScroll} style={{ display: "flex", height, overflow: "auto", fontFamily: "monospace", fontSize: "13px", lineHeight: 1.5, padding: "8px 0" }}>
         <div style={{ lineHeight: 1.5, flexShrink: 0, fontFamily: "monospace", fontSize: "13px" }}>
           {displayLines.map((_, i) => {
             const anno = blameMap[i + 1];
