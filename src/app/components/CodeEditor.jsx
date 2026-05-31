@@ -1,9 +1,12 @@
 import React, { useRef, useCallback, useEffect, useState, useMemo } from "react";
 
-export default function CodeEditor({ value, onChange, filename, readOnly = false, height = "60vh", highlightLines, blameAnnotations }) {
+export default function CodeEditor({ value, onChange, filename, readOnly = false, height = "60vh", highlightLines, blameAnnotations, highlightRanges, onScroll, externalScrollTop }) {
   const textareaRef = useRef(null);
   const gutterRef = useRef(null);
+  const containerRef = useRef(null);
   const [lineCount, setLineCount] = useState(1);
+  const internalScroll = useRef(0);
+  const syncing = useRef(false);
 
   const lines = (value || "").replace(/\r\n/g, "\n").replace(/\r/g, "\n").split("\n");
   const lineCountForReal = lines.length;
@@ -12,11 +15,27 @@ export default function CodeEditor({ value, onChange, filename, readOnly = false
     setLineCount(Math.max(lineCountForReal, 1));
   }, [lineCountForReal]);
 
-  const handleScroll = useCallback(() => {
-    if (gutterRef.current && textareaRef.current) {
-      gutterRef.current.scrollTop = textareaRef.current.scrollTop;
+  useEffect(() => {
+    if (externalScrollTop != null && !syncing.current) {
+      if (containerRef.current) containerRef.current.scrollTop = externalScrollTop;
+      if (textareaRef.current) textareaRef.current.scrollTop = externalScrollTop;
+      if (gutterRef.current) gutterRef.current.scrollTop = externalScrollTop;
     }
-  }, []);
+  }, [externalScrollTop]);
+
+  const handleScroll = useCallback(() => {
+    if (syncing.current) return;
+    syncing.current = true;
+    let st = 0;
+    if (containerRef.current) st = containerRef.current.scrollTop;
+    if (textareaRef.current) st = textareaRef.current.scrollTop;
+    if (gutterRef.current) gutterRef.current.scrollTop = st;
+    if (internalScroll.current !== st) {
+      internalScroll.current = st;
+      onScroll?.(st);
+    }
+    requestAnimationFrame(() => { syncing.current = false; });
+  }, [onScroll]);
 
   const highlightSet = new Set(highlightLines || []);
   const blameMap = useMemo(() => {
@@ -31,12 +50,27 @@ export default function CodeEditor({ value, onChange, filename, readOnly = false
 
   const hasBlame = blameAnnotations && blameAnnotations.length > 0;
 
+  const rangeBg = useMemo(() => {
+    const map = {};
+    if (highlightRanges) {
+      for (const r of highlightRanges) {
+        if (r.startLine != null && r.endLine != null) {
+          for (let i = r.startLine; i <= r.endLine; i++) map[i] = "rgba(255,193,7,0.2)";
+        }
+      }
+    }
+    return map;
+  }, [highlightRanges]);
+
   const displayLines = lines.length > 0 && lines[lines.length - 1] === "" ? lines.slice(0, -1) : lines;
 
   if (readOnly) {
     if (!hasBlame) {
       return (
-        <div style={{ display: "flex", height, overflow: "auto", fontFamily: "monospace", fontSize: "13px", lineHeight: 1.5, padding: "8px 0" }}>
+        <div ref={containerRef} style={{
+          display: "flex", height,
+          overflow: "auto", fontFamily: "monospace", fontSize: "13px", lineHeight: 1.5, padding: "8px 0"
+        }}>
           <div style={{
             textAlign: "right",
             userSelect: "none",
@@ -47,26 +81,27 @@ export default function CodeEditor({ value, onChange, filename, readOnly = false
             {displayLines.map((_, i) => (
               <div key={i} style={{
                 padding: "0 6px 0 8px",
-                background: highlightSet.has(i + 1) ? "rgba(76, 175, 80, 0.45)" : "transparent",
+                background: highlightSet.has(i + 1) ? "rgba(76, 175, 80, 0.45)" : (rangeBg[i + 1] || "transparent"),
                 color: highlightSet.has(i + 1) ? "var(--diff-add-text)" : "var(--text-secondary)",
                 fontWeight: highlightSet.has(i + 1) ? 600 : 400,
+                width: "100%",
               }}>
                 {i + 1}
               </div>
             ))}
           </div>
-          <div style={{
+          <div className="linha-texto" style={{
             flex: 1,
             lineHeight: 1.5,
-            minWidth: 0,
           }}>
             {displayLines.map((line, i) => (
               <div key={i} style={{
                 padding: "0 8px",
-                background: highlightSet.has(i + 1) ? "rgba(76, 175, 80, 0.35)" : "transparent",
+                background: highlightSet.has(i + 1) ? "rgba(76, 175, 80, 0.35)" : (rangeBg[i + 1] || "transparent"),
                 whiteSpace: "pre",
                 fontFamily: "monospace",
                 fontSize: "13px",
+                width: "100%",
               }}>
                 {line || "\u00A0"}
               </div>
@@ -77,7 +112,7 @@ export default function CodeEditor({ value, onChange, filename, readOnly = false
     }
 
     return (
-      <div style={{ display: "flex", height, overflow: "auto", fontFamily: "monospace", fontSize: "13px", lineHeight: 1.5, padding: "8px 0" }}>
+      <div ref={containerRef} style={{ display: "flex", height, overflow: "auto", fontFamily: "monospace", fontSize: "13px", lineHeight: 1.5, padding: "8px 0" }}>
         <div style={{ lineHeight: 1.5, flexShrink: 0, fontFamily: "monospace", fontSize: "13px" }}>
           {displayLines.map((_, i) => {
             const anno = blameMap[i + 1];
@@ -114,6 +149,7 @@ export default function CodeEditor({ value, onChange, filename, readOnly = false
           flex: 1,
           lineHeight: 1.5,
           minWidth: 0,
+          width: "100%",
         }}>
           {displayLines.map((line, i) => (
             <div key={i} style={{
@@ -122,6 +158,7 @@ export default function CodeEditor({ value, onChange, filename, readOnly = false
               whiteSpace: "pre",
               fontFamily: "monospace",
               fontSize: "13px",
+              width: "100%",
             }}>
               {line || "\u00A0"}
             </div>
@@ -167,6 +204,7 @@ export default function CodeEditor({ value, onChange, filename, readOnly = false
           <div key={i} style={{
             background: highlightSet.has(i + 1) ? "rgba(76, 175, 80, 0.3)" : "transparent",
             whiteSpace: "pre",
+            width: "100%",
           }}>
             {line || "\u00A0"}
           </div>

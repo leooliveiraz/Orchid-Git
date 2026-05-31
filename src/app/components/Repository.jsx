@@ -17,7 +17,7 @@ import { OrchidContext } from "../OrchidContext.jsx";
 export default function Repository({ repositoryDirectory }) {
   const { refreshKey, setNotRepo, tabSignal, setTabSignal } = useContext(OrchidContext);
   const [commitList, setCommitList] = useState([]);
-  const [tab, setTab] = useState("graph");
+  const [tab, setTab] = useState("changes");
   const [commitFiles, setCommitFiles] = useState(null);
   const [menuAnchor, setMenuAnchor] = useState(null);
   const [selectedCommit, setSelectedCommit] = useState(null);

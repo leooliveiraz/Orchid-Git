@@ -65,6 +65,7 @@ export default function Orchid() {
     if (directory) {
       localStorage.setItem("orchid-last-dir", directory);
       addRecentDir(directory);
+      window.api?.writeLastDirectory(directory);
     }
   }, [directory, addRecentDir]);
 

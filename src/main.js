@@ -9,7 +9,7 @@ const isWindows = process.platform === "win32";
 function runGit(args, cwd) {
   const result = childProcess.spawnSync("git", args, { cwd, encoding: "utf8" });
   if (result.error) throw result.error;
-  if(result.status === 1 && result.stdout.toLowerCase().indexOf("conflict" > -1)) throw new Error(result.stderr || `git merge failed: merge conflict`); 
+  if (result.status === 1 && result.stdout.toLowerCase().indexOf("conflict" > -1)) throw new Error(result.stderr || `git merge failed: merge conflict`);
   if (result.status !== 0) throw new Error(result.stderr || `git command failed: ${args.join(" ")}`);
   return result.stdout;
 }
@@ -27,7 +27,7 @@ const createWindow = () => {
     : path.join(app.getAppPath(), "src", "assets", "icon.png");
   // Create the browser window.
   const mainWindow = new BrowserWindow({
-    width:1280,
+    width: 1280,
     height: 800,
     icon: iconPath,
     webPreferences: {
@@ -91,7 +91,7 @@ ipcMain.on("test-send", function (event, arg) {
   console.log(event, arg);
 });
 
-ipcMain.on("open-dev-tools", function (event,arg){
+ipcMain.on("open-dev-tools", function (event, arg) {
   win.webContents.openDevTools();
 });
 
@@ -250,7 +250,7 @@ ipcMain.handle("discard-hunks", (event, directory, filePath, hunkIds) => {
   try {
     runGit(["apply", "-R", tmpFile], directory);
   } finally {
-    try { fs.unlinkSync(tmpFile); } catch(e) {}
+    try { fs.unlinkSync(tmpFile); } catch (e) { }
   }
   return "ok";
 });
@@ -302,8 +302,8 @@ ipcMain.handle("execute-rebase", (event, directory, targetBranch, todoList) => {
     env: { ...process.env, GIT_SEQUENCE_EDITOR: scriptFile },
   });
 
-  try { fs.unlinkSync(scriptFile); } catch(e) {}
-  try { fs.unlinkSync(todoFile); } catch(e) {}
+  try { fs.unlinkSync(scriptFile); } catch (e) { }
+  try { fs.unlinkSync(todoFile); } catch (e) { }
 
   if (result.error) throw result.error;
   if (result.status !== 0) throw new Error(result.stderr || "Rebase failed");
@@ -341,13 +341,13 @@ ipcMain.handle("delete-remote-branch", (event, directory, remoteName) => {
 
 ipcMain.handle("get-origin-url", (event, directory) => {
   try { return runGit(["remote", "get-url", "origin"], directory).trim(); }
-  catch(e) { return ""; }
+  catch (e) { return ""; }
 });
 
 ipcMain.handle("set-origin-url", (event, directory, url) => {
   try {
     runGit(["remote", "set-url", "origin", url], directory);
-  } catch(e) {
+  } catch (e) {
     runGit(["remote", "add", "origin", url], directory);
   }
   return "ok";
@@ -376,7 +376,7 @@ ipcMain.handle("get-repo-metrics-extra", (event, directory) => {
     const hourCounts = {};
     hours.forEach(h => { hourCounts[h] = (hourCounts[h] || 0) + 1; });
     hourData = Object.entries(hourCounts).sort((a, b) => a[0] - b[0]).map(([h, c]) => ({ hour: `${h}:00`, count: c }));
-  } catch(e) {}
+  } catch (e) { }
 
   try {
     const fileOutput = runGit(["log", "--diff-filter=AMDR", "--name-only", "--oneline", "-n", "2000"], directory);
@@ -389,7 +389,7 @@ ipcMain.handle("get-repo-metrics-extra", (event, directory) => {
       .sort((a, b) => b[1] - a[1])
       .slice(0, 15)
       .map(([path, count]) => ({ path, count }));
-  } catch(e) {}
+  } catch (e) { }
 
   try {
     const numstatOutput = runGit(["log", "--numstat", "--oneline", "-n", "2000"], directory);
@@ -401,7 +401,7 @@ ipcMain.handle("get-repo-metrics-extra", (event, directory) => {
         totalDeleted += parseInt(parts[1], 10);
       }
     });
-  } catch(e) {}
+  } catch (e) { }
 
   return { hourData, topFiles, totalAdded, totalDeleted };
 });
@@ -427,7 +427,7 @@ ipcMain.handle("get-conflict-blocks", (event, directory, filePath) => {
   const fs = require("fs");
   const fullPath = path.join(directory, filePath);
   if (!fs.existsSync(fullPath)) return { blocks: [] };
-  const content = fs.readFileSync(fullPath, "utf8");
+  const content = fs.readFileSync(fullPath, "utf8").replace(/\r\n/g, "\n").replace(/\r/g, "\n");
   const blocks = [];
   const regex = /<<<<<<< .+\n([\s\S]*?)=======\n([\s\S]*?)>>>>>>> .+\n?/g;
   let match;
@@ -578,7 +578,7 @@ ipcMain.handle("get-diff-lines", (event, directory, filePath) => {
       for (let i = 0; i < count; i++) lines.push(start + i);
     }
     return lines;
-  } catch(e) { return []; }
+  } catch (e) { return []; }
 });
 
 ipcMain.handle("get-staged-diff", (event, directory, filePath) => {
@@ -587,8 +587,8 @@ ipcMain.handle("get-staged-diff", (event, directory, filePath) => {
 
 ipcMain.handle("get-user-config", (event, directory) => {
   let name = "", email = "";
-  try { name = runGit(["config", "user.name"], directory).trim(); } catch {}
-  try { email = runGit(["config", "user.email"], directory).trim(); } catch {}
+  try { name = runGit(["config", "user.name"], directory).trim(); } catch { }
+  try { email = runGit(["config", "user.email"], directory).trim(); } catch { }
   return { name, email };
 });
 
@@ -627,4 +627,11 @@ ipcMain.handle("clone", async (event, url, destPath) => {
     throw new Error("Invalid repository URL");
   }
   return runGit(["clone", url, destPath]);
+});
+
+ipcMain.handle("write-last-directory", (event, dirPath) => {
+  if (app.isPackaged) return;
+  const fs = require("fs");
+  const target = ("lastDirectory.txt");
+  try { fs.writeFileSync(target, dirPath, "utf8"); } catch { }
 });
