@@ -16,6 +16,7 @@ export default function ConflictResolverDialog({ directory, conflictedFiles, onC
   const [blockIndex, setBlockIndex] = useState(0);
   const [applied, setApplied] = useState({});
   const [saving, setSaving] = useState(false);
+  const [confirmCancel, setConfirmCancel] = useState(false);
   const scrollTargets = useRef([null, null, null]);
   const syncingScroll = useRef(false);
 
@@ -106,6 +107,12 @@ export default function ConflictResolverDialog({ directory, conflictedFiles, onC
 
   const currentBlock = blocks[blockIndex] || null;
 
+  // Current block line number (for scrolling when navigating blocks)
+  const currentBlockLine = useMemo(() => {
+    if (blocks.length === 0 || blockLineRanges.length === 0) return null;
+    return blockLineRanges[Math.min(blockIndex, blockLineRanges.length - 1)]?.startLine || null;
+  }, [blocks, blockLineRanges, blockIndex]);
+
   const acceptOurs = () => {
     if (!currentBlock) return;
     const blockRanges = blockLineRanges;
@@ -155,6 +162,10 @@ export default function ConflictResolverDialog({ directory, conflictedFiles, onC
 
   const handleSave = async () => {
     if (!window.api || !currentFile) return;
+    if (blocks.length > 0 && Object.keys(applied).length < blocks.length) {
+      setError("Resolve all conflict blocks before advancing.");
+      return;
+    }
     setSaving(true);
     setError(null);
     try {
@@ -179,6 +190,14 @@ export default function ConflictResolverDialog({ directory, conflictedFiles, onC
     } else {
       onClose();
     }
+  };
+
+  const handleCancel = () => {
+    setMergedContent(fullContent);
+    setApplied({});
+    setBlockIndex(0);
+    setConfirmCancel(false);
+    setError(null);
   };
 
   // Build merged highlight ranges (show which blocks are resolved in merged view)
@@ -240,7 +259,7 @@ export default function ConflictResolverDialog({ directory, conflictedFiles, onC
                   OUR
                 </Typography>
                 <Box sx={{ flex: 1, minHeight: 0 }}>
-                  <CodeEditor value={ourContent} filename={currentFile} readOnly height="100%" highlightRanges={ourHighlights} onScroll={(st) => handleScroll(0, st)} scrollContainerRef={ourScrollRef} />
+                  <CodeEditor value={ourContent} filename={currentFile} readOnly height="100%" highlightRanges={ourHighlights} onScroll={(st) => handleScroll(0, st)} scrollContainerRef={ourScrollRef} scrollToLine={currentBlockLine} />
                 </Box>
               </Box>
 
@@ -250,7 +269,7 @@ export default function ConflictResolverDialog({ directory, conflictedFiles, onC
                   MERGED (editável)
                 </Typography>
                 <Box sx={{ flex: 1, minHeight: 0 }}>
-                  <CodeEditor value={mergedContent} filename={currentFile} readOnly={false} height="100%" highlightRanges={mergedHighlights} onChange={setMergedContent} onScroll={(st) => handleScroll(1, st)} scrollContainerRef={mergedScrollRef} />
+                  <CodeEditor value={mergedContent} filename={currentFile} readOnly={false} height="100%" highlightRanges={mergedHighlights} onChange={setMergedContent} onScroll={(st) => handleScroll(1, st)} scrollContainerRef={mergedScrollRef} scrollToLine={currentBlockLine} />
                 </Box>
               </Box>
 
@@ -260,7 +279,7 @@ export default function ConflictResolverDialog({ directory, conflictedFiles, onC
                   THEIR
                 </Typography>
                 <Box sx={{ flex: 1, minHeight: 0 }}>
-                  <CodeEditor value={theirContent} filename={currentFile} readOnly height="100%" highlightRanges={theirHighlights} onScroll={(st) => handleScroll(2, st)} scrollContainerRef={theirScrollRef} />
+                  <CodeEditor value={theirContent} filename={currentFile} readOnly height="100%" highlightRanges={theirHighlights} onScroll={(st) => handleScroll(2, st)} scrollContainerRef={theirScrollRef} scrollToLine={currentBlockLine} />
                 </Box>
               </Box>
             </Box>
@@ -290,10 +309,26 @@ export default function ConflictResolverDialog({ directory, conflictedFiles, onC
       </DialogContent>
       <DialogActions>
         <Button onClick={handleSkip}>Skip</Button>
+        <Button color="error" onClick={() => setConfirmCancel(true)}>Cancel changes</Button>
         <Button variant="contained" onClick={handleSave} disabled={!currentFile || saving}>
           {saving ? "Saving..." : "Resolve & advance"}
         </Button>
       </DialogActions>
+
+      {confirmCancel && (
+        <Box sx={{ position: "fixed", inset: 0, bgcolor: "rgba(0,0,0,0.4)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1400 }}>
+          <Box sx={{ bgcolor: "background.paper", borderRadius: 3, width: 360, maxWidth: "90vw", boxShadow: 24, p: 3 }}>
+            <Typography variant="h6" sx={{ mb: 1 }}>Cancel changes?</Typography>
+            <Typography variant="body2" sx={{ mb: 2, color: "text.secondary" }}>
+              This will undo all block resolutions for the current file and reset to the original conflict state.
+            </Typography>
+            <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 1 }}>
+              <Button onClick={() => setConfirmCancel(false)}>Keep editing</Button>
+              <Button color="error" variant="contained" onClick={handleCancel}>Cancel changes</Button>
+            </Box>
+          </Box>
+        </Box>
+      )}
     </Dialog>
   );
 }

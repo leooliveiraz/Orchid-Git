@@ -1,6 +1,6 @@
 import React, { useRef, useCallback, useEffect, useState, useMemo } from "react";
 
-export default function CodeEditor({ value, onChange, filename, readOnly = false, height = "60vh", highlightLines, blameAnnotations, highlightRanges, onScroll, scrollContainerRef }) {
+export default function CodeEditor({ value, onChange, filename, readOnly = false, height = "60vh", highlightLines, blameAnnotations, highlightRanges, onScroll, scrollContainerRef, scrollToLine }) {
   const textareaRef = useRef(null);
   const gutterRef = useRef(null);
   const containerRef = useRef(null);
@@ -22,6 +22,17 @@ export default function CodeEditor({ value, onChange, filename, readOnly = false
       if (el) scrollContainerRef(el);
     }
   }, [scrollContainerRef]);
+
+  // Scroll to specific line when scrollToLine changes
+  useEffect(() => {
+    if (scrollToLine != null) {
+      const el = containerRef.current || textareaRef.current;
+      if (el) {
+        const lineH = 19.5; // 13px * 1.5 lineHeight
+        el.scrollTop = (scrollToLine - 1) * lineH;
+      }
+    }
+  }, [scrollToLine]);
 
   const handleScroll = useCallback(() => {
     if (syncing.current) return;
