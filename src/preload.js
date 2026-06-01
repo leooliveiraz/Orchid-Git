@@ -16,6 +16,7 @@ contextBridge.exposeInMainWorld("api", {
   getCommitFileDiff: (directory, hash, filePath) => ipcRenderer.invoke("get-commit-file-diff", directory, hash, filePath),
   checkoutBranch: (directory, branch) => ipcRenderer.invoke("checkout-branch", directory, branch),
   checkoutRemoteBranch: (directory, branch) => ipcRenderer.invoke("checkout-remote-branch", directory, branch),
+  checkoutCommit: (directory, commitHash) => ipcRenderer.invoke("checkout-commit", directory, commitHash),
   isGitRepo: (directory) => ipcRenderer.invoke("is-git-repo", directory),
   createBranch: (directory, branchName) => ipcRenderer.invoke("create-branch", directory, branchName),
   initRepo: (directory) => ipcRenderer.invoke("init-repo", directory),
