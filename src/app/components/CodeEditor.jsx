@@ -1,6 +1,6 @@
 import React, { useRef, useCallback, useEffect, useState, useMemo } from "react";
 
-export default function CodeEditor({ value, onChange, filename, readOnly = false, height = "60vh", highlightLines, blameAnnotations, highlightRanges, onScroll, scrollContainerRef, scrollToLine }) {
+export default function CodeEditor({ value, onChange, filename, readOnly = false, height = "60vh", highlightLines, blameAnnotations, highlightRanges, highlightColor, onScroll, scrollContainerRef, scrollToLine }) {
   const textareaRef = useRef(null);
   const gutterRef = useRef(null);
   const containerRef = useRef(null);
@@ -63,15 +63,16 @@ export default function CodeEditor({ value, onChange, filename, readOnly = false
 
   const rangeBg = useMemo(() => {
     const map = {};
+    const color = highlightColor || "rgba(255,193,7,0.2)";
     if (highlightRanges) {
       for (const r of highlightRanges) {
         if (r.startLine != null && r.endLine != null) {
-          for (let i = r.startLine; i <= r.endLine; i++) map[i] = "rgba(255,193,7,0.2)";
+          for (let i = r.startLine; i <= r.endLine; i++) map[i] = color;
         }
       }
     }
     return map;
-  }, [highlightRanges]);
+  }, [highlightRanges, highlightColor]);
 
   const displayLines = lines.length > 0 && lines[lines.length - 1] === "" ? lines.slice(0, -1) : lines;
 

@@ -274,7 +274,7 @@ export default function ConflictResolverDialog({ directory, conflictedFiles, onC
                   )}
                 </Box>
                 <Box sx={{ flex: 1, minHeight: 0 }}>
-                  <CodeEditor value={ourContent} filename={currentFile} readOnly height="100%" highlightRanges={ourHighlights} onScroll={(st) => handleScroll(0, st)} scrollContainerRef={ourScrollRef} scrollToLine={currentBlockLine} />
+                  <CodeEditor value={ourContent} filename={currentFile} readOnly height="100%" highlightRanges={ourHighlights} highlightColor="rgba(33,150,243,0.25)" onScroll={(st) => handleScroll(0, st)} scrollContainerRef={ourScrollRef} scrollToLine={currentBlockLine} />
                 </Box>
               </Box>
 
@@ -306,7 +306,7 @@ export default function ConflictResolverDialog({ directory, conflictedFiles, onC
                   )}
                 </Box>
                 <Box sx={{ flex: 1, minHeight: 0 }}>
-                  <CodeEditor value={theirContent} filename={currentFile} readOnly height="100%" highlightRanges={theirHighlights} onScroll={(st) => handleScroll(2, st)} scrollContainerRef={theirScrollRef} scrollToLine={currentBlockLine} />
+                  <CodeEditor value={theirContent} filename={currentFile} readOnly height="100%" highlightRanges={theirHighlights} highlightColor="rgba(76,175,80,0.25)" onScroll={(st) => handleScroll(2, st)} scrollContainerRef={theirScrollRef} scrollToLine={currentBlockLine} />
                 </Box>
               </Box>
             </Box>
