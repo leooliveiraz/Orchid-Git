@@ -1,6 +1,6 @@
 import React, { useRef, useCallback, useEffect, useState, useMemo } from "react";
 
-export default function CodeEditor({ value, onChange, filename, readOnly = false, height = "60vh", highlightLines, blameAnnotations, highlightRanges, highlightColor, onScroll, scrollContainerRef, scrollToLine }) {
+export default function CodeEditor({ value, onChange, filename, readOnly = false, height = "60vh", highlightLines, blameAnnotations, highlightRanges, highlightColor, onScroll, scrollContainerRef, scrollToLine, onDoubleClick, gutterActions, actionLines }) {
   const textareaRef = useRef(null);
   const gutterRef = useRef(null);
   const containerRef = useRef(null);
@@ -39,7 +39,7 @@ export default function CodeEditor({ value, onChange, filename, readOnly = false
     syncing.current = true;
     let st = 0;
     if (containerRef.current) st = containerRef.current.scrollTop;
-    if (textareaRef.current) st = textareaRef.current.scrollTop;
+    if (textareaRef.current && textareaRef.current.scrollTop !== st) textareaRef.current.scrollTop = st;
     if (gutterRef.current) gutterRef.current.scrollTop = st;
     if (internalScroll.current !== st) {
       internalScroll.current = st;
@@ -63,10 +63,11 @@ export default function CodeEditor({ value, onChange, filename, readOnly = false
 
   const rangeBg = useMemo(() => {
     const map = {};
-    const color = highlightColor || "rgba(255,193,7,0.2)";
+    const defaultColor = highlightColor || "rgba(255,193,7,0.2)";
     if (highlightRanges) {
       for (const r of highlightRanges) {
         if (r.startLine != null && r.endLine != null) {
+          const color = r.color || defaultColor;
           for (let i = r.startLine; i <= r.endLine; i++) map[i] = color;
         }
       }
@@ -92,13 +93,17 @@ export default function CodeEditor({ value, onChange, filename, readOnly = false
           }}>
             {displayLines.map((_, i) => (
               <div key={i} style={{
+                display: "flex", alignItems: "center",
                 padding: "0 6px 0 8px",
                 background: highlightSet.has(i + 1) ? "rgba(76, 175, 80, 0.45)" : (rangeBg[i + 1] || "transparent"),
                 color: highlightSet.has(i + 1) ? "var(--diff-add-text)" : "var(--text-secondary)",
                 fontWeight: highlightSet.has(i + 1) ? 600 : 400,
                 width: "100%",
               }}>
-                {i + 1}
+                <span style={{ flex: 1, textAlign: "right" }}>{i + 1}</span>
+                {gutterActions?.[i + 1] && (
+                  <span style={{ marginLeft: 2, lineHeight: 1, display: "inline-flex", alignItems: "center" }}>{gutterActions[i + 1]}</span>
+                )}
               </div>
             ))}
           </div>
@@ -106,14 +111,15 @@ export default function CodeEditor({ value, onChange, filename, readOnly = false
             flex: 1,
             lineHeight: 1.5,
           }}>
-            {displayLines.map((line, i) => (
-              <div key={i} style={{
+                {displayLines.map((line, i) => (
+              <div key={i} onDoubleClick={() => onDoubleClick?.(i + 1)} style={{
                 padding: "0 8px",
                 background: highlightSet.has(i + 1) ? "rgba(76, 175, 80, 0.35)" : (rangeBg[i + 1] || "transparent"),
                 whiteSpace: "pre",
                 fontFamily: "monospace",
                 fontSize: "13px",
                 width: "100%",
+                cursor: onDoubleClick ? "pointer" : undefined,
               }}>
                 {line || "\u00A0"}
               </div>
@@ -164,13 +170,14 @@ export default function CodeEditor({ value, onChange, filename, readOnly = false
           width: "100%",
         }}>
           {displayLines.map((line, i) => (
-            <div key={i} style={{
+            <div key={i} onDoubleClick={() => onDoubleClick?.(i + 1)} style={{
               padding: "0 8px",
               background: highlightSet.has(i + 1) ? "rgba(76, 175, 80, 0.35)" : "transparent",
               whiteSpace: "pre",
               fontFamily: "monospace",
               fontSize: "13px",
               width: "100%",
+              cursor: onDoubleClick ? "pointer" : undefined,
             }}>
               {line || "\u00A0"}
             </div>
@@ -180,11 +187,20 @@ export default function CodeEditor({ value, onChange, filename, readOnly = false
     );
   }
 
+  const handleDblClick = useCallback((e) => {
+    const textarea = e.currentTarget;
+    const pos = textarea.selectionStart;
+    const text = textarea.value || "";
+    const lineNum = text.substring(0, pos).split("\n").length;
+    onDoubleClick?.(lineNum);
+  }, [onDoubleClick]);
+
+  const editorId = filename ? `ce-${filename.replace(/[^a-zA-Z0-9]/g, "-")}` : "ce";
+
   return (
-    <div style={{ display: "flex", height, overflow: "hidden", fontFamily: "monospace", fontSize: "13px", lineHeight: 1.5, position: "relative" }}>
-      <div ref={gutterRef} style={{
+    <div id={editorId} style={{ display: "flex", height, overflow: "hidden", fontFamily: "monospace", fontSize: "13px", lineHeight: 1.5 }}>
+      <div id={`${editorId}-gutter`} ref={gutterRef} style={{
         overflow: "hidden",
-        textAlign: "right",
         padding: "8px 6px 8px 8px",
         color: "var(--text-secondary)",
         userSelect: "none",
@@ -193,60 +209,63 @@ export default function CodeEditor({ value, onChange, filename, readOnly = false
       }}>
         {Array.from({ length: lineCount }, (_, i) => (
           <div key={i} style={{
+            display: "flex", alignItems: "center",
             background: highlightSet.has(i + 1) ? "rgba(76, 175, 80, 0.45)" : "transparent",
             color: highlightSet.has(i + 1) ? "var(--diff-add-text)" : "inherit",
             fontWeight: highlightSet.has(i + 1) ? 600 : 400,
           }}>
-            {i + 1}
+            <span style={{ flex: 1, textAlign: "right" }}>{i + 1}</span>
+            {gutterActions?.[i + 1] && (
+              <span style={{ marginLeft: 2, lineHeight: 1, display: "inline-flex", alignItems: "center" }}>{gutterActions[i + 1]}</span>
+            )}
           </div>
         ))}
       </div>
-      <div style={{
-        position: "absolute",
-        left: 0, right: 0, top: 0, bottom: 0,
-        pointerEvents: "none",
-        padding: "8px 8px 8px 4px",
-        lineHeight: 1.5,
-        fontFamily: "inherit",
-        fontSize: "inherit",
-        color: "transparent",
-        overflow: "hidden",
+      <div id={`${editorId}-scroll`} ref={containerRef} onScroll={handleScroll} style={{
+        flex: 1, overflow: "auto", position: "relative", minWidth: 0,
       }}>
-        {lines.map((line, i) => (
-          <div key={i} style={{
-            background: highlightSet.has(i + 1) ? "rgba(76, 175, 80, 0.3)" : "transparent",
-            whiteSpace: "pre",
-            width: "100%",
+        <div id={`${editorId}-lines`} style={{ padding: "8px 8px 8px 4px", lineHeight: 1.5, fontFamily: "inherit", fontSize: "inherit" }}>
+          {lines.map((line, i) => (
+            <div key={i} id={`${editorId}-L${i + 1}`} style={{
+              background: highlightSet.has(i + 1) ? "rgba(76, 175, 80, 0.35)" : (rangeBg[i + 1] || "transparent"),
+              whiteSpace: "pre", minHeight: "1.5em", color: "inherit",
+            }}>
+              {line || "\u00A0"}
+            </div>
+          ))}
+        </div>
+        {actionLines && (
+          <div id={`${editorId}-actions`} style={{
+            position: "absolute", left: 0, right: 0, top: 0, pointerEvents: "none",
+            padding: "8px 8px 8px 4px", lineHeight: 1.5, zIndex: 2,
           }}>
-            {line || "\u00A0"}
+            {lines.map((_, i) => (
+              <div key={i} id={`${editorId}-A${i + 1}`} style={{
+                pointerEvents: actionLines[i + 1] ? "auto" : "none",
+                minHeight: actionLines[i + 1] ? undefined : "1.5em",
+              }}>
+                {actionLines[i + 1] || null}
+              </div>
+            ))}
           </div>
-        ))}
+        )}
+        <textarea
+          id={`${editorId}-textarea`}
+          ref={textareaRef}
+          value={value || ""}
+          onChange={e => { onChange?.(e.target.value); setLineCount(e.target.value.split("\n").length); }}
+          onDoubleClick={handleDblClick}
+          readOnly={readOnly}
+          spellCheck={false}
+          style={{
+            position: "absolute", left: 0, top: 0, width: "100%", height: "100%",
+            fontFamily: "inherit", fontSize: "inherit", lineHeight: 1.5,
+            resize: "none", border: "none", outline: "none",
+            padding: "8px 8px 8px 4px", background: "transparent",
+            color: "inherit", tabSize: 2, overflow: "hidden", whiteSpace: "pre",
+          }}
+        />
       </div>
-      <textarea
-        ref={textareaRef}
-        value={value || ""}
-        onChange={e => { onChange?.(e.target.value); setLineCount(e.target.value.split("\n").length); }}
-        onScroll={handleScroll}
-        readOnly={readOnly}
-        spellCheck={false}
-        style={{
-          flex: 1,
-          height: "100%",
-          fontFamily: "inherit",
-          fontSize: "inherit",
-          lineHeight: 1.5,
-          resize: "none",
-          border: "none",
-          outline: "none",
-          padding: "8px 8px 8px 4px",
-          background: "transparent",
-          color: "inherit",
-          tabSize: 2,
-          overflow: "auto",
-          position: "relative",
-          whiteSpace: "pre",
-        }}
-      />
     </div>
   );
 }

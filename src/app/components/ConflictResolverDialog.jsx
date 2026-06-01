@@ -216,13 +216,104 @@ export default function ConflictResolverDialog({ directory, conflictedFiles, onC
       const b = blocks[i];
       const before = (fullContent || "").slice(0, b.start);
       const startLine = (before.match(/\n/g) || []).length + 1;
-      const content = applied[i] ? "" : b.ours;
-      const endLine = startLine + (content.match(/\n/g) || []).length;
-      if (!applied[i]) {
-        ranges.push({ startLine, endLine });
+      if (applied[i]) {
+        const replacement = applied[i];
+        if (replacement === b.ours + "\n" + b.theirs) {
+          const ourEnd = startLine + (b.ours.match(/\n/g) || []).length;
+          ranges.push({ startLine, endLine: ourEnd, color: "rgba(33,150,243,0.25)" });
+          const theirStart = ourEnd + 1;
+          const theirEnd = theirStart + (b.theirs.match(/\n/g) || []).length;
+          ranges.push({ startLine: theirStart, endLine: theirEnd, color: "rgba(76,175,80,0.25)" });
+        } else if (replacement === b.ours) {
+          const endLine = startLine + (replacement.match(/\n/g) || []).length;
+          ranges.push({ startLine, endLine, color: "rgba(33,150,243,0.25)" });
+        } else if (replacement === b.theirs) {
+          const endLine = startLine + (replacement.match(/\n/g) || []).length;
+          ranges.push({ startLine, endLine, color: "rgba(76,175,80,0.25)" });
+        } else {
+          const endLine = startLine + (replacement.match(/\n/g) || []).length;
+          ranges.push({ startLine, endLine });
+        }
+      } else {
+        const contentStart = startLine + 1;
+        const ourLines = (b.ours.match(/\n/g) || []).length;
+        const theirLines = (b.theirs.match(/\n/g) || []).length;
+        ranges.push({ startLine: contentStart, endLine: contentStart + ourLines, color: "rgba(33,150,243,0.25)" });
+        ranges.push({ startLine: contentStart + ourLines + 2, endLine: contentStart + ourLines + theirLines + 2, color: "rgba(76,175,80,0.25)" });
       }
     }
     return ranges;
+  }, [blocks, fullContent, applied]);
+
+  const findBlockByLine = (lineNum) => {
+    for (let i = 0; i < blocks.length; i++) {
+      const b = blocks[i];
+      const before = (fullContent || "").slice(0, b.start);
+      const markerLine = (before.match(/\n/g) || []).length + 1;
+      const ourLines = (b.ours.match(/\n/g) || []).length;
+      const theirLines = (b.theirs.match(/\n/g) || []).length;
+      if (applied[i]) {
+        const end = markerLine + (applied[i].match(/\n/g) || []).length;
+        if (lineNum >= markerLine && lineNum <= end) return { blockIdx: i, section: applied[i] === b.ours ? "ours" : applied[i] === b.theirs ? "theirs" : null };
+      } else {
+        const ourStart = markerLine + 1;
+        const ourEnd = ourStart + ourLines;
+        if (lineNum >= ourStart && lineNum <= ourEnd) return { blockIdx: i, section: "ours" };
+        const theirStart = ourEnd + 2;
+        const theirEnd = theirStart + theirLines;
+        if (lineNum >= theirStart && lineNum <= theirEnd) return { blockIdx: i, section: "theirs" };
+      }
+    }
+    return null;
+  };
+
+  const handleOurDblClick = useCallback((lineNum) => {
+    const found = findBlockByLine(lineNum);
+    if (found && !applied[found.blockIdx]) {
+      applyBlock(found.blockIdx, blocks[found.blockIdx].ours);
+    }
+  }, [blocks, fullContent, applied]);
+
+  const handleTheirDblClick = useCallback((lineNum) => {
+    const found = findBlockByLine(lineNum);
+    if (found && !applied[found.blockIdx]) {
+      applyBlock(found.blockIdx, blocks[found.blockIdx].theirs);
+    }
+  }, [blocks, fullContent, applied]);
+
+  const handleMergedDblClick = useCallback((lineNum) => {
+    const found = findBlockByLine(lineNum);
+    if (found && !applied[found.blockIdx]) {
+      if (found.section === "ours") applyBlock(found.blockIdx, blocks[found.blockIdx].ours);
+      else if (found.section === "theirs") applyBlock(found.blockIdx, blocks[found.blockIdx].theirs);
+    }
+  }, [blocks, fullContent, applied]);
+
+  const mergedActionLines = useMemo(() => {
+    const actions = {};
+    for (let i = 0; i < blocks.length; i++) {
+      const b = blocks[i];
+      if (applied[i]) continue;
+      const before = (fullContent || "").slice(0, b.start);
+      const markerLine = (before.match(/\n/g) || []).length + 1;
+      actions[markerLine] = (
+        <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, px: 1, minHeight: "1.5em", justifyContent: "flex-end" }}>
+          <Button size="small" variant="contained" color="error"
+            onClick={() => applyBlock(i, b.ours)}
+            sx={{ fontSize: "0.6rem", height: 20, py: 0, textTransform: "none", whiteSpace: "nowrap" }}
+          >Ours</Button>
+          <Button size="small" variant="contained" color="success"
+            onClick={() => applyBlock(i, b.theirs)}
+            sx={{ fontSize: "0.6rem", height: 20, py: 0, textTransform: "none", whiteSpace: "nowrap" }}
+          >Theirs</Button>
+          <Button size="small" variant="contained" color="warning"
+            onClick={() => applyBlock(i, b.ours + "\n" + b.theirs)}
+            sx={{ fontSize: "0.6rem", height: 20, py: 0, textTransform: "none", whiteSpace: "nowrap" }}
+          >Both</Button>
+        </Box>
+      );
+    }
+    return actions;
   }, [blocks, fullContent, applied]);
 
   return (
@@ -274,7 +365,7 @@ export default function ConflictResolverDialog({ directory, conflictedFiles, onC
                   )}
                 </Box>
                 <Box sx={{ flex: 1, minHeight: 0 }}>
-                  <CodeEditor value={ourContent} filename={currentFile} readOnly height="100%" highlightRanges={ourHighlights} highlightColor="rgba(33,150,243,0.25)" onScroll={(st) => handleScroll(0, st)} scrollContainerRef={ourScrollRef} scrollToLine={currentBlockLine} />
+                  <CodeEditor value={ourContent} filename={`our-${currentFile}`} readOnly height="100%" highlightRanges={ourHighlights} highlightColor="rgba(33,150,243,0.25)" onDoubleClick={handleOurDblClick} onScroll={(st) => handleScroll(0, st)} scrollContainerRef={ourScrollRef} scrollToLine={currentBlockLine} />
                 </Box>
               </Box>
 
@@ -290,7 +381,7 @@ export default function ConflictResolverDialog({ directory, conflictedFiles, onC
                   )}
                 </Box>
                 <Box sx={{ flex: 1, minHeight: 0 }}>
-              <CodeEditor value={mergedContent} filename={currentFile} readOnly={false} height="100%" highlightRanges={mergedHighlights} onChange={(v) => { setMergedContent(v); setUserEditedContent(v); }} onScroll={(st) => handleScroll(1, st)} scrollContainerRef={mergedScrollRef} scrollToLine={currentBlockLine} />
+              <CodeEditor value={mergedContent} filename={`merged-${currentFile}`} readOnly={false} height="100%" highlightRanges={mergedHighlights} onDoubleClick={handleMergedDblClick} actionLines={mergedActionLines} onChange={(v) => { setMergedContent(v); setUserEditedContent(v); }} onScroll={(st) => handleScroll(1, st)} scrollContainerRef={mergedScrollRef} scrollToLine={currentBlockLine} />
             </Box>
               </Box>
 
@@ -306,7 +397,7 @@ export default function ConflictResolverDialog({ directory, conflictedFiles, onC
                   )}
                 </Box>
                 <Box sx={{ flex: 1, minHeight: 0 }}>
-                  <CodeEditor value={theirContent} filename={currentFile} readOnly height="100%" highlightRanges={theirHighlights} highlightColor="rgba(76,175,80,0.25)" onScroll={(st) => handleScroll(2, st)} scrollContainerRef={theirScrollRef} scrollToLine={currentBlockLine} />
+                  <CodeEditor value={theirContent} filename={`their-${currentFile}`} readOnly height="100%" highlightRanges={theirHighlights} highlightColor="rgba(76,175,80,0.25)" onDoubleClick={handleTheirDblClick} onScroll={(st) => handleScroll(2, st)} scrollContainerRef={theirScrollRef} scrollToLine={currentBlockLine} />
                 </Box>
               </Box>
             </Box>
