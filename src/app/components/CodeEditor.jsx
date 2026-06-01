@@ -243,6 +243,7 @@ export default function CodeEditor({ value, onChange, filename, readOnly = false
           tabSize: 2,
           overflow: "auto",
           position: "relative",
+          whiteSpace: "pre",
         }}
       />
     </div>

@@ -17,6 +17,7 @@ export default function ConflictResolverDialog({ directory, conflictedFiles, onC
   const [applied, setApplied] = useState({});
   const [saving, setSaving] = useState(false);
   const [confirmCancel, setConfirmCancel] = useState(false);
+  const [userEditedContent, setUserEditedContent] = useState(null);
   const scrollTargets = useRef([null, null, null]);
   const syncingScroll = useRef(false);
 
@@ -132,12 +133,19 @@ export default function ConflictResolverDialog({ directory, conflictedFiles, onC
   };
 
   const applyBlock = (idx, replacement) => {
-    setMergedContent(prev => {
-      const b = blocks[idx];
-      if (!b) return prev;
-      return prev.slice(0, b.start) + replacement + prev.slice(b.end);
-    });
-    setApplied(prev => ({ ...prev, [idx]: true }));
+    const nextApplied = { ...applied, [idx]: replacement };
+    setApplied(nextApplied);
+    setUserEditedContent(null);
+    // Rebuild merged content from fullContent by applying all accepted blocks in reverse order
+    let result = fullContent;
+    const indices = Object.keys(nextApplied).map(Number).sort((a, b) => b - a);
+    for (const i of indices) {
+      const b = blocks[i];
+      if (!b) continue;
+      const r = nextApplied[i];
+      result = result.slice(0, b.start) + r + result.slice(b.end);
+    }
+    setMergedContent(result);
   };
 
   const handlePrevBlock = () => setBlockIndex(i => Math.max(0, i - 1));
@@ -195,6 +203,7 @@ export default function ConflictResolverDialog({ directory, conflictedFiles, onC
   const handleCancel = () => {
     setMergedContent(fullContent);
     setApplied({});
+    setUserEditedContent(null);
     setBlockIndex(0);
     setConfirmCancel(false);
     setError(null);
@@ -255,9 +264,15 @@ export default function ConflictResolverDialog({ directory, conflictedFiles, onC
             <Box sx={{ display: "flex", gap: 0.5, flex: 1, minHeight: 0, overflow: "hidden" }}>
               {/* OUR */}
               <Box sx={{ flex: 1, display: "flex", flexDirection: "column", border: "1px solid", borderColor: "divider", borderRadius: 1, overflow: "hidden" }}>
-                <Typography variant="caption" sx={{ px: 1, py: 0.25, bgcolor: "rgba(244,67,54,0.08)", fontWeight: 600, color: "error.main", flexShrink: 0 }}>
-                  OUR
-                </Typography>
+                <Box sx={{ display: "flex", alignItems: "center", px: 1, py: 0.25, bgcolor: "rgba(244,67,54,0.08)", flexShrink: 0 }}>
+                  <Typography variant="caption" sx={{ fontWeight: 600, color: "error.main", flex: 1 }}>OUR</Typography>
+                  {currentBlock && !applied[blockIndex] && (
+                    <Button size="small" variant="contained" color="error"
+                      onClick={acceptOurs} sx={{ fontSize: "0.6rem", minWidth: 40, height: 20, py: 0 }}>
+                      Accept
+                    </Button>
+                  )}
+                </Box>
                 <Box sx={{ flex: 1, minHeight: 0 }}>
                   <CodeEditor value={ourContent} filename={currentFile} readOnly height="100%" highlightRanges={ourHighlights} onScroll={(st) => handleScroll(0, st)} scrollContainerRef={ourScrollRef} scrollToLine={currentBlockLine} />
                 </Box>
@@ -265,19 +280,31 @@ export default function ConflictResolverDialog({ directory, conflictedFiles, onC
 
               {/* MERGED */}
               <Box sx={{ flex: 1, display: "flex", flexDirection: "column", border: "2px solid", borderColor: "primary.main", borderRadius: 1, overflow: "hidden" }}>
-                <Typography variant="caption" sx={{ px: 1, py: 0.25, bgcolor: "primary.main", fontWeight: 600, color: "#fff", flexShrink: 0 }}>
-                  MERGED (editável)
-                </Typography>
-                <Box sx={{ flex: 1, minHeight: 0 }}>
-                  <CodeEditor value={mergedContent} filename={currentFile} readOnly={false} height="100%" highlightRanges={mergedHighlights} onChange={setMergedContent} onScroll={(st) => handleScroll(1, st)} scrollContainerRef={mergedScrollRef} scrollToLine={currentBlockLine} />
+                <Box sx={{ display: "flex", alignItems: "center", px: 1, py: 0.25, bgcolor: "primary.main", flexShrink: 0 }}>
+                  <Typography variant="caption" sx={{ fontWeight: 600, color: "#fff", flex: 1 }}>MERGED (editável)</Typography>
+                  {currentBlock && !applied[blockIndex] && (
+                    <Button size="small" variant="contained" color="warning"
+                      onClick={acceptBoth} sx={{ fontSize: "0.6rem", minWidth: 40, height: 20, py: 0 }}>
+                      Both
+                    </Button>
+                  )}
                 </Box>
+                <Box sx={{ flex: 1, minHeight: 0 }}>
+              <CodeEditor value={mergedContent} filename={currentFile} readOnly={false} height="100%" highlightRanges={mergedHighlights} onChange={(v) => { setMergedContent(v); setUserEditedContent(v); }} onScroll={(st) => handleScroll(1, st)} scrollContainerRef={mergedScrollRef} scrollToLine={currentBlockLine} />
+            </Box>
               </Box>
 
               {/* THEIR */}
               <Box sx={{ flex: 1, display: "flex", flexDirection: "column", border: "1px solid", borderColor: "divider", borderRadius: 1, overflow: "hidden" }}>
-                <Typography variant="caption" sx={{ px: 1, py: 0.25, bgcolor: "rgba(76,175,80,0.08)", fontWeight: 600, color: "success.main", flexShrink: 0 }}>
-                  THEIR
-                </Typography>
+                <Box sx={{ display: "flex", alignItems: "center", px: 1, py: 0.25, bgcolor: "rgba(76,175,80,0.08)", flexShrink: 0 }}>
+                  <Typography variant="caption" sx={{ fontWeight: 600, color: "success.main", flex: 1 }}>THEIR</Typography>
+                  {currentBlock && !applied[blockIndex] && (
+                    <Button size="small" variant="contained" color="success"
+                      onClick={acceptTheirs} sx={{ fontSize: "0.6rem", minWidth: 40, height: 20, py: 0 }}>
+                      Accept
+                    </Button>
+                  )}
+                </Box>
                 <Box sx={{ flex: 1, minHeight: 0 }}>
                   <CodeEditor value={theirContent} filename={currentFile} readOnly height="100%" highlightRanges={theirHighlights} onScroll={(st) => handleScroll(2, st)} scrollContainerRef={theirScrollRef} scrollToLine={currentBlockLine} />
                 </Box>
