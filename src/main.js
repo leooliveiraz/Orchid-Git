@@ -146,6 +146,10 @@ ipcMain.handle("checkout-branch", (event, directory, branch) => {
   return runGit(["checkout", branch, "--"], directory);
 });
 
+ipcMain.handle("checkout-remote-branch", (event, directory, branch) => {
+  return runGit(["checkout", "--track", branch], directory);
+});
+
 ipcMain.handle("is-git-repo", (event, directory) => {
   try {
     runGit(["rev-parse", "--git-dir"], directory);
