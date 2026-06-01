@@ -289,6 +289,23 @@ export default function ConflictResolverDialog({ directory, conflictedFiles, onC
     }
   }, [blocks, fullContent, applied]);
 
+  const mergedButton = useCallback((i, b) => (
+    <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, px: 1, minHeight: "1.5em", justifyContent: "flex-end" }}>
+      <Button size="small" variant="contained" color="error"
+        onClick={() => applyBlock(i, b.ours)}
+        sx={{ fontSize: "0.6rem", height: 20, py: 0, textTransform: "none", whiteSpace: "nowrap" }}
+      >Ours</Button>
+      <Button size="small" variant="contained" color="success"
+        onClick={() => applyBlock(i, b.theirs)}
+        sx={{ fontSize: "0.6rem", height: 20, py: 0, textTransform: "none", whiteSpace: "nowrap" }}
+      >Theirs</Button>
+      <Button size="small" variant="contained" color="warning"
+        onClick={() => applyBlock(i, b.ours + "\n" + b.theirs)}
+        sx={{ fontSize: "0.6rem", height: 20, py: 0, textTransform: "none", whiteSpace: "nowrap" }}
+      >Both</Button>
+    </Box>
+  ), [applyBlock]);
+
   const mergedActionLines = useMemo(() => {
     const actions = {};
     for (let i = 0; i < blocks.length; i++) {
@@ -296,25 +313,10 @@ export default function ConflictResolverDialog({ directory, conflictedFiles, onC
       if (applied[i]) continue;
       const before = (fullContent || "").slice(0, b.start);
       const markerLine = (before.match(/\n/g) || []).length + 1;
-      actions[markerLine] = (
-        <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, px: 1, minHeight: "1.5em", justifyContent: "flex-end" }}>
-          <Button size="small" variant="contained" color="error"
-            onClick={() => applyBlock(i, b.ours)}
-            sx={{ fontSize: "0.6rem", height: 20, py: 0, textTransform: "none", whiteSpace: "nowrap" }}
-          >Ours</Button>
-          <Button size="small" variant="contained" color="success"
-            onClick={() => applyBlock(i, b.theirs)}
-            sx={{ fontSize: "0.6rem", height: 20, py: 0, textTransform: "none", whiteSpace: "nowrap" }}
-          >Theirs</Button>
-          <Button size="small" variant="contained" color="warning"
-            onClick={() => applyBlock(i, b.ours + "\n" + b.theirs)}
-            sx={{ fontSize: "0.6rem", height: 20, py: 0, textTransform: "none", whiteSpace: "nowrap" }}
-          >Both</Button>
-        </Box>
-      );
+      actions[markerLine] = mergedButton(i, b);
     }
     return actions;
-  }, [blocks, fullContent, applied]);
+  }, [blocks, fullContent, applied, mergedButton]);
 
   return (
     <Dialog open onClose={onClose} maxWidth="xl" fullWidth>

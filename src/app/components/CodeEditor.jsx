@@ -1,4 +1,5 @@
 import React, { useRef, useCallback, useEffect, useState, useMemo } from "react";
+import { Tooltip } from "@mui/material";
 
 export default function CodeEditor({ value, onChange, filename, readOnly = false, height = "60vh", highlightLines, blameAnnotations, highlightRanges, highlightColor, onScroll, scrollContainerRef, scrollToLine, onDoubleClick, gutterActions, actionLines }) {
   const textareaRef = useRef(null);
@@ -107,23 +108,44 @@ export default function CodeEditor({ value, onChange, filename, readOnly = false
               </div>
             ))}
           </div>
-          <div className="linha-texto" style={{
-            flex: 1,
-            lineHeight: 1.5,
-          }}>
-                {displayLines.map((line, i) => (
-              <div key={i} onDoubleClick={() => onDoubleClick?.(i + 1)} style={{
-                padding: "0 8px",
-                background: highlightSet.has(i + 1) ? "rgba(76, 175, 80, 0.35)" : (rangeBg[i + 1] || "transparent"),
-                whiteSpace: "pre",
-                fontFamily: "monospace",
-                fontSize: "13px",
-                width: "100%",
-                cursor: onDoubleClick ? "pointer" : undefined,
+          <div style={{ flex: 1, position: "relative", minWidth: 0 }}>
+            <div className="linha-texto" style={{ lineHeight: 1.5 }}>
+              {displayLines.map((line, i) => {
+                const lineEl = (
+                  <div key={i} onDoubleClick={() => onDoubleClick?.(i + 1)}
+                    style={{
+                    padding: "0 8px",
+                    background: highlightSet.has(i + 1) ? "rgba(76, 175, 80, 0.35)" : (rangeBg[i + 1] || "transparent"),
+                    whiteSpace: "pre",
+                    fontFamily: "monospace",
+                    fontSize: "13px",
+                    width: "100%",
+                    cursor: onDoubleClick ? "pointer" : undefined,
+                  }}>
+                    {line || "\u00A0"}
+                  </div>
+                );
+                return rangeBg[i + 1] ? (
+                  <Tooltip key={i} title="Double-click to accept" arrow placement="bottom">{lineEl}</Tooltip>
+                ) : lineEl;
+              })}
+            </div>
+            {actionLines && (
+              <div style={{
+                position: "absolute", left: 0, right: 0, top: 0, pointerEvents: "none",
+                lineHeight: 1.5, zIndex: 2,
               }}>
-                {line || "\u00A0"}
+                {displayLines.map((_, i) => (
+                  <div key={i} style={{
+                    pointerEvents: actionLines[i + 1] ? "auto" : "none",
+                    minHeight: actionLines[i + 1] ? undefined : "1.5em",
+                    padding: actionLines[i + 1] ? "0 8px" : undefined,
+                  }}>
+                    {actionLines[i + 1] || null}
+                  </div>
+                ))}
               </div>
-            ))}
+            )}
           </div>
         </div>
       );
@@ -168,20 +190,39 @@ export default function CodeEditor({ value, onChange, filename, readOnly = false
           lineHeight: 1.5,
           minWidth: 0,
           width: "100%",
+          position: "relative",
         }}>
-          {displayLines.map((line, i) => (
-            <div key={i} onDoubleClick={() => onDoubleClick?.(i + 1)} style={{
-              padding: "0 8px",
-              background: highlightSet.has(i + 1) ? "rgba(76, 175, 80, 0.35)" : "transparent",
-              whiteSpace: "pre",
-              fontFamily: "monospace",
-              fontSize: "13px",
-              width: "100%",
-              cursor: onDoubleClick ? "pointer" : undefined,
+          <div>
+            {displayLines.map((line, i) => (
+              <div key={i} onDoubleClick={() => onDoubleClick?.(i + 1)} style={{
+                padding: "0 8px",
+                background: highlightSet.has(i + 1) ? "rgba(76, 175, 80, 0.35)" : "transparent",
+                whiteSpace: "pre",
+                fontFamily: "monospace",
+                fontSize: "13px",
+                width: "100%",
+                cursor: onDoubleClick ? "pointer" : undefined,
+              }}>
+                {line || "\u00A0"}
+              </div>
+            ))}
+          </div>
+          {actionLines && (
+            <div style={{
+              position: "absolute", left: 0, right: 0, top: 0, pointerEvents: "none",
+              lineHeight: 1.5, zIndex: 2,
             }}>
-              {line || "\u00A0"}
+              {displayLines.map((_, i) => (
+                <div key={i} style={{
+                  pointerEvents: actionLines[i + 1] ? "auto" : "none",
+                  minHeight: actionLines[i + 1] ? undefined : "1.5em",
+                  padding: actionLines[i + 1] ? "0 8px" : undefined,
+                }}>
+                  {actionLines[i + 1] || null}
+                </div>
+              ))}
             </div>
-          ))}
+          )}
         </div>
       </div>
     );
@@ -226,7 +267,9 @@ export default function CodeEditor({ value, onChange, filename, readOnly = false
       }}>
         <div id={`${editorId}-lines`} style={{ padding: "8px 8px 8px 4px", lineHeight: 1.5, fontFamily: "inherit", fontSize: "inherit" }}>
           {lines.map((line, i) => (
-            <div key={i} id={`${editorId}-L${i + 1}`} style={{
+            <div key={i} id={`${editorId}-L${i + 1}`}
+              title={rangeBg[i + 1] ? "Double-click to accept" : undefined}
+              style={{
               background: highlightSet.has(i + 1) ? "rgba(76, 175, 80, 0.35)" : (rangeBg[i + 1] || "transparent"),
               whiteSpace: "pre", minHeight: "1.5em", color: "inherit",
             }}>
