@@ -6,6 +6,7 @@ import {
   Chip, Tooltip, Box,
 } from "@mui/material";
 import ContentPasteIcon from "@mui/icons-material/ContentPaste";
+import CheckIcon from "@mui/icons-material/Check";
 
 const COLORS = [
   "#2D3AC9", "#B041FD", "#FD63CE", "#FD3C2F",
@@ -13,7 +14,7 @@ const COLORS = [
   "#FF5722", "#607D8B", "#795548", "#9C27B0",
 ];
 
-export default function CommitTable({ commitList, connectionStyle, onCommitClick, highlightIndex, onCherryPick }) {
+export default function CommitTable({ commitList, connectionStyle, onCommitClick, highlightIndex, onCherryPick, onCheckout }) {
   const containerRef = useRef(null);
   const [contextMenu, setContextMenu] = useState(null);
   const [contextCommit, setContextCommit] = useState(null);
@@ -40,6 +41,13 @@ export default function CommitTable({ commitList, connectionStyle, onCommitClick
     setConfirmCherry(false);
     if (contextCommit && onCherryPick) {
       onCherryPick(contextCommit.commit);
+    }
+  };
+
+  const handleCheckout = () => {
+    setContextMenu(null);
+    if (contextCommit && onCheckout) {
+      onCheckout(contextCommit.commit);
     }
   };
 
@@ -222,6 +230,12 @@ export default function CommitTable({ commitList, connectionStyle, onCommitClick
         anchorReference="anchorPosition"
         anchorPosition={contextMenu}
       >
+        <MenuItem onClick={handleCheckout} dense>
+          <ListItemIcon sx={{ minWidth: 28 }}>
+            <CheckIcon fontSize="small" />
+          </ListItemIcon>
+          <ListItemText primary="Checkout this commit" primaryTypographyProps={{ variant: "body2" }} />
+        </MenuItem>
         <MenuItem onClick={handleCherryPick} dense>
           <ListItemIcon sx={{ minWidth: 28 }}>
             <ContentPasteIcon fontSize="small" />

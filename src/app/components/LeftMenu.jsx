@@ -153,6 +153,26 @@ export default function LeftMenu({ open }) {
     }
   }, [directory, repoData, refresh]);
 
+  const handleRemoteBranchDblClick = useCallback(async (branch) => {
+    if (!directory || !window.api) return;
+    const localName = branch.replace(/^[^/]+\//, "");
+    if (localName === repoData?.currentBranch) {
+      setMessageType("info");
+      setMessage("This branch is already selected");
+      return;
+    }
+    setMessage(null);
+    try {
+      await window.api.checkoutRemoteBranch(directory, branch);
+      setMessageType("success");
+      setMessage(`Switched to ${localName}`);
+      refresh();
+    } catch (e) {
+      setMessageType("error");
+      setMessage(e.message || String(e));
+    }
+  }, [directory, repoData, refresh]);
+
   const handleBranchClick = useCallback((branch) => {
     if (branch === repoData?.currentBranch) return;
     setMessageType("info");
@@ -402,7 +422,7 @@ export default function LeftMenu({ open }) {
 
             <Section title="Remote" count={repoData.remoteBranches?.length ?? 0} defaultOpen={false}>
               {repoData.remoteBranches?.map(b => (
-                <Item key={b} label={b} onClick={() => handleBranchClick(b)} onDoubleClick={() => handleBranchDblClick(b)} onDelete={() => confirmDeleteRemoteBranch(b)} />
+                <Item key={b} label={b} onClick={() => handleBranchClick(b)} onDoubleClick={() => handleRemoteBranchDblClick(b)} onDelete={() => confirmDeleteRemoteBranch(b)} />
               ))}
             </Section>
 

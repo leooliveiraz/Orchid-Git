@@ -227,6 +227,17 @@ export default function Repository({ repositoryDirectory }) {
     setTimeout(() => setHighlightIndex(null), 3000);
   };
 
+  const handleCheckout = async (commitHash) => {
+    if (!window.api) return;
+    try {
+      await window.api.checkoutCommit(repositoryDirectory, commitHash);
+      setSuccess("Checked out " + commitHash);
+      refresh();
+    } catch (e) {
+      setError(e.message || String(e));
+    }
+  };
+
   const handleCherryPick = async (commitHash) => {
     if (!window.api) return;
     try {
@@ -312,7 +323,7 @@ export default function Repository({ repositoryDirectory }) {
           )}
 
           <Box sx={{ flex: 1, minHeight: 0 }}>
-            <CommitTable commitList={commitList} connectionStyle={connectionStyle} onCommitClick={handleCommitClick} highlightIndex={highlightIndex} onCherryPick={handleCherryPick} />
+            <CommitTable commitList={commitList} connectionStyle={connectionStyle} onCommitClick={handleCommitClick} highlightIndex={highlightIndex} onCherryPick={handleCherryPick} onCheckout={handleCheckout} />
           </Box>
         </>
       )}
