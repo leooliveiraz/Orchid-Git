@@ -8,6 +8,7 @@ import {
   Button,
   TextField,
   Alert,
+  Snackbar,
   CircularProgress,
 } from "@mui/material";
 import RefreshIcon from "@mui/icons-material/Refresh";
@@ -362,17 +363,13 @@ export default function AppMenu({ onToggleMenu }) {
         </Box>
       )}
 
-      {syncWarning && (
-        <Box sx={OVERLAY_STYLE}>
-          <Box sx={MODAL_STYLE}>
-            <Typography variant="h6" sx={{ mb: 1, color: "warning.main" }}>{syncWarning.title || "Warning"}</Typography>
-            <Typography variant="body2" sx={{ mb: 2 }}>{syncWarning.message || ""}</Typography>
-            <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 1 }}>
-              <Button onClick={() => setSyncWarning(null)}>Dismiss</Button>
-            </Box>
-          </Box>
-        </Box>
-      )}
+      <Snackbar open={!!syncWarning} autoHideDuration={8000} onClose={() => setSyncWarning(null)}
+        anchorOrigin={{ vertical: "top", horizontal: "center" }}
+      >
+        <Alert severity="warning" onClose={() => setSyncWarning(null)} sx={{ width: "100%" }}>
+          {syncWarning?.title && <strong>{syncWarning.title}: </strong>}{syncWarning?.message || ""}
+        </Alert>
+      </Snackbar>
 
       {syncError && (
         <Box sx={OVERLAY_STYLE}>

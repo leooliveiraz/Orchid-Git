@@ -12,8 +12,10 @@ export default function ConflictResolverDialog({ directory, conflictedFiles, onC
   const [blockIndex, setBlockIndex] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [successMessage, setSuccessMessage] = useState(null);
   const [saving, setSaving] = useState(false);
   const [confirmCancel, setConfirmCancel] = useState(false);
+  const [confirmAbort, setConfirmAbort] = useState(false);
   const cardRefs = useRef({});
 
   const currentFile = conflictedFiles?.[fileIndex];
@@ -190,14 +192,20 @@ export default function ConflictResolverDialog({ directory, conflictedFiles, onC
       if (fileIndex < conflictedFiles.length - 1) {
         setFileIndex(i => i + 1);
       } else {
+        let isMergeCommit = false;
         try {
-          await window.api.continueMerge(directory);
+          const result = await window.api.continueMerge(directory);
+          isMergeCommit = result !== null;
+          onRefresh?.();
         } catch (e) {
-          setError("All conflicts resolved, but merge could not be finalized: " + (e.message || e));
+          setError("Merge could not be finalized: " + (e.message || e));
           return;
         }
-        onRefresh?.();
-        onClose();
+        if (isMergeCommit) {
+          setSuccessMessage("Merge commit concluído com sucesso!");
+        } else {
+          onClose();
+        }
       }
     } catch (e) {
       setError(e.message || String(e));
@@ -219,6 +227,18 @@ export default function ConflictResolverDialog({ directory, conflictedFiles, onC
     setConfirmCancel(false);
     setError(null);
     fetchBlocks();
+  };
+
+  const handleAbort = async () => {
+    if (!window.api) return;
+    setConfirmAbort(false);
+    try {
+      await window.api.abortMerge(directory);
+      setSuccessMessage("Merge aborted successfully!");
+      onRefresh?.();
+    } catch (e) {
+      setError("Could not abort merge: " + (e.message || e));
+    }
   };
 
   const renderNormalSegment = (seg, idx) => {
@@ -370,11 +390,28 @@ export default function ConflictResolverDialog({ directory, conflictedFiles, onC
       </DialogContent>
       <DialogActions>
         <Button onClick={handleSkip}>Skip</Button>
-        <Button color="error" onClick={() => setConfirmCancel(true)}>Cancel changes</Button>
+        <Button color="error" onClick={() => setConfirmAbort(true)}>Abort merge</Button>
+        <Button color="warning" onClick={() => setConfirmCancel(true)}>Cancel changes</Button>
         <Button variant="contained" onClick={handleSave} disabled={!currentFile || saving}>
           {saving ? "Saving..." : "Resolve & advance"}
         </Button>
       </DialogActions>
+
+      {confirmAbort && (
+        <Box sx={{ position: "fixed", inset: 0, bgcolor: "rgba(0,0,0,0.4)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1400 }}>
+          <Box sx={{ bgcolor: "background.paper", borderRadius: 3, width: 360, maxWidth: "90vw", boxShadow: 24, p: 3 }}>
+            <Typography variant="h6" sx={{ mb: 1 }}>Abort merge?</Typography>
+            <Typography variant="body2" sx={{ mb: 2, color: "text.secondary" }}>
+              This will abort the current merge/rebase and discard all conflict resolutions.
+            </Typography>
+            <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 1 }}>
+              <Button onClick={() => setConfirmAbort(false)}>Keep editing</Button>
+              <Button color="error" variant="contained" onClick={handleAbort}>Abort merge</Button>
+            </Box>
+          </Box>
+        </Box>
+      )}
+
       {confirmCancel && (
         <Box sx={{ position: "fixed", inset: 0, bgcolor: "rgba(0,0,0,0.4)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1400 }}>
           <Box sx={{ bgcolor: "background.paper", borderRadius: 3, width: 360, maxWidth: "90vw", boxShadow: 24, p: 3 }}>
@@ -395,6 +432,15 @@ export default function ConflictResolverDialog({ directory, conflictedFiles, onC
       >
         <Alert severity="error" onClose={() => setError(null)} sx={{ width: "100%" }}>
           {error}
+        </Alert>
+      </Snackbar>
+
+      <Snackbar open={!!successMessage} autoHideDuration={3000}
+        onClose={() => { setSuccessMessage(null); onClose(); }}
+        anchorOrigin={{ vertical: "top", horizontal: "center" }}
+      >
+        <Alert severity="success" sx={{ width: "100%" }}>
+          {successMessage}
         </Alert>
       </Snackbar>
     </Dialog>

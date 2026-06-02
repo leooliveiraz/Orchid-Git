@@ -163,6 +163,7 @@ export default function ChangesPanel({ directory }) {
   const [fileViewer, setFileViewer] = useState(null);
   const [success, setSuccess] = useState(null);
   const [discardConfirm, setDiscardConfirm] = useState(null);
+  const [confirmAbort, setConfirmAbort] = useState(false);
   const [viewMode, setViewMode] = useState(() => localStorage.getItem("orchid-changes-view") || "flat");
 
   const refresh = useCallback(async () => {
@@ -300,6 +301,18 @@ export default function ChangesPanel({ directory }) {
     }});
   };
 
+  const handleAbort = async () => {
+    if (!window.api) return;
+    setConfirmAbort(false);
+    try {
+      await window.api.abortMerge(directory);
+      setSuccess("Merge aborted successfully!");
+      refresh();
+    } catch (e) {
+      setError(e.message || String(e));
+    }
+  };
+
   const staged = statusList.filter(f => f.staged);
   const unstaged = statusList.filter(f => !f.staged);
   const conflicted = statusList.filter(f => f.conflicted).map(f => f.path);
@@ -322,9 +335,14 @@ export default function ChangesPanel({ directory }) {
         <Button size="small" variant="contained" onClick={() => setShowCommit(true)} disabled={staged.length === 0}>
           Commit
         </Button>
-        {unstaged.length > 0 && (
+        {unstaged.length > 0 && conflicted.length === 0 && (
           <Button size="small" variant="outlined" color="error" onClick={handleDiscardAll}>
             Discard All
+          </Button>
+        )}
+        {conflicted.length > 0 && (
+          <Button size="small" variant="outlined" color="error" onClick={() => setConfirmAbort(true)}>
+            Abort merge
           </Button>
         )}
         <IconButton size="small" onClick={() => handleViewMode(viewMode === "flat" ? "tree" : "flat")}
@@ -383,6 +401,8 @@ export default function ChangesPanel({ directory }) {
             <StatusFile key={"unstaged-" + f.path} file={f} onStage={handleStage} onUnstage={handleUnstage} onViewDiff={handleViewDiff} onViewBlame={handleViewBlame} onViewHistory={handleViewHistory} onViewFile={handleViewFile} />
           ))}
         </List>
+      )}
+        </>
       )}
 
       {showCommit && (
@@ -454,8 +474,21 @@ export default function ChangesPanel({ directory }) {
           </Box>
         </Box>
       )}
-      </>
-    )}
+
+      {confirmAbort && (
+        <Box sx={OVERLAY_STYLE}>
+          <Box sx={MODAL_STYLE}>
+            <Typography variant="h6" sx={{ mb: 1 }}>Abort merge?</Typography>
+            <Typography variant="body2" sx={{ mb: 2, color: "text.secondary" }}>
+              This will abort the current merge/rebase and discard all conflict resolutions.
+            </Typography>
+            <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 1 }}>
+              <Button onClick={() => setConfirmAbort(false)}>Keep editing</Button>
+              <Button color="error" variant="contained" onClick={handleAbort}>Abort merge</Button>
+            </Box>
+          </Box>
+        </Box>
+      )}
     </Box>
   );
 }
