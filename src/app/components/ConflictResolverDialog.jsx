@@ -1,188 +1,201 @@
-import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import {
   Dialog, DialogTitle, DialogContent, DialogActions,
-  Typography, Box, Button, IconButton, MenuItem, TextField, Chip, Alert,
+  Typography, Box, Button, IconButton, MenuItem, TextField, Chip, Alert, Divider, Snackbar,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
-import CodeEditor from "./CodeEditor.jsx";
 
 export default function ConflictResolverDialog({ directory, conflictedFiles, onClose, onRefresh }) {
   const [fileIndex, setFileIndex] = useState(0);
+  const [segments, setSegments] = useState([]);
   const [blocks, setBlocks] = useState([]);
-  const [fullContent, setFullContent] = useState("");
-  const [mergedContent, setMergedContent] = useState("");
+  const [blockIndex, setBlockIndex] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [blockIndex, setBlockIndex] = useState(0);
-  const [applied, setApplied] = useState({});
   const [saving, setSaving] = useState(false);
   const [confirmCancel, setConfirmCancel] = useState(false);
-  const [userEditedContent, setUserEditedContent] = useState(null);
-  const scrollTargets = useRef([null, null, null]);
-  const syncingScroll = useRef(false);
-
-  const handleScroll = useCallback((sourceIndex, scrollTop) => {
-    if (syncingScroll.current) return;
-    syncingScroll.current = true;
-    scrollTargets.current.forEach((el, i) => {
-      if (el && i !== sourceIndex) el.scrollTop = scrollTop;
-    });
-    syncingScroll.current = false;
-  }, []);
-
-  const ourScrollRef = useCallback((el) => { scrollTargets.current[0] = el; }, []);
-  const mergedScrollRef = useCallback((el) => { scrollTargets.current[1] = el; }, []);
-  const theirScrollRef = useCallback((el) => { scrollTargets.current[2] = el; }, []);
+  const cardRefs = useRef({});
 
   const currentFile = conflictedFiles?.[fileIndex];
+
+  const conflictIndices = useMemo(() => {
+    const indices = [];
+    segments.forEach((s, i) => { if (s.type === "conflict") indices.push(i); });
+    return indices;
+  }, [segments]);
+
+  const segmentsWithLines = useMemo(() => {
+    let line = 1;
+    return segments.map(seg => {
+      const startLine = line;
+      if (seg.type === "normal") {
+        const lines = seg.content.split("\n");
+        const count = seg.content ? (seg.content.endsWith("\n") ? lines.length - 1 : lines.length) : 0;
+        line += count;
+        return { ...seg, startLine, lineCount: count };
+      }
+      const ourLines = seg.ours ? (seg.ours.match(/\n/g) || []).length + 1 : 1;
+      const theirLines = seg.theirs ? (seg.theirs.match(/\n/g) || []).length + 1 : 1;
+      const count = ourLines + theirLines;
+      line += count;
+      return { ...seg, startLine, lineCount: count };
+    });
+  }, [segments]);
+
+  const parseIntoSegments = useCallback((fullContent, parsedBlocks) => {
+    const segs = [];
+    let lastEnd = 0;
+    for (const b of parsedBlocks) {
+      if (b.start > lastEnd) {
+        segs.push({ type: "normal", content: fullContent.slice(lastEnd, b.start) });
+      }
+      segs.push({
+        type: "conflict",
+        id: b.index,
+        ours: b.ours,
+        theirs: b.theirs,
+        start: b.start,
+        end: b.end,
+      });
+      lastEnd = b.end;
+    }
+    if (lastEnd < fullContent.length) {
+      segs.push({ type: "normal", content: fullContent.slice(lastEnd) });
+    }
+    return segs;
+  }, []);
 
   const fetchBlocks = useCallback(async () => {
     if (!directory || !window.api || !currentFile) return;
     setLoading(true);
     setError(null);
     setBlockIndex(0);
-    setApplied({});
     try {
       const data = await window.api.getConflictBlocks(directory, currentFile);
-      setBlocks(data.blocks || []);
-      setFullContent(data.fullContent || "");
-      const merged = data.fullContent || "";
-      setMergedContent(merged);
+      const parsedBlocks = data.blocks || [];
+      setBlocks(parsedBlocks);
+      if (parsedBlocks.length === 0) {
+        setSegments([{ type: "normal", content: data.fullContent || "" }]);
+      } else {
+        setSegments(parseIntoSegments(data.fullContent || "", parsedBlocks));
+      }
     } catch (e) {
       setError(e.message || String(e));
     }
     setLoading(false);
-  }, [directory, currentFile]);
+  }, [directory, currentFile, parseIntoSegments]);
 
   useEffect(() => { fetchBlocks(); }, [fetchBlocks]);
 
-  // Build OUR and THEIR content from blocks + fullContent
-  const ourContent = useMemo(() => {
-    if (!blocks.length || !fullContent) return fullContent;
-    let result = fullContent;
-    for (let i = blocks.length - 1; i >= 0; i--) {
-      const b = blocks[i];
-      result = result.slice(0, b.start) + b.ours + result.slice(b.end);
+  useEffect(() => {
+    if (conflictIndices.length === 0) {
+      setBlockIndex(0);
+    } else if (blockIndex >= conflictIndices.length) {
+      setBlockIndex(conflictIndices.length - 1);
     }
-    return result;
-  }, [blocks, fullContent]);
+  }, [conflictIndices.length, blockIndex]);
 
-  const theirContent = useMemo(() => {
-    if (!blocks.length || !fullContent) return fullContent;
-    let result = fullContent;
-    for (let i = blocks.length - 1; i >= 0; i--) {
-      const b = blocks[i];
-      result = result.slice(0, b.start) + b.theirs + result.slice(b.end);
+  const buildMergedContent = useCallback(() => {
+    return segments.map(s => {
+      if (s.type === "normal") return s.content;
+      return `<<<<<<< HEAD\n${s.ours}\n=======\n${s.theirs}\n>>>>>>> branch\n`;
+    }).join("");
+  }, [segments]);
+
+  const resolveBlock = useCallback((segmentIdx, choice) => {
+    setSegments(prev => {
+      const seg = prev[segmentIdx];
+      if (!seg || seg.type !== "conflict") return prev;
+      let content = "";
+      if (choice === "ours") content = seg.ours;
+      else if (choice === "theirs") content = seg.theirs;
+      else if (choice === "both") content = seg.ours + "\n" + seg.theirs;
+      const next = [...prev];
+      next[segmentIdx] = { type: "normal", content: content + "\n", _conflict: { ours: seg.ours, theirs: seg.theirs } };
+      return next;
+    });
+  }, []);
+
+  const handleNormalEdit = useCallback((idx, newContent) => {
+    setSegments(prev => {
+      const seg = prev[idx];
+      if (!seg || seg.type !== "normal") return prev;
+      const next = [...prev];
+      next[idx] = { ...seg, content: newContent };
+      return next;
+    });
+  }, []);
+
+  const handleOursEdit = useCallback((idx, text) => {
+    setSegments(prev => {
+      const seg = prev[idx];
+      if (!seg || seg.type !== "conflict") return prev;
+      const next = [...prev];
+      next[idx] = { ...seg, ours: text };
+      return next;
+    });
+  }, []);
+
+  const handleTheirsEdit = useCallback((idx, text) => {
+    setSegments(prev => {
+      const seg = prev[idx];
+      if (!seg || seg.type !== "conflict") return prev;
+      const next = [...prev];
+      next[idx] = { ...seg, theirs: text };
+      return next;
+    });
+  }, []);
+
+  const undoBlock = useCallback((idx) => {
+    setSegments(prev => {
+      const seg = prev[idx];
+      if (!seg || seg.type !== "normal" || !seg._conflict) return prev;
+      const next = [...prev];
+      next[idx] = {
+        type: "conflict",
+        id: Date.now(),
+        ours: seg._conflict.ours,
+        theirs: seg._conflict.theirs,
+      };
+      return next;
+    });
+  }, []);
+
+  useEffect(() => {
+    if (conflictIndices.length === 0) return;
+    const targetIdx = conflictIndices[Math.min(blockIndex, conflictIndices.length - 1)];
+    const seg = segments[targetIdx];
+    if (seg?.type === "conflict" && cardRefs.current[seg.id]) {
+      cardRefs.current[seg.id].scrollIntoView({ behavior: "smooth", block: "center" });
     }
-    return result;
-  }, [blocks, fullContent]);
-
-  // Compute line ranges for highlights in OUR/THEIR
-  const blockLineRanges = useMemo(() => {
-    const ranges = [];
-    for (const b of blocks) {
-      const beforeOurs = (fullContent || "").slice(0, b.start);
-      const startLine = (beforeOurs.match(/\n/g) || []).length + 1;
-      const content = b.ours;
-      const endLine = startLine + (content.match(/\n/g) || []).length;
-      ranges.push({ startLine, endLine, ours: b.ours, theirs: b.theirs });
-    }
-    return ranges;
-  }, [blocks, fullContent]);
-
-  // Highlight ranges for OUR editor
-  const ourHighlights = useMemo(() => blockLineRanges.map(r => ({ startLine: r.startLine, endLine: r.endLine })), [blockLineRanges]);
-
-  // For THEIR editor, same ranges since content has same structure length
-  const theirHighlights = useMemo(() => {
-    const ranges = [];
-    for (const b of blocks) {
-      const before = (fullContent || "").slice(0, b.start);
-      const startLine = (before.match(/\n/g) || []).length + 1;
-      const content = b.theirs;
-      const endLine = startLine + (content.match(/\n/g) || []).length;
-      ranges.push({ startLine, endLine });
-    }
-    return ranges;
-  }, [blocks, fullContent]);
-
-  const currentBlock = blocks[blockIndex] || null;
-
-  // Current block line number (for scrolling when navigating blocks)
-  const currentBlockLine = useMemo(() => {
-    if (blocks.length === 0 || blockLineRanges.length === 0) return null;
-    return blockLineRanges[Math.min(blockIndex, blockLineRanges.length - 1)]?.startLine || null;
-  }, [blocks, blockLineRanges, blockIndex]);
-
-  const acceptOurs = () => {
-    if (!currentBlock) return;
-    const blockRanges = blockLineRanges;
-    const range = blockRanges[blockIndex];
-    if (!range) return;
-    applyBlock(blockIndex, range.ours);
-  };
-
-  const acceptTheirs = () => {
-    if (!currentBlock) return;
-    applyBlock(blockIndex, currentBlock.theirs);
-  };
-
-  const acceptBoth = () => {
-    if (!currentBlock) return;
-    applyBlock(blockIndex, currentBlock.ours + "\n" + currentBlock.theirs);
-  };
-
-  const applyBlock = (idx, replacement) => {
-    const nextApplied = { ...applied, [idx]: replacement };
-    setApplied(nextApplied);
-    setUserEditedContent(null);
-    // Rebuild merged content from fullContent by applying all accepted blocks in reverse order
-    let result = fullContent;
-    const indices = Object.keys(nextApplied).map(Number).sort((a, b) => b - a);
-    for (const i of indices) {
-      const b = blocks[i];
-      if (!b) continue;
-      const r = nextApplied[i];
-      result = result.slice(0, b.start) + r + result.slice(b.end);
-    }
-    setMergedContent(result);
-  };
+  }, [blockIndex, conflictIndices, segments]);
 
   const handlePrevBlock = () => setBlockIndex(i => Math.max(0, i - 1));
-  const handleNextBlock = () => setBlockIndex(i => Math.min(blocks.length - 1, i + 1));
-
-  // Change current block to match cursor/selection
-  const handleMergedScroll = (lineNum) => {
-    if (!blocks.length) return;
-    // Find which block contains this line
-    const lines = mergedContent.split("\n");
-    let charCount = 0;
-    for (let i = 0; i < blocks.length; i++) {
-      const b = blocks[i];
-      const blockStartLine = (mergedContent.slice(0, b.start).match(/\n/g) || []).length + 1;
-      const blockEndLine = blockStartLine + ((b.ours.match(/\n/g) || []).length);
-      if (lineNum >= blockStartLine && lineNum <= blockEndLine) {
-        setBlockIndex(i);
-        return;
-      }
-    }
-  };
+  const handleNextBlock = () => setBlockIndex(i => Math.min(conflictIndices.length - 1, i + 1));
 
   const handleSave = async () => {
     if (!window.api || !currentFile) return;
-    if (blocks.length > 0 && Object.keys(applied).length < blocks.length) {
-      setError("Resolve all conflict blocks before advancing.");
+
+    if (segments.some(s => s.type === "conflict")) {
+      setError("Resolve all conflict blocks before saving.");
       return;
     }
+
     setSaving(true);
     setError(null);
     try {
+      const mergedContent = buildMergedContent();
       await window.api.saveFileContent(directory, currentFile, mergedContent);
       await window.api.resolveFile(directory, currentFile);
-      // Move to next file or close
       if (fileIndex < conflictedFiles.length - 1) {
         setFileIndex(i => i + 1);
       } else {
+        try {
+          await window.api.continueMerge(directory);
+        } catch (e) {
+          setError("All conflicts resolved, but merge could not be finalized: " + (e.message || e));
+          return;
+        }
         onRefresh?.();
         onClose();
       }
@@ -201,230 +214,158 @@ export default function ConflictResolverDialog({ directory, conflictedFiles, onC
   };
 
   const handleCancel = () => {
-    setMergedContent(fullContent);
-    setApplied({});
-    setUserEditedContent(null);
-    setBlockIndex(0);
+    setSegments([]);
+    setBlocks([]);
     setConfirmCancel(false);
     setError(null);
+    fetchBlocks();
   };
 
-  // Build merged highlight ranges (show which blocks are resolved in merged view)
-  const mergedHighlights = useMemo(() => {
-    const ranges = [];
-    for (let i = 0; i < blocks.length; i++) {
-      const b = blocks[i];
-      const before = (fullContent || "").slice(0, b.start);
-      const startLine = (before.match(/\n/g) || []).length + 1;
-      if (applied[i]) {
-        const replacement = applied[i];
-        if (replacement === b.ours + "\n" + b.theirs) {
-          const ourEnd = startLine + (b.ours.match(/\n/g) || []).length;
-          ranges.push({ startLine, endLine: ourEnd, color: "rgba(33,150,243,0.25)" });
-          const theirStart = ourEnd + 1;
-          const theirEnd = theirStart + (b.theirs.match(/\n/g) || []).length;
-          ranges.push({ startLine: theirStart, endLine: theirEnd, color: "rgba(76,175,80,0.25)" });
-        } else if (replacement === b.ours) {
-          const endLine = startLine + (replacement.match(/\n/g) || []).length;
-          ranges.push({ startLine, endLine, color: "rgba(33,150,243,0.25)" });
-        } else if (replacement === b.theirs) {
-          const endLine = startLine + (replacement.match(/\n/g) || []).length;
-          ranges.push({ startLine, endLine, color: "rgba(76,175,80,0.25)" });
-        } else {
-          const endLine = startLine + (replacement.match(/\n/g) || []).length;
-          ranges.push({ startLine, endLine });
-        }
-      } else {
-        const contentStart = startLine + 1;
-        const ourLines = (b.ours.match(/\n/g) || []).length;
-        const theirLines = (b.theirs.match(/\n/g) || []).length;
-        ranges.push({ startLine: contentStart, endLine: contentStart + ourLines, color: "rgba(33,150,243,0.25)" });
-        ranges.push({ startLine: contentStart + ourLines + 2, endLine: contentStart + ourLines + theirLines + 2, color: "rgba(76,175,80,0.25)" });
-      }
-    }
-    return ranges;
-  }, [blocks, fullContent, applied]);
-
-  const findBlockByLine = (lineNum) => {
-    for (let i = 0; i < blocks.length; i++) {
-      const b = blocks[i];
-      const before = (fullContent || "").slice(0, b.start);
-      const markerLine = (before.match(/\n/g) || []).length + 1;
-      const ourLines = (b.ours.match(/\n/g) || []).length;
-      const theirLines = (b.theirs.match(/\n/g) || []).length;
-      if (applied[i]) {
-        const end = markerLine + (applied[i].match(/\n/g) || []).length;
-        if (lineNum >= markerLine && lineNum <= end) return { blockIdx: i, section: applied[i] === b.ours ? "ours" : applied[i] === b.theirs ? "theirs" : null };
-      } else {
-        const ourStart = markerLine + 1;
-        const ourEnd = ourStart + ourLines;
-        if (lineNum >= ourStart && lineNum <= ourEnd) return { blockIdx: i, section: "ours" };
-        const theirStart = ourEnd + 2;
-        const theirEnd = theirStart + theirLines;
-        if (lineNum >= theirStart && lineNum <= theirEnd) return { blockIdx: i, section: "theirs" };
-      }
-    }
-    return null;
+  const renderNormalSegment = (seg, idx) => {
+    const displayLines = seg.content ? (seg.content.endsWith("\n") ? seg.content.slice(0, -1) : seg.content).split("\n") : [];
+    return (
+      <Box key={idx} sx={{ display: "flex", px: 1.5, py: 0, gap: 0.5 }}>
+        {seg._conflict && (
+          <Button size="small" variant="outlined" color="info"
+            onClick={() => undoBlock(idx)}
+            sx={{ flexShrink: 0, minWidth: 28, fontSize: "0.65rem", py: 0, mt: 0.5 }}
+            title="Undo resolution"
+          >
+            ↩
+          </Button>
+        )}
+        <Box sx={{ textAlign: "right", userSelect: "none", color: "text.secondary", fontFamily: "monospace", fontSize: "13px", lineHeight: 1.5, py: 0.5, minWidth: seg.lineCount >= 100 ? 44 : seg.lineCount >= 10 ? 36 : 28 }}>
+          {displayLines.map((_, i) => (
+            <div key={i} style={{ paddingRight: 8 }}>{seg.startLine + i}</div>
+          ))}
+        </Box>
+        <div
+          contentEditable
+          suppressContentEditableWarning
+          style={{
+            flex: 1,
+            fontFamily: "monospace",
+            fontSize: "13px",
+            lineHeight: 1.5,
+            whiteSpace: "pre",
+            outline: "none",
+            minHeight: "1.5em",
+          }}
+          onInput={e => handleNormalEdit(idx, e.currentTarget.textContent || "")}
+        >
+          {seg.content}
+        </div>
+      </Box>
+    );
   };
 
-  const handleOurDblClick = useCallback((lineNum) => {
-    const found = findBlockByLine(lineNum);
-    if (found && !applied[found.blockIdx]) {
-      applyBlock(found.blockIdx, blocks[found.blockIdx].ours);
-    }
-  }, [blocks, fullContent, applied]);
+  const activeBlockId = useMemo(() => {
+    if (conflictIndices.length === 0) return null;
+    const targetIdx = conflictIndices[Math.min(blockIndex, conflictIndices.length - 1)];
+    const seg = segments[targetIdx];
+    return seg?.type === "conflict" ? seg.id : null;
+  }, [blockIndex, conflictIndices, segments]);
 
-  const handleTheirDblClick = useCallback((lineNum) => {
-    const found = findBlockByLine(lineNum);
-    if (found && !applied[found.blockIdx]) {
-      applyBlock(found.blockIdx, blocks[found.blockIdx].theirs);
-    }
-  }, [blocks, fullContent, applied]);
-
-  const handleMergedDblClick = useCallback((lineNum) => {
-    const found = findBlockByLine(lineNum);
-    if (found && !applied[found.blockIdx]) {
-      if (found.section === "ours") applyBlock(found.blockIdx, blocks[found.blockIdx].ours);
-      else if (found.section === "theirs") applyBlock(found.blockIdx, blocks[found.blockIdx].theirs);
-    }
-  }, [blocks, fullContent, applied]);
-
-  const mergedButton = useCallback((i, b) => (
-    <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, px: 1, minHeight: "1.5em", justifyContent: "flex-end" }}>
-      <Button size="small" variant="contained" color="error"
-        onClick={() => applyBlock(i, b.ours)}
-        sx={{ fontSize: "0.6rem", height: 20, py: 0, textTransform: "none", whiteSpace: "nowrap" }}
-      >Ours</Button>
-      <Button size="small" variant="contained" color="success"
-        onClick={() => applyBlock(i, b.theirs)}
-        sx={{ fontSize: "0.6rem", height: 20, py: 0, textTransform: "none", whiteSpace: "nowrap" }}
-      >Theirs</Button>
-      <Button size="small" variant="contained" color="warning"
-        onClick={() => applyBlock(i, b.ours + "\n" + b.theirs)}
-        sx={{ fontSize: "0.6rem", height: 20, py: 0, textTransform: "none", whiteSpace: "nowrap" }}
-      >Both</Button>
+  const renderConflictCard = (seg, idx) => (
+    <Box
+      key={idx}
+      ref={el => cardRefs.current[seg.id] = el}
+      sx={{
+        border: activeBlockId === seg.id ? "2px solid" : "1px solid",
+        borderColor: activeBlockId === seg.id ? "primary.main" : "divider",
+        borderRadius: 1,
+        mx: 1,
+        my: 1,
+        overflow: "hidden",
+        bgcolor: "background.paper",
+      }}
+    >
+      <Box sx={{ display: "flex", gap: 0.5, p: 0.5, bgcolor: "action.hover", borderBottom: "1px solid", borderColor: "divider", alignItems: "center" }}>
+        <Typography variant="caption" sx={{ color: "text.secondary", fontWeight: 600, mr: 1, fontFamily: "monospace", px: 1 }}>
+          Lines {seg.startLine}–{seg.startLine + seg.lineCount - 1}
+        </Typography>
+        <Button size="small" variant="contained" color="error" onClick={() => resolveBlock(idx, "ours")}>
+          Ours
+        </Button>
+        <Button size="small" variant="contained" color="success" onClick={() => resolveBlock(idx, "theirs")}>
+          Theirs
+        </Button>
+        <Button size="small" variant="contained" color="warning" onClick={() => resolveBlock(idx, "both")}>
+          Both
+        </Button>
+      </Box>
+      <Box sx={{ bgcolor: "rgba(33,150,243,0.08)", px: 1.5, py: 0.5 }}>
+        <Typography variant="caption" sx={{ color: "primary.main", fontWeight: 600, display: "block", mb: 0.25 }}>
+          OURS
+        </Typography>
+        <div
+          contentEditable
+          suppressContentEditableWarning
+          style={{
+            fontFamily: "monospace",
+            fontSize: "13px",
+            lineHeight: 1.5,
+            whiteSpace: "pre",
+            outline: "none",
+            minHeight: "1.5em",
+          }}
+          onInput={e => handleOursEdit(idx, e.currentTarget.textContent || "")}
+        >
+          {seg.ours}
+        </div>
+      </Box>
+      <Divider />
+      <Box sx={{ bgcolor: "rgba(76,175,80,0.08)", px: 1.5, py: 0.5 }}>
+        <Typography variant="caption" sx={{ color: "success.main", fontWeight: 600, display: "block", mb: 0.25 }}>
+          THEIRS
+        </Typography>
+        <div
+          contentEditable
+          suppressContentEditableWarning
+          style={{
+            fontFamily: "monospace",
+            fontSize: "13px",
+            lineHeight: 1.5,
+            whiteSpace: "pre",
+            outline: "none",
+            minHeight: "1.5em",
+          }}
+          onInput={e => handleTheirsEdit(idx, e.currentTarget.textContent || "")}
+        >
+          {seg.theirs}
+        </div>
+      </Box>
     </Box>
-  ), [applyBlock]);
-
-  const mergedActionLines = useMemo(() => {
-    const actions = {};
-    for (let i = 0; i < blocks.length; i++) {
-      const b = blocks[i];
-      if (applied[i]) continue;
-      const before = (fullContent || "").slice(0, b.start);
-      const markerLine = (before.match(/\n/g) || []).length + 1;
-      actions[markerLine] = mergedButton(i, b);
-    }
-    return actions;
-  }, [blocks, fullContent, applied, mergedButton]);
+  );
 
   return (
     <Dialog open onClose={onClose} maxWidth="xl" fullWidth>
       <DialogTitle sx={{ display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap" }}>
-        <Typography component="div" variant="body2" sx={{ fontFamily: "monospace", fontWeight: 600, flex: 1 }}>
-          Resolve conflicts
-        </Typography>
+        <TextField select size="small" value={fileIndex}
+          onChange={e => setFileIndex(Number(e.target.value))}
+          sx={{ minWidth: 250 }}
+        >
+          {conflictedFiles.map((f, i) => (
+            <MenuItem key={f} value={i}>{f}</MenuItem>
+          ))}
+        </TextField>
+        <Chip label={`Block ${conflictIndices.length > 0 ? blockIndex + 1 : 0}/${conflictIndices.length}`} size="small" />
+        <Button size="small" onClick={handlePrevBlock} disabled={blockIndex <= 0 || conflictIndices.length === 0}>Prev</Button>
+        <Button size="small" onClick={handleNextBlock} disabled={blockIndex >= conflictIndices.length - 1 || conflictIndices.length === 0}>Next</Button>
+        <Box sx={{ flex: 1 }} />
         <IconButton size="small" onClick={onClose} aria-label="close">
           <CloseIcon fontSize="small" />
         </IconButton>
       </DialogTitle>
-      <DialogContent sx={{ p: 1, overflow: "hidden", display: "flex", flexDirection: "column", gap: 1 }}>
-        {error && <Alert severity="error" onClose={() => setError(null)}>{error}</Alert>}
-
+      <DialogContent sx={{ p: 1, overflow: "auto" }}>
         {loading && <Typography sx={{ textAlign: "center", py: 4 }}>Loading...</Typography>}
-
-        {!loading && currentFile && (
-          <>
-            {/* File selector + block navigation */}
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap" }}>
-              <TextField select size="small" value={fileIndex} onChange={e => setFileIndex(Number(e.target.value))}
-                sx={{ minWidth: 250 }}
-              >
-                {conflictedFiles.map((f, i) => (
-                  <MenuItem key={f} value={i}>{f} {i === fileIndex ? "(active)" : ""}</MenuItem>
-                ))}
-              </TextField>
-              <Chip label={`Block ${blocks.length > 0 ? blockIndex + 1 : 0}/${blocks.length}`} size="small" />
-              <Button size="small" onClick={handlePrevBlock} disabled={blockIndex <= 0 || blocks.length === 0}>Prev</Button>
-              <Button size="small" onClick={handleNextBlock} disabled={blockIndex >= blocks.length - 1 || blocks.length === 0}>Next</Button>
-              <Box sx={{ flex: 1 }} />
-              <Typography variant="caption" sx={{ color: "text.secondary" }}>
-                {blocks.length > 0 ? `Block ${blockIndex + 1} — lines ${blockLineRanges[blockIndex]?.startLine || "?"}-${blockLineRanges[blockIndex]?.endLine || "?"}` : "No blocks"}
-              </Typography>
-            </Box>
-
-            {/* Three CodeEditors */}
-            <Box sx={{ display: "flex", gap: 0.5, flex: 1, minHeight: 0, overflow: "hidden" }}>
-              {/* OUR */}
-              <Box sx={{ flex: 1, display: "flex", flexDirection: "column", border: "1px solid", borderColor: "divider", borderRadius: 1, overflow: "hidden" }}>
-                <Box sx={{ display: "flex", alignItems: "center", px: 1, py: 0.25, bgcolor: "rgba(244,67,54,0.08)", flexShrink: 0 }}>
-                  <Typography variant="caption" sx={{ fontWeight: 600, color: "error.main", flex: 1 }}>OUR</Typography>
-                  {currentBlock && !applied[blockIndex] && (
-                    <Button size="small" variant="contained" color="error"
-                      onClick={acceptOurs} sx={{ fontSize: "0.6rem", minWidth: 40, height: 20, py: 0 }}>
-                      Accept
-                    </Button>
-                  )}
-                </Box>
-                <Box sx={{ flex: 1, minHeight: 0 }}>
-                  <CodeEditor value={ourContent} filename={`our-${currentFile}`} readOnly height="100%" highlightRanges={ourHighlights} highlightColor="rgba(33,150,243,0.25)" onDoubleClick={handleOurDblClick} onScroll={(st) => handleScroll(0, st)} scrollContainerRef={ourScrollRef} scrollToLine={currentBlockLine} />
-                </Box>
-              </Box>
-
-              {/* MERGED */}
-              <Box sx={{ flex: 1, display: "flex", flexDirection: "column", border: "2px solid", borderColor: "primary.main", borderRadius: 1, overflow: "hidden" }}>
-                <Box sx={{ display: "flex", alignItems: "center", px: 1, py: 0.25, bgcolor: "primary.main", flexShrink: 0 }}>
-                  <Typography variant="caption" sx={{ fontWeight: 600, color: "#fff", flex: 1 }}>MERGED (editável)</Typography>
-                  {currentBlock && !applied[blockIndex] && (
-                    <Button size="small" variant="contained" color="warning"
-                      onClick={acceptBoth} sx={{ fontSize: "0.6rem", minWidth: 40, height: 20, py: 0 }}>
-                      Both
-                    </Button>
-                  )}
-                </Box>
-                <Box sx={{ flex: 1, minHeight: 0 }}>
-              <CodeEditor value={mergedContent} filename={`merged-${currentFile}`} readOnly={false} height="100%" highlightRanges={mergedHighlights} onDoubleClick={handleMergedDblClick} actionLines={mergedActionLines} onChange={(v) => { setMergedContent(v); setUserEditedContent(v); }} onScroll={(st) => handleScroll(1, st)} scrollContainerRef={mergedScrollRef} scrollToLine={currentBlockLine} />
-            </Box>
-              </Box>
-
-              {/* THEIR */}
-              <Box sx={{ flex: 1, display: "flex", flexDirection: "column", border: "1px solid", borderColor: "divider", borderRadius: 1, overflow: "hidden" }}>
-                <Box sx={{ display: "flex", alignItems: "center", px: 1, py: 0.25, bgcolor: "rgba(76,175,80,0.08)", flexShrink: 0 }}>
-                  <Typography variant="caption" sx={{ fontWeight: 600, color: "success.main", flex: 1 }}>THEIR</Typography>
-                  {currentBlock && !applied[blockIndex] && (
-                    <Button size="small" variant="contained" color="success"
-                      onClick={acceptTheirs} sx={{ fontSize: "0.6rem", minWidth: 40, height: 20, py: 0 }}>
-                      Accept
-                    </Button>
-                  )}
-                </Box>
-                <Box sx={{ flex: 1, minHeight: 0 }}>
-                  <CodeEditor value={theirContent} filename={`their-${currentFile}`} readOnly height="100%" highlightRanges={theirHighlights} highlightColor="rgba(76,175,80,0.25)" onDoubleClick={handleTheirDblClick} onScroll={(st) => handleScroll(2, st)} scrollContainerRef={theirScrollRef} scrollToLine={currentBlockLine} />
-                </Box>
-              </Box>
-            </Box>
-
-            {/* Block action buttons */}
-            {currentBlock && (
-              <Box sx={{ display: "flex", gap: 1, justifyContent: "center", flexWrap: "wrap" }}>
-                <Button size="small" variant="contained" color="error" onClick={acceptOurs} disabled={applied[blockIndex]}>
-                  Accept Ours
-                </Button>
-                <Button size="small" variant="contained" color="success" onClick={acceptTheirs} disabled={applied[blockIndex]}>
-                  Accept Theirs
-                </Button>
-                <Button size="small" variant="contained" color="warning" onClick={acceptBoth} disabled={applied[blockIndex]}>
-                  Accept Both
-                </Button>
-              </Box>
-            )}
-          </>
-        )}
-
         {!loading && !currentFile && (
           <Typography sx={{ textAlign: "center", py: 4, color: "text.secondary" }}>
             No conflicted files
           </Typography>
+        )}
+        {!loading && currentFile && segmentsWithLines.map((seg, idx) =>
+          seg.type === "normal" ? renderNormalSegment(seg, idx) : renderConflictCard(seg, idx)
         )}
       </DialogContent>
       <DialogActions>
@@ -434,7 +375,6 @@ export default function ConflictResolverDialog({ directory, conflictedFiles, onC
           {saving ? "Saving..." : "Resolve & advance"}
         </Button>
       </DialogActions>
-
       {confirmCancel && (
         <Box sx={{ position: "fixed", inset: 0, bgcolor: "rgba(0,0,0,0.4)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1400 }}>
           <Box sx={{ bgcolor: "background.paper", borderRadius: 3, width: 360, maxWidth: "90vw", boxShadow: 24, p: 3 }}>
@@ -449,6 +389,14 @@ export default function ConflictResolverDialog({ directory, conflictedFiles, onC
           </Box>
         </Box>
       )}
+
+      <Snackbar open={!!error} autoHideDuration={5000} onClose={() => setError(null)}
+        anchorOrigin={{ vertical: "top", horizontal: "center" }}
+      >
+        <Alert severity="error" onClose={() => setError(null)} sx={{ width: "100%" }}>
+          {error}
+        </Alert>
+      </Snackbar>
     </Dialog>
   );
 }

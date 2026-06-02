@@ -483,7 +483,7 @@ ipcMain.handle("continue-merge", (event, directory) => {
   const rebaseDir = require("path").join(directory, ".git", "rebase-merge");
   const isMerge = require("fs").existsSync(mergeMsg);
   const isRebase = require("fs").existsSync(rebaseDir);
-  if (isMerge) return runGit(["merge", "--continue"], directory);
+  if (isMerge) return runGit(["commit", "--no-edit"], directory);
   if (isRebase) return runGit(["rebase", "--continue"], directory);
   throw new Error("No merge or rebase in progress");
 });
