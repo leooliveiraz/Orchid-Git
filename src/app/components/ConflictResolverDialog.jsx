@@ -17,6 +17,7 @@ export default function ConflictResolverDialog({ directory, conflictedFiles, onC
   const [confirmCancel, setConfirmCancel] = useState(false);
   const [confirmAbort, setConfirmAbort] = useState(false);
   const [viewMode, setViewMode] = useState("unified");
+  const [activeConflictId, setActiveConflictId] = useState(null);
   const cardRefs = useRef({});
   const paneRefs = useRef([null, null, null]);
   const syncingScroll = useRef(false);
@@ -44,6 +45,38 @@ export default function ConflictResolverDialog({ directory, conflictedFiles, onC
       const count = ourLines + theirLines;
       line += count;
       return { ...seg, startLine, lineCount: count };
+    });
+  }, [segments]);
+
+  const ourSegments = useMemo(() => {
+    let line = 1;
+    return segments.map(seg => {
+      const startLine = line;
+      if (seg.type === "normal") {
+        const count = seg.content ? (seg.content.endsWith("\n") ? seg.content.split("\n").length - 1 : seg.content.split("\n").length) : 0;
+        line += count;
+        return { ...seg, startLine, lineCount: count };
+      }
+      const content = seg.ours || "";
+      const count = (content.match(/\n/g) || []).length + 1;
+      line += count;
+      return { ...seg, startLine, lineCount: count, _displayContent: content };
+    });
+  }, [segments]);
+
+  const theirSegments = useMemo(() => {
+    let line = 1;
+    return segments.map(seg => {
+      const startLine = line;
+      if (seg.type === "normal") {
+        const count = seg.content ? (seg.content.endsWith("\n") ? seg.content.split("\n").length - 1 : seg.content.split("\n").length) : 0;
+        line += count;
+        return { ...seg, startLine, lineCount: count };
+      }
+      const content = seg.theirs || "";
+      const count = (content.match(/\n/g) || []).length + 1;
+      line += count;
+      return { ...seg, startLine, lineCount: count, _displayContent: content };
     });
   }, [segments]);
 
@@ -230,20 +263,10 @@ export default function ConflictResolverDialog({ directory, conflictedFiles, onC
     if (conflictIndices.length === 0) return;
     const targetIdx = conflictIndices[Math.min(blockIndex, conflictIndices.length - 1)];
     const seg = segments[targetIdx];
-    if (viewMode === "unified" && seg?.type === "conflict" && cardRefs.current[seg.id]) {
+    if (seg?.type === "conflict" && cardRefs.current[seg.id]) {
       cardRefs.current[seg.id].scrollIntoView({ behavior: "smooth", block: "center" });
     }
-    if (viewMode === "3pane" && seg?.type === "conflict") {
-      const mergedPane = paneRefs.current[1];
-      if (mergedPane) {
-        const segIdx = segmentsWithLines.findIndex(s => s.id === seg.id);
-        const lineNum = segmentsWithLines[segIdx]?.startLine;
-        if (lineNum) {
-          mergedPane.scrollTop = (lineNum - 1) * 19.5 - 100;
-        }
-      }
-    }
-  }, [blockIndex, conflictIndices, segments, viewMode, segmentsWithLines]);
+  }, [blockIndex, conflictIndices, segments]);
 
   const mergedActionLines = useMemo(() => {
     const actions = {};
@@ -387,70 +410,45 @@ export default function ConflictResolverDialog({ directory, conflictedFiles, onC
     return seg?.type === "conflict" ? seg.id : null;
   }, [blockIndex, conflictIndices, segments]);
 
-  const renderReadOnlyPane = (content, highlights, highlightColor, scrollIdx) => {
-    const lines = content ? (content.endsWith("\n") ? content.slice(0, -1) : content).split("\n") : [];
-    const hlMap = {};
-    for (const r of highlights || []) {
-      for (let i = r.startLine; i <= r.endLine; i++) hlMap[i] = true;
-    }
-    return (
-      <Box ref={el => paneRefs.current[scrollIdx] = el} onScroll={e => handlePaneScroll(scrollIdx, e.target.scrollTop)}
-        sx={{ overflow: "auto", flex: 1, fontFamily: "monospace", fontSize: "13px", lineHeight: 1.5, whiteSpace: "pre", py: 0.5 }}
-      >
-        <Box sx={{ display: "flex" }}>
-          <Box sx={{ textAlign: "right", userSelect: "none", color: "text.secondary", px: 1, minWidth: 36 }}>
-            {lines.map((_, i) => (
-              <div key={i} style={{ lineHeight: 1.5 }}>{i + 1}</div>
+  const renderSideSegment = (seg, idx, sideColor) => {
+    if (seg.type === "normal") {
+      const displayLines = seg.content ? (seg.content.endsWith("\n") ? seg.content.slice(0, -1) : seg.content).split("\n") : [];
+      return (
+        <Box key={idx} sx={{ display: "flex", px: 1.5, py: 0 }}>
+          <Box sx={{ textAlign: "right", userSelect: "none", color: "text.secondary", fontFamily: "monospace", fontSize: "13px", lineHeight: 1.5, py: 0.5, minWidth: seg.lineCount >= 100 ? 44 : seg.lineCount >= 10 ? 36 : 28 }}>
+            {displayLines.map((_, i) => (
+              <div key={i} style={{ paddingRight: 8 }}>{seg.startLine + i}</div>
             ))}
           </Box>
-          <Box sx={{ flex: 1, minWidth: 0 }}>
-            {lines.map((line, i) => (
-              <div key={i} style={{
-                lineHeight: 1.5,
-                background: hlMap[i + 1] ? highlightColor : "transparent",
-                whiteSpace: "pre",
-              }}>{line || "\u00A0"}</div>
+          <Box sx={{ flex: 1, fontFamily: "monospace", fontSize: "13px", lineHeight: 1.5, py: 0.5, whiteSpace: "pre" }}>
+            {displayLines.map((line, i) => (
+              <div key={i} style={{ background: seg._choice === "ours" ? "rgba(33,150,243,0.08)" : seg._choice === "theirs" ? "rgba(76,175,80,0.08)" : "transparent" }}>{line || "\u00A0"}</div>
             ))}
           </Box>
         </Box>
-      </Box>
-    );
-  };
-
-  const renderEditablePane = (content, scrollIdx, highlights) => {
-    const lines = content ? (content.endsWith("\n") ? content.slice(0, -1) : content).split("\n") : [];
-    const hlMap = {};
-    for (const r of highlights?.ours || []) {
-      for (let i = r.startLine; i <= r.endLine; i++) hlMap[i] = "rgba(33,150,243,0.12)";
+      );
     }
-    for (const r of highlights?.theirs || []) {
-      for (let i = r.startLine; i <= r.endLine; i++) hlMap[i] = "rgba(76,175,80,0.12)";
-    }
+    const isActive = activeConflictId === seg.id;
+    const displayLines = seg._displayContent ? (seg._displayContent.endsWith("\n") ? seg._displayContent.slice(0, -1) : seg._displayContent).split("\n") : [];
     return (
-      <Box ref={el => paneRefs.current[scrollIdx] = el} onScroll={e => handlePaneScroll(scrollIdx, e.target.scrollTop)}
-        sx={{ position: "relative", overflow: "auto", flex: 1, fontFamily: "monospace", fontSize: "13px", lineHeight: 1.5, py: 0.5 }}
+      <Box key={idx}
+        onMouseEnter={() => setActiveConflictId(seg.id)}
+        onMouseLeave={() => setActiveConflictId(null)}
+        sx={{
+          border: isActive ? "2px solid" : "1px solid",
+          borderColor: isActive ? "primary.main" : "divider",
+          borderRadius: 1, mx: 1, my: 1, overflow: "hidden",
+          transition: "border 0.15s",
+        }}
       >
-        <Box sx={{ display: "flex" }}>
-          <Box sx={{ textAlign: "right", userSelect: "none", color: "text.secondary", px: 1, minWidth: 36 }}>
-            {lines.map((_, i) => (
-              <div key={i} style={{ lineHeight: 1.5 }}>{i + 1}</div>
-            ))}
-          </Box>
-          <Box sx={{ flex: 1, minWidth: 0 }}>
-            {lines.map((line, i) => (
-              <div key={i} style={{
-                lineHeight: 1.5,
-                background: hlMap[i + 1] || "transparent",
-                whiteSpace: "pre",
-              }}>{line || "\u00A0"}</div>
-            ))}
-          </Box>
+        <Box sx={{ px: 1, py: 0.25, bgcolor: sideColor, borderBottom: "1px solid", borderColor: "divider" }}>
+          <Typography variant="caption" sx={{ fontWeight: 600, color: "text.secondary", fontFamily: "monospace" }}>
+            Lines {seg.startLine}–{seg.startLine + seg.lineCount - 1}
+          </Typography>
         </Box>
-        <Box sx={{ position: "absolute", top: 0, left: 0, right: 0, pointerEvents: "none" }}>
-          {lines.map((_, i) => (
-            <div key={i} style={{ pointerEvents: mergedActionLines[i + 1] ? "auto" : "none", lineHeight: 1.5, minHeight: "1.5em" }}>
-              {mergedActionLines[i + 1] || null}
-            </div>
+        <Box sx={{ px: 1.5, py: 0.5, fontFamily: "monospace", fontSize: "13px", lineHeight: 1.5, whiteSpace: "pre", bgcolor: sideColor }}>
+          {displayLines.map((line, i) => (
+            <div key={i}>{line || "\u00A0"}</div>
           ))}
         </Box>
       </Box>
@@ -463,35 +461,54 @@ export default function ConflictResolverDialog({ directory, conflictedFiles, onC
         <Box sx={{ px: 1, py: 0.25, bgcolor: "rgba(33,150,243,0.08)", borderBottom: "1px solid", borderColor: "divider" }}>
           <Typography variant="caption" sx={{ fontWeight: 600, color: "primary.main" }}>OURS</Typography>
         </Box>
-        {renderReadOnlyPane(ourContent, ourHighlights, "rgba(33,150,243,0.12)", 0)}
+        <Box ref={el => paneRefs.current[0] = el} onScroll={e => handlePaneScroll(0, e.target.scrollTop)}
+          sx={{ overflow: "auto", flex: 1, fontFamily: "monospace", fontSize: "13px", lineHeight: 1.5, py: 0.5 }}
+        >
+          {ourSegments.map((seg, idx) => renderSideSegment(seg, idx, "rgba(33,150,243,0.04)"))}
+        </Box>
       </Box>
       <Box sx={{ flex: 1, display: "flex", flexDirection: "column", border: "2px solid", borderColor: "secondary.main", borderRadius: 1, overflow: "hidden" }}>
         <Box sx={{ px: 1, py: 0.25, bgcolor: "secondary.main" }}>
           <Typography variant="caption" sx={{ fontWeight: 600, color: "#fff" }}>MERGED</Typography>
         </Box>
-        {renderEditablePane(mergedContent, 1, mergedHighlights)}
+        <Box ref={el => paneRefs.current[1] = el} onScroll={e => handlePaneScroll(1, e.target.scrollTop)}
+          sx={{ overflow: "auto", flex: 1, fontFamily: "monospace", fontSize: "13px", lineHeight: 1.5, py: 0.5 }}
+        >
+          {segmentsWithLines.map((seg, idx) =>
+            seg.type === "normal" ? renderNormalSegment(seg, idx) : renderConflictCard(seg, idx)
+          )}
+        </Box>
       </Box>
       <Box sx={{ flex: 1, display: "flex", flexDirection: "column", border: "1px solid", borderColor: "divider", borderRadius: 1, overflow: "hidden" }}>
         <Box sx={{ px: 1, py: 0.25, bgcolor: "rgba(76,175,80,0.08)", borderBottom: "1px solid", borderColor: "divider" }}>
           <Typography variant="caption" sx={{ fontWeight: 600, color: "success.main" }}>THEIRS</Typography>
         </Box>
-        {renderReadOnlyPane(theirContent, theirHighlights, "rgba(76,175,80,0.12)", 2)}
+        <Box ref={el => paneRefs.current[2] = el} onScroll={e => handlePaneScroll(2, e.target.scrollTop)}
+          sx={{ overflow: "auto", flex: 1, fontFamily: "monospace", fontSize: "13px", lineHeight: 1.5, py: 0.5 }}
+        >
+          {theirSegments.map((seg, idx) => renderSideSegment(seg, idx, "rgba(76,175,80,0.04)"))}
+        </Box>
       </Box>
     </Box>
   );
 
-  const renderConflictCard = (seg, idx) => (
+  const renderConflictCard = (seg, idx) => {
+    const isActive = activeConflictId === seg.id || activeBlockId === seg.id;
+    return (
     <Box
       key={idx}
       ref={el => cardRefs.current[seg.id] = el}
+      onMouseEnter={() => setActiveConflictId(seg.id)}
+      onMouseLeave={() => setActiveConflictId(null)}
       sx={{
-        border: activeBlockId === seg.id ? "2px solid" : "1px solid",
-        borderColor: activeBlockId === seg.id ? "primary.main" : "divider",
+        border: isActive ? "2px solid" : "1px solid",
+        borderColor: isActive ? "primary.main" : "divider",
         borderRadius: 1,
         mx: 1,
         my: 1,
         overflow: "hidden",
         bgcolor: "background.paper",
+        transition: "border 0.15s",
       }}
     >
       <Box sx={{ display: "flex", gap: 0.5, p: 0.5, bgcolor: "action.hover", borderBottom: "1px solid", borderColor: "divider", alignItems: "center" }}>
@@ -551,6 +568,7 @@ export default function ConflictResolverDialog({ directory, conflictedFiles, onC
       </Box>
     </Box>
   );
+  };
 
   return (
     <Dialog open onClose={onClose} maxWidth="xl" fullWidth>
