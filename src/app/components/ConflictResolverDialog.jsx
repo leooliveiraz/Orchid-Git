@@ -297,7 +297,7 @@ export default function ConflictResolverDialog({ directory, conflictedFiles, onC
   const handlePrevBlock = () => setBlockIndex(i => Math.max(0, i - 1));
   const handleNextBlock = () => setBlockIndex(i => Math.min(conflictIndices.length - 1, i + 1));
 
-  const handleSave = async () => {
+  const handleSave = async (doCommit) => {
     if (!window.api || !currentFile) return;
 
     if (segments.some(s => s.type === "conflict")) {
@@ -313,7 +313,7 @@ export default function ConflictResolverDialog({ directory, conflictedFiles, onC
       await window.api.resolveFile(directory, currentFile);
       if (fileIndex < conflictedFiles.length - 1) {
         setFileIndex(i => i + 1);
-      } else {
+      } else if (doCommit) {
         let isMergeCommit = false;
         try {
           const result = await window.api.continueMerge(directory);
@@ -328,6 +328,9 @@ export default function ConflictResolverDialog({ directory, conflictedFiles, onC
         } else {
           onClose();
         }
+      } else {
+        onRefresh?.();
+        onClose();
       }
     } catch (e) {
       setError(e.message || String(e));
@@ -627,8 +630,11 @@ export default function ConflictResolverDialog({ directory, conflictedFiles, onC
         <Button onClick={handleSkip}>Skip</Button>
         <Button color="error" onClick={() => setConfirmAbort(true)}>Abort merge</Button>
         <Button color="warning" onClick={() => setConfirmCancel(true)}>Cancel changes</Button>
-        <Button variant="contained" onClick={handleSave} disabled={!currentFile || saving}>
-          {saving ? "Saving..." : "Resolve & advance"}
+        <Button variant="outlined" onClick={() => handleSave(false)} disabled={!currentFile || saving}>
+          {saving ? "Saving..." : "Resolve & stage"}
+        </Button>
+        <Button variant="contained" onClick={() => handleSave(true)} disabled={!currentFile || saving}>
+          {saving ? "Saving..." : "Resolve & commit"}
         </Button>
       </DialogActions>
 

@@ -498,6 +498,14 @@ ipcMain.handle("abort-merge", (event, directory) => {
   throw new Error("No merge or rebase in progress");
 });
 
+ipcMain.handle("get-merge-message", (event, directory) => {
+  const fs = require("fs");
+  const path = require("path");
+  const mergeMsgPath = path.join(directory, ".git", "MERGE_MSG");
+  if (fs.existsSync(mergeMsgPath)) return fs.readFileSync(mergeMsgPath, "utf8").trim();
+  return null;
+});
+
 ipcMain.handle("get-commit-files", (event, directory, commitHash) => {
   const statusOutput = runGit(["diff-tree", "--no-commit-id", "-r", "--name-status", commitHash], directory);
   const numstatOutput = runGit(["diff-tree", "--no-commit-id", "-r", "--numstat", commitHash], directory);

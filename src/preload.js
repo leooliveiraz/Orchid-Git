@@ -68,6 +68,7 @@ contextBridge.exposeInMainWorld("api", {
   resolveConflictBlocks: (directory, filePath, resolutions, separator) => ipcRenderer.invoke("resolve-conflict-blocks", directory, filePath, resolutions, separator),
   continueMerge: (directory) => ipcRenderer.invoke("continue-merge", directory),
   abortMerge: (directory) => ipcRenderer.invoke("abort-merge", directory),
+  getMergeMessage: (directory) => ipcRenderer.invoke("get-merge-message", directory),
   writeLastDirectory: (dirPath) => ipcRenderer.invoke("write-last-directory", dirPath),
   // Send Methods
   testSend: (args) => ipcRenderer.send("test-send", args),

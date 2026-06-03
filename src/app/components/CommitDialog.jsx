@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Dialog, DialogTitle, DialogContent, DialogActions,
   Button, TextField, Typography, List, ListItem, ListItemIcon, ListItemText,
@@ -9,6 +9,17 @@ export default function CommitDialog({ directory, stagedFiles, onClose }) {
   const [message, setMessage] = useState("");
   const [committing, setCommitting] = useState(false);
   const [error, setError] = useState(null);
+
+  useEffect(() => {
+    (async () => {
+      if (directory && window.api?.getMergeMessage) {
+        try {
+          const msg = await window.api.getMergeMessage(directory);
+          if (msg) setMessage(msg);
+        } catch (e) { /* ignore */ }
+      }
+    })();
+  }, [directory]);
 
   const handleCommit = async () => {
     if (!message.trim()) return;

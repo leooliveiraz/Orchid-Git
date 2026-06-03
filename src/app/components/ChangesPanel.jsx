@@ -265,7 +265,8 @@ export default function ChangesPanel({ directory }) {
       if (!window.api) return;
       try {
         await window.api.discardFile(directory, file.path);
-        setSuccess(`Discarded changes in ${file.path}`);
+        await window.api.abortMerge(directory);
+        setSuccess(`Discarded changes in ${file.path} (merge aborted)`);
         refresh();
       } catch (e) {
         setError(e.message || String(e));
@@ -277,12 +278,13 @@ export default function ChangesPanel({ directory }) {
     setDiscardConfirm({ type: "all", path: "all changes", action: async () => {
       if (!window.api) return;
       try {
+        await window.api.abortMerge(directory);
+      } catch (e) { /* sem merge em progresso */ }
+      try {
         await window.api.discardAll(directory);
-        setSuccess("All changes discarded");
-        refresh();
-      } catch (e) {
-        setError(e.message || String(e));
-      }
+      } catch (e) { /* sem mudanças para descartar */ }
+      setSuccess("All changes discarded");
+      refresh();
     }});
   };
 
@@ -398,7 +400,7 @@ export default function ChangesPanel({ directory }) {
       ) : (
         <List dense>
           {unstaged.map(f => (
-            <StatusFile key={"unstaged-" + f.path} file={f} onStage={handleStage} onUnstage={handleUnstage} onViewDiff={handleViewDiff} onViewBlame={handleViewBlame} onViewHistory={handleViewHistory} onViewFile={handleViewFile} />
+            <StatusFile key={"unstaged-" + f.path} file={f} onStage={handleStage} onUnstage={handleUnstage} onViewDiff={handleViewDiff} onViewBlame={handleViewBlame} onViewHistory={handleViewHistory} onViewFile={handleViewFile} onDiscard={handleDiscardFile} onDiscardHunks={handleDiscardHunks} />
           ))}
         </List>
       )}
