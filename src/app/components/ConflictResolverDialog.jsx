@@ -410,7 +410,7 @@ export default function ConflictResolverDialog({ directory, conflictedFiles, onC
     return seg?.type === "conflict" ? seg.id : null;
   }, [blockIndex, conflictIndices, segments]);
 
-  const renderSideSegment = (seg, idx, sideColor) => {
+  const renderSideSegment = (seg, idx, side) => {
     if (seg.type === "normal") {
       const displayLines = seg.content ? (seg.content.endsWith("\n") ? seg.content.slice(0, -1) : seg.content).split("\n") : [];
       return (
@@ -429,7 +429,13 @@ export default function ConflictResolverDialog({ directory, conflictedFiles, onC
       );
     }
     const isActive = activeConflictId === seg.id;
-    const displayLines = seg._displayContent ? (seg._displayContent.endsWith("\n") ? seg._displayContent.slice(0, -1) : seg._displayContent).split("\n") : [];
+    const isOurs = side === "ours";
+    const ourContent = seg.ours || "";
+    const theirContent = seg.theirs || "";
+    const splitLines = (text) => text ? text.replace(/\n$/, "").split("\n") : [];
+    const ourLines = splitLines(ourContent);
+    const theirLines = splitLines(theirContent);
+    const emptyLine = (key) => <div key={key} style={{ lineHeight: 1.5, minHeight: "1.5em" }}>{"\u00A0"}</div>;
     return (
       <Box key={idx}
         onMouseEnter={() => setActiveConflictId(seg.id)}
@@ -441,15 +447,27 @@ export default function ConflictResolverDialog({ directory, conflictedFiles, onC
           transition: "border 0.15s",
         }}
       >
-        <Box sx={{ px: 1, py: 0.25, bgcolor: sideColor, borderBottom: "1px solid", borderColor: "divider" }}>
+        <Box sx={{ px: 1, py: 0.25, bgcolor: "rgba(33,150,243,0.08)", borderBottom: "1px solid", borderColor: "divider" }}>
           <Typography variant="caption" sx={{ fontWeight: 600, color: "text.secondary", fontFamily: "monospace" }}>
             Lines {seg.startLine}–{seg.startLine + seg.lineCount - 1}
           </Typography>
         </Box>
-        <Box sx={{ px: 1.5, py: 0.5, fontFamily: "monospace", fontSize: "13px", lineHeight: 1.5, whiteSpace: "pre", bgcolor: sideColor }}>
-          {displayLines.map((line, i) => (
-            <div key={i}>{line || "\u00A0"}</div>
-          ))}
+        <Box sx={{ bgcolor: isOurs ? "rgba(33,150,243,0.08)" : "rgba(33,150,243,0.04)", px: 1.5, py: 0.5 }}>
+          <Typography variant="caption" sx={{ color: "primary.main", fontWeight: 600, display: "block", mb: 0.25 }}>OURS</Typography>
+          <Box sx={{ fontFamily: "monospace", fontSize: "13px", lineHeight: 1.5, whiteSpace: "pre" }}>
+            {isOurs
+              ? ourLines.map((line, i) => (<div key={i}>{line || "\u00A0"}</div>))
+              : ourLines.map((_, i) => emptyLine(i))}
+          </Box>
+        </Box>
+        <Divider />
+        <Box sx={{ bgcolor: !isOurs ? "rgba(76,175,80,0.08)" : "rgba(76,175,80,0.04)", px: 1.5, py: 0.5 }}>
+          <Typography variant="caption" sx={{ color: "success.main", fontWeight: 600, display: "block", mb: 0.25 }}>THEIRS</Typography>
+          <Box sx={{ fontFamily: "monospace", fontSize: "13px", lineHeight: 1.5, whiteSpace: "pre" }}>
+            {!isOurs
+              ? theirLines.map((line, i) => (<div key={i}>{line || "\u00A0"}</div>))
+              : theirLines.map((_, i) => emptyLine(i))}
+          </Box>
         </Box>
       </Box>
     );
@@ -464,7 +482,7 @@ export default function ConflictResolverDialog({ directory, conflictedFiles, onC
         <Box ref={el => paneRefs.current[0] = el} onScroll={e => handlePaneScroll(0, e.target.scrollTop)}
           sx={{ overflow: "auto", flex: 1, fontFamily: "monospace", fontSize: "13px", lineHeight: 1.5, py: 0.5 }}
         >
-          {ourSegments.map((seg, idx) => renderSideSegment(seg, idx, "rgba(33,150,243,0.04)"))}
+          {ourSegments.map((seg, idx) => renderSideSegment(seg, idx, "ours"))}
         </Box>
       </Box>
       <Box sx={{ flex: 1, display: "flex", flexDirection: "column", border: "2px solid", borderColor: "secondary.main", borderRadius: 1, overflow: "hidden" }}>
@@ -486,7 +504,7 @@ export default function ConflictResolverDialog({ directory, conflictedFiles, onC
         <Box ref={el => paneRefs.current[2] = el} onScroll={e => handlePaneScroll(2, e.target.scrollTop)}
           sx={{ overflow: "auto", flex: 1, fontFamily: "monospace", fontSize: "13px", lineHeight: 1.5, py: 0.5 }}
         >
-          {theirSegments.map((seg, idx) => renderSideSegment(seg, idx, "rgba(76,175,80,0.04)"))}
+          {theirSegments.map((seg, idx) => renderSideSegment(seg, idx, "theirs"))}
         </Box>
       </Box>
     </Box>
