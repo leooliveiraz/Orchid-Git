@@ -17,9 +17,9 @@ import Tooltip from "@mui/material/Tooltip";
 import { OrchidContext } from "../OrchidContext.jsx";
 import MergeDialog from "./MergeDialog.jsx";
 
-function Section({ title, count, children, defaultOpen, onAdd, onMerge, onSort }) {
+function Section({ title, count, children, expanded, onToggle, onAdd, onMerge, onSort }) {
   return (
-    <Accordion defaultExpanded={defaultOpen !== false} disableGutters>
+    <Accordion expanded={expanded} onChange={onToggle} disableGutters>
       <AccordionSummary expandIcon={<ExpandMoreIcon sx={{ fontSize: 16, color: "text.secondary" }} />}>
         <Typography variant="body2" sx={{ fontWeight: 600, flex: 1 }}>{title}</Typography>
         {onAdd && (
@@ -126,6 +126,21 @@ export default function LeftMenu({ open }) {
   const [branchContext, setBranchContext] = useState(null);
   const [pendingRecentDir, setPendingRecentDir] = useState(null);
   const [skipRecentConfirm, setSkipRecentConfirm] = useState(() => localStorage.getItem("orchid-skip-repo-switch") === "true");
+  const [expandedSections, setExpandedSections] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem("orchid-left-menu-sections")) || {};
+    } catch {
+      return {};
+    }
+  });
+
+  const handleToggle = useCallback((section) => (_event, isExpanded) => {
+    setExpandedSections(prev => {
+      const next = { ...prev, [section]: isExpanded };
+      localStorage.setItem("orchid-left-menu-sections", JSON.stringify(next));
+      return next;
+    });
+  }, []);
 
   useEffect(() => {
     if (message) {
@@ -380,7 +395,7 @@ export default function LeftMenu({ open }) {
         }}
       >
         {recentDirs?.length > 0 && (
-          <Section title="Recent" count={recentDirs.length} defaultOpen={true}
+          <Section title="Recent" count={recentDirs.length} expanded={expandedSections.recent !== false} onToggle={handleToggle("recent")}
             onSort={() => {
               const modes = ["recent", "name-asc", "name-desc"];
               const idx = modes.indexOf(recentSort);
@@ -406,7 +421,7 @@ export default function LeftMenu({ open }) {
         )}
         {repoData ? (
           <>
-            <Section title="Branches" count={repoData.branches?.length ?? 0} onAdd={openNewBranchDialog} onMerge={() => setShowMerge(true)}>
+            <Section title="Branches" count={repoData.branches?.length ?? 0} expanded={expandedSections.branches !== false} onToggle={handleToggle("branches")} onAdd={openNewBranchDialog} onMerge={() => setShowMerge(true)}>
               {repoData.branches?.map(b => (
                 <Item
                   key={b}
@@ -420,19 +435,19 @@ export default function LeftMenu({ open }) {
               ))}
             </Section>
 
-            <Section title="Remote" count={repoData.remoteBranches?.length ?? 0} defaultOpen={false}>
+            <Section title="Remote" count={repoData.remoteBranches?.length ?? 0} expanded={expandedSections.remote === true} onToggle={handleToggle("remote")}>
               {repoData.remoteBranches?.map(b => (
                 <Item key={b} label={b} onClick={() => handleBranchClick(b)} onDoubleClick={() => handleRemoteBranchDblClick(b)} onDelete={() => confirmDeleteRemoteBranch(b)} />
               ))}
             </Section>
 
-            <Section title="Tags" count={repoData.tags?.length ?? 0} defaultOpen={false} onAdd={openNewTagDialog}>
+            <Section title="Tags" count={repoData.tags?.length ?? 0} expanded={expandedSections.tags === true} onToggle={handleToggle("tags")} onAdd={openNewTagDialog}>
               {repoData.tags?.map(t => (
                 <Item key={t} label={t} onDelete={() => confirmDeleteTag(t)} />
               ))}
             </Section>
 
-            <Section title="Stash" count={repoData.stashList?.length ?? 0} defaultOpen={false} onAdd={openNewStashDialog}>
+            <Section title="Stash" count={repoData.stashList?.length ?? 0} expanded={expandedSections.stash === true} onToggle={handleToggle("stash")} onAdd={openNewStashDialog}>
               {repoData.stashList?.map(s => (
                 <Item key={s.id} label={`${s.id}: ${s.message}`} onDoubleClick={() => handleStashDblClick(s.id)} onDelete={() => confirmDropStash(s.id)} />
               ))}
