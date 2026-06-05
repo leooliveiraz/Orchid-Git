@@ -451,7 +451,7 @@ export default function ConflictResolverDialog({ directory, conflictedFiles, onC
         sx={{
           border: isActive ? "2px solid" : "1px solid",
           borderColor: isActive ? "primary.main" : "divider",
-          borderRadius: 1, mx: 1, my: 1, overflow: "hidden",
+          borderRadius: 1, mx: 1, my: 1, overflowX: "auto", overflowY: "hidden",
           transition: "border 0.15s",
         }}
       >
@@ -462,18 +462,18 @@ export default function ConflictResolverDialog({ directory, conflictedFiles, onC
         </Box>
         <Box sx={{ bgcolor: isOurs ? "rgba(33,150,243,0.08)" : "rgba(33,150,243,0.04)", px: 1.5, py: 0.5 }}>
           <Typography variant="caption" sx={{ color: "primary.main", fontWeight: 600, display: "block", mb: 0.25 }}>OURS</Typography>
-          <Box sx={{ fontFamily: "monospace", fontSize: "13px", lineHeight: 1.5, whiteSpace: "pre" }}>
+          <Box sx={{ fontFamily: "monospace", fontSize: "13px", lineHeight: 1.5, whiteSpace: "nowrap" }}>
             {isOurs
-              ? ourLines.map((line, i) => (<div key={i}>{line || "\u00A0"}</div>))
+              ? ourLines.map((line, i) => (<div key={i} style={{ whiteSpace: "nowrap" }}>{line || "\u00A0"}</div>))
               : ourLines.map((_, i) => emptyLine(i))}
           </Box>
         </Box>
         <Divider />
         <Box sx={{ bgcolor: !isOurs ? "rgba(76,175,80,0.08)" : "rgba(76,175,80,0.04)", px: 1.5, py: 0.5 }}>
           <Typography variant="caption" sx={{ color: "success.main", fontWeight: 600, display: "block", mb: 0.25 }}>THEIRS</Typography>
-          <Box sx={{ fontFamily: "monospace", fontSize: "13px", lineHeight: 1.5, whiteSpace: "pre" }}>
+          <Box sx={{ fontFamily: "monospace", fontSize: "13px", lineHeight: 1.5, whiteSpace: "nowrap" }}>
             {!isOurs
-              ? theirLines.map((line, i) => (<div key={i}>{line || "\u00A0"}</div>))
+              ? theirLines.map((line, i) => (<div key={i} style={{ whiteSpace: "nowrap" }}>{line || "\u00A0"}</div>))
               : theirLines.map((_, i) => emptyLine(i))}
           </Box>
         </Box>
@@ -490,7 +490,9 @@ export default function ConflictResolverDialog({ directory, conflictedFiles, onC
         <Box ref={el => paneRefs.current[0] = el} onScroll={e => handlePaneScroll(0, e.target.scrollTop)}
           sx={{ overflow: "auto", flex: 1, fontFamily: "monospace", fontSize: "13px", lineHeight: 1.5, py: 0.5 }}
         >
-          {ourSegments.map((seg, idx) => renderSideSegment(seg, idx, "ours"))}
+          <Box sx={{ display: "inline-block", minWidth: "100%" }}>
+            {ourSegments.map((seg, idx) => renderSideSegment(seg, idx, "ours"))}
+          </Box>
         </Box>
       </Box>
       <Box sx={{ flex: 1, display: "flex", flexDirection: "column", border: "2px solid", borderColor: "secondary.main", borderRadius: 1, overflow: "hidden" }}>
@@ -500,9 +502,11 @@ export default function ConflictResolverDialog({ directory, conflictedFiles, onC
         <Box ref={el => paneRefs.current[1] = el} onScroll={e => handlePaneScroll(1, e.target.scrollTop)}
           sx={{ overflow: "auto", flex: 1, fontFamily: "monospace", fontSize: "13px", lineHeight: 1.5, py: 0.5 }}
         >
-          {segmentsWithLines.map((seg, idx) =>
-            seg.type === "normal" ? renderNormalSegment(seg, idx) : renderConflictCard(seg, idx)
-          )}
+          <Box sx={{ display: "inline-block", minWidth: "100%" }}>
+            {segmentsWithLines.map((seg, idx) =>
+              seg.type === "normal" ? renderNormalSegment(seg, idx) : renderConflictCard(seg, idx)
+            )}
+          </Box>
         </Box>
       </Box>
       <Box sx={{ flex: 1, display: "flex", flexDirection: "column", border: "1px solid", borderColor: "divider", borderRadius: 1, overflow: "hidden" }}>
@@ -512,7 +516,9 @@ export default function ConflictResolverDialog({ directory, conflictedFiles, onC
         <Box ref={el => paneRefs.current[2] = el} onScroll={e => handlePaneScroll(2, e.target.scrollTop)}
           sx={{ overflow: "auto", flex: 1, fontFamily: "monospace", fontSize: "13px", lineHeight: 1.5, py: 0.5 }}
         >
-          {theirSegments.map((seg, idx) => renderSideSegment(seg, idx, "theirs"))}
+          <Box sx={{ display: "inline-block", minWidth: "100%" }}>
+            {theirSegments.map((seg, idx) => renderSideSegment(seg, idx, "theirs"))}
+          </Box>
         </Box>
       </Box>
     </Box>
@@ -532,7 +538,8 @@ export default function ConflictResolverDialog({ directory, conflictedFiles, onC
         borderRadius: 1,
         mx: 1,
         my: 1,
-        overflow: "hidden",
+        overflowX: "auto",
+        overflowY: "hidden",
         bgcolor: "background.paper",
         transition: "border 0.15s",
       }}
@@ -626,8 +633,12 @@ export default function ConflictResolverDialog({ directory, conflictedFiles, onC
             No conflicted files
           </Typography>
         )}
-        {!loading && currentFile && viewMode === "unified" && segmentsWithLines.map((seg, idx) =>
-          seg.type === "normal" ? renderNormalSegment(seg, idx) : renderConflictCard(seg, idx)
+        {!loading && currentFile && viewMode === "unified" && (
+          <Box sx={{ display: "inline-block", minWidth: "100%" }}>
+            {segmentsWithLines.map((seg, idx) =>
+              seg.type === "normal" ? renderNormalSegment(seg, idx) : renderConflictCard(seg, idx)
+            )}
+          </Box>
         )}
         {!loading && currentFile && viewMode === "3pane" && render3PaneView()}
       </DialogContent>
