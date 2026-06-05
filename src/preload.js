@@ -12,6 +12,8 @@ contextBridge.exposeInMainWorld("api", {
   getTags: (directory) => ipcRenderer.invoke("get-tags", directory),
   getStashList: (directory) => ipcRenderer.invoke("get-stash-list", directory),
   getCurrentBranch: (directory) => ipcRenderer.invoke("get-current-branch", directory),
+  getAheadBehind: (directory) => ipcRenderer.invoke("get-ahead-behind", directory),
+  getBranchesAheadBehind: (directory) => ipcRenderer.invoke("get-branches-ahead-behind", directory),
   getCommitFiles: (directory, hash) => ipcRenderer.invoke("get-commit-files", directory, hash),
   getCommitFileDiff: (directory, hash, filePath) => ipcRenderer.invoke("get-commit-file-diff", directory, hash, filePath),
   checkoutBranch: (directory, branch) => ipcRenderer.invoke("checkout-branch", directory, branch),

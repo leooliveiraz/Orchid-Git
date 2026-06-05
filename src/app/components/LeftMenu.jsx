@@ -1,10 +1,10 @@
-import React, { useContext, useState, useCallback, useEffect } from "react";
+import React, { useContext, useState, useCallback, useEffect, useMemo } from "react";
 import {
   Drawer, Snackbar, Alert, Accordion, AccordionSummary, AccordionDetails,
   List, ListItem, ListItemIcon, ListItemText,
   Typography, Box, Button, TextField,
   Dialog, DialogTitle, DialogContent, DialogActions,
-  FormControlLabel, Checkbox, Menu, MenuItem,
+  FormControlLabel, Checkbox, Menu, MenuItem, Chip,
 } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import AddIcon from "@mui/icons-material/Add";
@@ -67,7 +67,7 @@ function Section({ title, count, children, expanded, onToggle, onAdd, onMerge, o
   );
 }
 
-function Item({ label, active, onDoubleClick, onClick, onDelete, onContextMenu }) {
+function Item({ label, active, badge, onDoubleClick, onClick, onDelete, onContextMenu }) {
   return (
     <ListItem
       dense
@@ -103,12 +103,33 @@ function Item({ label, active, onDoubleClick, onClick, onDelete, onContextMenu }
           sx: { fontSize: "0.75rem", ...(active ? { fontWeight: 700 } : {}) },
         }}
       />
+      {badge && (
+        <Chip id={`branch-status-${label}`}
+          label={`↑${badge.ahead} ↓${badge.behind}`}
+          size="small"
+          sx={{
+            height: 16,
+            fontSize: "0.55rem",
+            fontWeight: 600,
+            mr: 0.5,
+            color: badge.behind > 0 ? "#fff" : badge.ahead > 0 ? "#fff" : "text.secondary",
+            bgcolor: badge.behind > 0 ? "rgba(239,83,80,0.8)" : badge.ahead > 0 ? "rgba(66,165,245,0.8)" : "transparent",
+            "& .MuiChip-label": { px: 0.5 },
+          }}
+        />
+      )}
     </ListItem>
   );
 }
 
 export default function LeftMenu({ open }) {
   const { directory, repoData, refresh, recentDirs, setDirectory, removeRecentDir, recentSort, setRecentSort } = useContext(OrchidContext);
+  const branchStatusMap = useMemo(() => {
+    if (!repoData?.branchesStatus) return {};
+    const map = {};
+    repoData.branchesStatus.forEach(b => { map[b.name] = { ahead: b.ahead, behind: b.behind }; });
+    return map;
+  }, [repoData?.branchesStatus]);
   const [message, setMessage] = useState(null);
   const [messageType, setMessageType] = useState("error");
   const [showNewBranch, setShowNewBranch] = useState(false);
@@ -422,17 +443,22 @@ export default function LeftMenu({ open }) {
         {repoData ? (
           <>
             <Section title="Branches" count={repoData.branches?.length ?? 0} expanded={expandedSections.branches !== false} onToggle={handleToggle("branches")} onAdd={openNewBranchDialog} onMerge={() => setShowMerge(true)}>
-              {repoData.branches?.map(b => (
-                <Item
-                  key={b}
-                  label={b}
-                  active={b === repoData.currentBranch}
-                  onClick={() => handleBranchClick(b)}
-                  onDoubleClick={() => handleBranchDblClick(b)}
-                  onContextMenu={(e) => handleBranchContext(e, b)}
-                  onDelete={b !== repoData.currentBranch ? () => confirmDeleteBranch(b) : undefined}
-                />
-              ))}
+              {repoData.branches?.map(b => {
+                const st = branchStatusMap[b];
+                const badge = st && (st.ahead > 0 || st.behind > 0) ? st : null;
+                return (
+                  <Item
+                    key={b}
+                    label={b}
+                    badge={badge}
+                      active={b === repoData.currentBranch}
+                    onClick={() => handleBranchClick(b)}
+                    onDoubleClick={() => handleBranchDblClick(b)}
+                    onContextMenu={(e) => handleBranchContext(e, b)}
+                    onDelete={b !== repoData.currentBranch ? () => confirmDeleteBranch(b) : undefined}
+                  />
+                );
+              })}
             </Section>
 
             <Section title="Remote" count={repoData.remoteBranches?.length ?? 0} expanded={expandedSections.remote === true} onToggle={handleToggle("remote")}>

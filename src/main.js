@@ -142,6 +142,36 @@ ipcMain.handle("get-current-branch", (event, directory) => {
   return runGit(["rev-parse", "--abbrev-ref", "HEAD"], directory).trim();
 });
 
+ipcMain.handle("get-ahead-behind", (event, directory) => {
+  let ahead = 0, behind = 0;
+  try {
+    const out = runGit(["rev-list", "--left-right", "--count", "HEAD...@{upstream}"], directory);
+    const parts = out.trim().split("\t");
+    ahead = parseInt(parts[0], 10) || 0;
+    behind = parseInt(parts[1], 10) || 0;
+  } catch (e) { /* no upstream configured */ }
+  return { ahead, behind };
+});
+
+ipcMain.handle("get-branches-ahead-behind", (event, directory) => {
+  try {
+    const output = runGit(["for-each-ref", "--format=%(refname:short)|%(upstream:track)", "refs/heads"], directory);
+    return output.trim().split("\n").filter(Boolean).map(line => {
+      const [name, track] = line.split("|");
+      let ahead = 0, behind = 0;
+      if (track && track !== "") {
+        const m = track.match(/ahead\s+(\d+)/);
+        if (m) ahead = parseInt(m[1], 10);
+        const m2 = track.match(/behind\s+(\d+)/);
+        if (m2) behind = parseInt(m2[1], 10);
+      }
+      return { name, ahead, behind };
+    });
+  } catch {
+    return [];
+  }
+});
+
 ipcMain.handle("checkout-branch", (event, directory, branch) => {
   return runGit(["checkout", branch, "--"], directory);
 });

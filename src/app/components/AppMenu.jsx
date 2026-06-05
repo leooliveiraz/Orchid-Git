@@ -10,6 +10,7 @@ import {
   Alert,
   Snackbar,
   CircularProgress,
+  Chip,
 } from "@mui/material";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import SettingsIcon from "@mui/icons-material/Settings";
@@ -57,7 +58,7 @@ const MODAL_STYLE = {
 };
 
 export default function AppMenu({ onToggleMenu }) {
-  const { directory, setDirectory, themeMode, toggleTheme, refresh, setTabSignal, syncWarning, setSyncWarning } = useContext(OrchidContext);
+  const { directory, setDirectory, themeMode, toggleTheme, refresh, setTabSignal, syncWarning, setSyncWarning, repoData } = useContext(OrchidContext);
   const [showClone, setShowClone] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showNewBranch, setShowNewBranch] = useState(false);
@@ -216,6 +217,23 @@ export default function AppMenu({ onToggleMenu }) {
               </IconButton>
             </Tooltip>
           )}
+          {directory && repoData && (repoData.ahead > 0 || repoData.behind > 0) && (
+            <Tooltip title={`${repoData.ahead} ahead, ${repoData.behind} behind`}>
+              <Chip id="ahead-behind-chip"
+                label={`↑${repoData.ahead} ↓${repoData.behind}`}
+                size="small"
+                sx={{
+                  height: 20,
+                  fontSize: "0.65rem",
+                  fontWeight: 600,
+                  mr: 0.5,
+                  color: "#fff",
+                  bgcolor: repoData.behind > 0 ? "rgba(239,83,80,0.8)" : "rgba(66,165,245,0.8)",
+                  "& .MuiChip-label": { px: 0.75 },
+                }}
+              />
+            </Tooltip>
+          )}
           {directory && <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.4)", userSelect: "none", mx: 0.5 }}>|</Typography>}
           {directory && (
             <Tooltip title="Create branch">
@@ -333,7 +351,18 @@ export default function AppMenu({ onToggleMenu }) {
                 <Typography variant="body2">Pushing...</Typography>
               </Box>
             ) : (
-              <Typography variant="body2" sx={{ mb: 2 }}>Push commits to the remote repository?</Typography>
+              <>
+                <Typography variant="body2" sx={{ mb: 2 }}>
+                  {repoData?.ahead > 0
+                    ? `Push ${repoData.ahead} commit(s) to the remote repository?`
+                    : "Push commits to the remote repository?"}
+                </Typography>
+                {repoData?.behind > 0 && (
+                  <Alert severity="warning" sx={{ mb: 2 }}>
+                    The remote has {repoData.behind} commit(s) that are not in your local branch. Consider pulling first.
+                  </Alert>
+                )}
+              </>
             )}
             <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 1 }}>
               <Button onClick={() => { setSyncAction(null); setSyncLoading(false); }} disabled={syncLoading}>Cancel</Button>
@@ -353,7 +382,18 @@ export default function AppMenu({ onToggleMenu }) {
                 <Typography variant="body2">Pulling...</Typography>
               </Box>
             ) : (
-              <Typography variant="body2" sx={{ mb: 2 }}>Pull latest changes from the remote repository?</Typography>
+              <>
+                <Typography variant="body2" sx={{ mb: 2 }}>
+                  {repoData?.behind > 0
+                    ? `Pull ${repoData.behind} commit(s) from the remote repository?`
+                    : "Pull latest changes from the remote repository?"}
+                </Typography>
+                {repoData?.ahead > 0 && (
+                  <Alert severity="info" sx={{ mb: 2 }}>
+                    You have {repoData.ahead} local commit(s) that have not been pushed yet.
+                  </Alert>
+                )}
+              </>
             )}
             <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 1 }}>
               <Button onClick={() => { setSyncAction(null); setSyncLoading(false); }} disabled={syncLoading}>Cancel</Button>

@@ -9,14 +9,16 @@ import AppMenu from "./components/AppMenu.jsx";
 async function fetchRepoData(directory) {
   if (!directory || !window.api) return null;
   try {
-    const [branches, remoteBranches, tags, stashList, currentBranch] = await Promise.all([
+    const [branches, remoteBranches, tags, stashList, currentBranch, aheadBehind, branchesStatus] = await Promise.all([
       window.api.getBranches(directory),
       window.api.getRemoteBranches(directory),
       window.api.getTags(directory),
       window.api.getStashList(directory),
       window.api.getCurrentBranch(directory),
+      window.api.getAheadBehind(directory).catch(() => ({ ahead: 0, behind: 0 })),
+      window.api.getBranchesAheadBehind(directory).catch(() => []),
     ]);
-    return { branches, remoteBranches, tags, stashList, currentBranch };
+    return { branches, remoteBranches, tags, stashList, currentBranch, ahead: aheadBehind.ahead, behind: aheadBehind.behind, branchesStatus };
   } catch {
     return null;
   }
