@@ -506,6 +506,30 @@ ipcMain.handle("get-merge-message", (event, directory) => {
   return null;
 });
 
+ipcMain.handle("check-merge-head", (event, directory) => {
+  const path = require("path");
+  const fs = require("fs");
+  return fs.existsSync(path.join(directory, ".git", "MERGE_HEAD"));
+});
+
+ipcMain.handle("get-merge-conflicted-files", (event, directory) => {
+  const fs = require("fs");
+  const path = require("path");
+  const mergeMsgPath = path.join(directory, ".git", "MERGE_MSG");
+  if (!fs.existsSync(mergeMsgPath)) return [];
+  const content = fs.readFileSync(mergeMsgPath, "utf8");
+  const files = [];
+  for (const line of content.split("\n")) {
+    const m = line.match(/^#\t(.+)$/);
+    if (m) files.push(m[1]);
+  }
+  return files;
+});
+
+ipcMain.handle("get-merge-diff", (event, directory, filePath) => {
+  return runGit(["diff", "HEAD...MERGE_HEAD", "--", filePath], directory);
+});
+
 ipcMain.handle("get-commit-files", (event, directory, commitHash) => {
   const statusOutput = runGit(["diff-tree", "--no-commit-id", "-r", "--name-status", commitHash], directory);
   const numstatOutput = runGit(["diff-tree", "--no-commit-id", "-r", "--numstat", commitHash], directory);

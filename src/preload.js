@@ -68,6 +68,9 @@ contextBridge.exposeInMainWorld("api", {
   resolveConflictBlocks: (directory, filePath, resolutions, separator) => ipcRenderer.invoke("resolve-conflict-blocks", directory, filePath, resolutions, separator),
   continueMerge: (directory) => ipcRenderer.invoke("continue-merge", directory),
   abortMerge: (directory) => ipcRenderer.invoke("abort-merge", directory),
+  checkMergeHead: (directory) => ipcRenderer.invoke("check-merge-head", directory),
+  getMergeConflictedFiles: (directory) => ipcRenderer.invoke("get-merge-conflicted-files", directory),
+  getMergeDiff: (directory, filePath) => ipcRenderer.invoke("get-merge-diff", directory, filePath),
   getMergeMessage: (directory) => ipcRenderer.invoke("get-merge-message", directory),
   writeLastDirectory: (dirPath) => ipcRenderer.invoke("write-last-directory", dirPath),
   // Send Methods

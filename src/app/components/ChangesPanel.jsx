@@ -152,7 +152,7 @@ function StatusFile({ file, onStage, onUnstage, onViewDiff, onViewBlame, onViewH
 }
 
 export default function ChangesPanel({ directory }) {
-  const { refreshKey } = useContext(OrchidContext);
+  const { refreshKey, refresh: contextRefresh } = useContext(OrchidContext);
   const [statusList, setStatusList] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -165,6 +165,24 @@ export default function ChangesPanel({ directory }) {
   const [discardConfirm, setDiscardConfirm] = useState(null);
   const [confirmAbort, setConfirmAbort] = useState(false);
   const [viewMode, setViewMode] = useState(() => localStorage.getItem("orchid-changes-view") || "flat");
+  const [isMerging, setIsMerging] = useState(false);
+  const [resolvedFiles, setResolvedFiles] = useState([]);
+
+  const checkMergeStatus = useCallback(async () => {
+    if (!directory || !window.api?.checkMergeHead) return;
+    try {
+      const hasMergeHead = await window.api.checkMergeHead(directory);
+      setIsMerging(!!hasMergeHead);
+      if (hasMergeHead && window.api.getMergeConflictedFiles) {
+        const files = await window.api.getMergeConflictedFiles(directory);
+        setResolvedFiles(files);
+      } else {
+        setResolvedFiles([]);
+      }
+    } catch (e) { /* ignore */ }
+  }, [directory]);
+
+  useEffect(() => { checkMergeStatus(); }, [checkMergeStatus, refreshKey]);
 
   const refresh = useCallback(async () => {
     if (!directory || !window.api) return;
@@ -177,7 +195,8 @@ export default function ChangesPanel({ directory }) {
       setError(e.message || String(e));
     }
     setLoading(false);
-  }, [directory]);
+    checkMergeStatus();
+  }, [directory, checkMergeStatus]);
 
   useEffect(() => {
     refresh();
@@ -195,6 +214,10 @@ export default function ChangesPanel({ directory }) {
   };
 
   const handleUnstage = async (path) => {
+    if (isMerging) {
+      setError("Cannot unstage during a merge. Use 'Abort merge' or 'Resolve & commit' to conclude.");
+      return;
+    }
     try {
       await window.api.unstageFile(directory, path);
       refresh();
@@ -214,9 +237,16 @@ export default function ChangesPanel({ directory }) {
 
   const handleViewDiff = async (file) => {
     try {
-      const diff = file.staged
-        ? await window.api.getStagedDiff(directory, file.path)
-        : await window.api.getDiff(directory, file.path);
+      let diff;
+      if (isMerging && window.api.getMergeDiff) {
+        diff = await window.api.getMergeDiff(directory, file.path);
+        if (!diff || !diff.trim()) diff = null;
+      }
+      if (!diff) {
+        diff = file.staged
+          ? await window.api.getStagedDiff(directory, file.path)
+          : await window.api.getDiff(directory, file.path);
+      }
       if (diff && diff.trim()) {
         setDiffViewer({ fileName: file.path, diffText: diff });
       } else {
@@ -257,6 +287,7 @@ export default function ChangesPanel({ directory }) {
     if (didCommit) {
       setSuccess("Commit created successfully");
       refresh();
+      contextRefresh();
     }
   };
 
@@ -265,8 +296,12 @@ export default function ChangesPanel({ directory }) {
       if (!window.api) return;
       try {
         await window.api.discardFile(directory, file.path);
-        await window.api.abortMerge(directory);
-        setSuccess(`Discarded changes in ${file.path} (merge aborted)`);
+        if (await window.api.checkMergeHead(directory)) {
+          await window.api.abortMerge(directory);
+          setSuccess(`Discarded changes in ${file.path} (merge aborted)`);
+        } else {
+          setSuccess(`Discarded changes in ${file.path}`);
+        }
         refresh();
       } catch (e) {
         setError(e.message || String(e));
@@ -278,13 +313,15 @@ export default function ChangesPanel({ directory }) {
     setDiscardConfirm({ type: "all", path: "all changes", action: async () => {
       if (!window.api) return;
       try {
-        await window.api.abortMerge(directory);
-      } catch (e) { /* sem merge em progresso */ }
-      try {
+        if (await window.api.checkMergeHead(directory)) {
+          await window.api.abortMerge(directory);
+        }
         await window.api.discardAll(directory);
-      } catch (e) { /* sem mudanças para descartar */ }
-      setSuccess("All changes discarded");
-      refresh();
+        setSuccess("All changes discarded");
+        refresh();
+      } catch (e) {
+        setError(e.message || String(e));
+      }
     }});
   };
 
@@ -307,8 +344,12 @@ export default function ChangesPanel({ directory }) {
     if (!window.api) return;
     setConfirmAbort(false);
     try {
-      await window.api.abortMerge(directory);
-      setSuccess("Merge aborted successfully!");
+      if (await window.api.checkMergeHead(directory)) {
+        await window.api.abortMerge(directory);
+        setSuccess("Merge aborted successfully!");
+      } else {
+        setError("No merge in progress");
+      }
       refresh();
     } catch (e) {
       setError(e.message || String(e));
@@ -318,6 +359,14 @@ export default function ChangesPanel({ directory }) {
   const staged = statusList.filter(f => f.staged);
   const unstaged = statusList.filter(f => !f.staged);
   const conflicted = statusList.filter(f => f.conflicted).map(f => f.path);
+  const stagedWithResolved = useMemo(() => {
+    if (!isMerging) return staged;
+    const stagedPaths = new Set(staged.map(f => f.path));
+    const synthetic = resolvedFiles.filter(f => !stagedPaths.has(f)).map(f => ({
+      path: f, type: "M", staged: true, conflicted: false,
+    }));
+    return [...staged, ...synthetic];
+  }, [staged, resolvedFiles, isMerging]);
   const treeStaged = useMemo(() => buildTree(staged), [staged]);
   const treeUnstaged = useMemo(() => buildTree(unstaged), [unstaged]);
 
@@ -332,9 +381,10 @@ export default function ChangesPanel({ directory }) {
         <Typography variant="body2" sx={{ color: "text.secondary", mr: 1 }}>
           {loading ? "Refreshing..." : `${statusList.length} file(s)`}
         </Typography>
+        {isMerging && <Chip label="MERGING" size="small" color="warning" sx={{ fontWeight: 600, fontSize: "0.65rem" }} />}
         <Button size="small" variant="outlined" onClick={refresh}>Refresh</Button>
         <Button size="small" variant="outlined" onClick={handleStageAll}>Stage All</Button>
-        <Button size="small" variant="contained" onClick={() => setShowCommit(true)} disabled={staged.length === 0}>
+        <Button size="small" variant="contained" onClick={() => setShowCommit(true)} disabled={stagedWithResolved.length === 0}>
           Commit
         </Button>
         {unstaged.length > 0 && conflicted.length === 0 && (
@@ -342,7 +392,7 @@ export default function ChangesPanel({ directory }) {
             Discard All
           </Button>
         )}
-        {conflicted.length > 0 && (
+        {isMerging && (
           <Button size="small" variant="outlined" color="error" onClick={() => setConfirmAbort(true)}>
             Abort merge
           </Button>
@@ -357,19 +407,23 @@ export default function ChangesPanel({ directory }) {
 
       {error && <Alert severity="error" sx={{ mb: 1 }}>{error}</Alert>}
 
+      {isMerging && staged.length === 0 && unstaged.length === 0 && conflicted.length === 0 && (
+        <Alert severity="warning" sx={{ mb: 1 }}>
+          All conflicts resolved. <strong>Commit</strong> to conclude the merge or <strong>Abort merge</strong> to cancel.
+        </Alert>
+      )}
+
       {conflicted.length > 0 && (
         <ConflictResolver directory={directory} conflictedFiles={conflicted} onRefresh={refresh} />
       )}
 
-      {conflicted.length === 0 && (
-        <>
       <Typography variant="overline" sx={{ display: "block", color: "text.secondary", mb: 0.5 }}>
-        Staged ({staged.length})
+        Staged ({stagedWithResolved.length})
       </Typography>
-      {staged.length === 0 && (
+      {stagedWithResolved.length === 0 && (
         <Typography variant="body2" sx={{ color: "text.secondary", py: 1 }}>No staged files</Typography>
       )}
-      {staged.length > 0 && viewMode === "tree" ? (
+      {stagedWithResolved.length > 0 && viewMode === "tree" ? (
         <TreeList tree={treeStaged} handlers={{
           onStage: handleStage, onUnstage: handleUnstage,
           onViewDiff: handleViewDiff, onViewBlame: handleViewBlame,
@@ -378,7 +432,7 @@ export default function ChangesPanel({ directory }) {
         }} />
       ) : (
         <List dense>
-          {staged.map(f => (
+          {stagedWithResolved.map(f => (
             <StatusFile key={"staged-" + f.path} file={f} onStage={handleStage} onUnstage={handleUnstage} onViewDiff={handleViewDiff} onViewBlame={handleViewBlame} onViewHistory={handleViewHistory} onViewFile={handleViewFile} onDiscard={handleDiscardFile} onDiscardHunks={handleDiscardHunks} />
           ))}
         </List>
@@ -404,11 +458,9 @@ export default function ChangesPanel({ directory }) {
           ))}
         </List>
       )}
-        </>
-      )}
 
       {showCommit && (
-        <CommitDialog directory={directory} stagedFiles={staged} onClose={handleCommitClose} />
+        <CommitDialog directory={directory} stagedFiles={stagedWithResolved} onClose={handleCommitClose} />
       )}
 
       {diffViewer && (
@@ -482,7 +534,7 @@ export default function ChangesPanel({ directory }) {
           <Box sx={MODAL_STYLE}>
             <Typography variant="h6" sx={{ mb: 1 }}>Abort merge?</Typography>
             <Typography variant="body2" sx={{ mb: 2, color: "text.secondary" }}>
-              This will abort the current merge/rebase and discard all conflict resolutions.
+              This will abort the current merge/rebase and discard all conflict resolutions. <strong>All changes will be lost!</strong>
             </Typography>
             <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 1 }}>
               <Button onClick={() => setConfirmAbort(false)}>Keep editing</Button>

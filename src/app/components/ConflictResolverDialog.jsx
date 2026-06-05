@@ -358,8 +358,12 @@ export default function ConflictResolverDialog({ directory, conflictedFiles, onC
     if (!window.api) return;
     setConfirmAbort(false);
     try {
-      await window.api.abortMerge(directory);
-      setSuccessMessage("Merge aborted successfully!");
+      if (await window.api.checkMergeHead(directory)) {
+        await window.api.abortMerge(directory);
+        setSuccessMessage("Merge aborted successfully!");
+      } else {
+        setError("No merge in progress");
+      }
       onRefresh?.();
     } catch (e) {
       setError("Could not abort merge: " + (e.message || e));
@@ -643,7 +647,7 @@ export default function ConflictResolverDialog({ directory, conflictedFiles, onC
           <Box sx={{ bgcolor: "background.paper", borderRadius: 3, width: 360, maxWidth: "90vw", boxShadow: 24, p: 3 }}>
             <Typography variant="h6" sx={{ mb: 1 }}>Abort merge?</Typography>
             <Typography variant="body2" sx={{ mb: 2, color: "text.secondary" }}>
-              This will abort the current merge/rebase and discard all conflict resolutions.
+              This will abort the current merge/rebase and discard all conflict resolutions. <strong>All changes will be lost!</strong>
             </Typography>
             <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 1 }}>
               <Button onClick={() => setConfirmAbort(false)}>Keep editing</Button>
