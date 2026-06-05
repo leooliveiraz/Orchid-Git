@@ -6,7 +6,7 @@ import {
 import { OrchidContext } from "../OrchidContext.jsx";
 
 export default function CherryPickDialog({ onClose }) {
-  const { directory, refresh } = useContext(OrchidContext);
+  const { directory, refresh, setTabSignal } = useContext(OrchidContext);
   const [hash, setHash] = useState("");
   const [picking, setPicking] = useState(false);
   const [error, setError] = useState(null);
@@ -21,6 +21,7 @@ export default function CherryPickDialog({ onClose }) {
       await window.api.cherryPick(directory, hash.trim());
       setSuccess(`Cherry-picked ${hash.trim()}`);
       refresh();
+      setTabSignal("graph");
     } catch (e) {
       setError(e.message || String(e));
     }

@@ -5,7 +5,7 @@ import {
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 
-export default function ConflictResolverDialog({ directory, conflictedFiles, onClose, onRefresh }) {
+export default function ConflictResolverDialog({ directory, conflictedFiles, onClose, onRefresh, onCommit }) {
   const [fileIndex, setFileIndex] = useState(0);
   const [segments, setSegments] = useState([]);
   const [blocks, setBlocks] = useState([]);
@@ -325,6 +325,7 @@ export default function ConflictResolverDialog({ directory, conflictedFiles, onC
         }
         if (isMergeCommit) {
           setSuccessMessage("Merge commit concluído com sucesso!");
+          onCommit?.();
         } else {
           onClose();
         }

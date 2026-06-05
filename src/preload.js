@@ -17,6 +17,7 @@ contextBridge.exposeInMainWorld("api", {
   checkoutBranch: (directory, branch) => ipcRenderer.invoke("checkout-branch", directory, branch),
   checkoutRemoteBranch: (directory, branch) => ipcRenderer.invoke("checkout-remote-branch", directory, branch),
   checkoutCommit: (directory, commitHash) => ipcRenderer.invoke("checkout-commit", directory, commitHash),
+  resetCommit: (directory, commitHash, resetMode) => ipcRenderer.invoke("reset-commit", directory, commitHash, resetMode),
   isGitRepo: (directory) => ipcRenderer.invoke("is-git-repo", directory),
   createBranch: (directory, branchName) => ipcRenderer.invoke("create-branch", directory, branchName),
   initRepo: (directory) => ipcRenderer.invoke("init-repo", directory),

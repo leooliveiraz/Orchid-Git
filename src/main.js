@@ -154,6 +154,11 @@ ipcMain.handle("checkout-commit", (event, directory, commitHash) => {
   return runGit(["checkout", commitHash], directory);
 });
 
+ipcMain.handle("reset-commit", (event, directory, commitHash, resetMode) => {
+  const mode = resetMode || "mixed";
+  return runGit(["reset", `--${mode}`, commitHash], directory);
+});
+
 ipcMain.handle("is-git-repo", (event, directory) => {
   try {
     runGit(["rev-parse", "--git-dir"], directory);

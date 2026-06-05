@@ -3,10 +3,11 @@ import GitGraph, { parseLabels } from "./GitGraph.jsx";
 import {
   TableContainer, Table, TableHead, TableBody, TableRow, TableCell, Paper,
   Menu, MenuItem, ListItemIcon, ListItemText, Dialog, DialogTitle, DialogContent, DialogActions, Button, Typography,
-  Chip, Tooltip, Box,
+  Chip, Tooltip, Box, Radio, RadioGroup, FormControlLabel,
 } from "@mui/material";
 import ContentPasteIcon from "@mui/icons-material/ContentPaste";
 import CheckIcon from "@mui/icons-material/Check";
+import UndoIcon from "@mui/icons-material/Undo";
 
 const COLORS = [
   "#2D3AC9", "#B041FD", "#FD63CE", "#FD3C2F",
@@ -14,11 +15,13 @@ const COLORS = [
   "#FF5722", "#607D8B", "#795548", "#9C27B0",
 ];
 
-export default function CommitTable({ commitList, connectionStyle, onCommitClick, highlightIndex, onCherryPick, onCheckout }) {
+export default function CommitTable({ commitList, connectionStyle, onCommitClick, highlightIndex, onCherryPick, onCheckout, onReset }) {
   const containerRef = useRef(null);
   const [contextMenu, setContextMenu] = useState(null);
   const [contextCommit, setContextCommit] = useState(null);
   const [confirmCherry, setConfirmCherry] = useState(false);
+  const [confirmReset, setConfirmReset] = useState(false);
+  const [resetMode, setResetMode] = useState("mixed");
 
   useEffect(() => {
     if (highlightIndex == null || !containerRef.current) return;
@@ -55,6 +58,19 @@ export default function CommitTable({ commitList, connectionStyle, onCommitClick
     setContextMenu(null);
     if (contextCommit) {
       navigator.clipboard.writeText(contextCommit.commit);
+    }
+  };
+
+  const handleReset = () => {
+    setContextMenu(null);
+    setResetMode("mixed");
+    setConfirmReset(true);
+  };
+
+  const handleConfirmReset = () => {
+    setConfirmReset(false);
+    if (contextCommit && onReset) {
+      onReset(contextCommit.commit, resetMode);
     }
   };
 
@@ -224,6 +240,24 @@ export default function CommitTable({ commitList, connectionStyle, onCommitClick
         </DialogActions>
       </Dialog>
 
+      <Dialog open={confirmReset} onClose={() => setConfirmReset(false)} maxWidth="xs" fullWidth>
+        <DialogTitle>Reset to this commit</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" sx={{ mb: 2 }}>
+            Reset <strong>{contextCommit?.commit}</strong>?
+          </Typography>
+          <RadioGroup value={resetMode} onChange={(e) => setResetMode(e.target.value)}>
+            <FormControlLabel value="soft" control={<Radio size="small" />} label={<Typography variant="body2">Soft — keep all changes staged</Typography>} />
+            <FormControlLabel value="mixed" control={<Radio size="small" />} label={<Typography variant="body2">Mixed — keep changes, unstage them</Typography>} />
+            <FormControlLabel value="hard" control={<Radio size="small" />} label={<Typography variant="body2">Hard — discard all changes</Typography>} />
+          </RadioGroup>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setConfirmReset(false)}>Cancel</Button>
+          <Button variant="contained" color={resetMode === "hard" ? "error" : "primary"} onClick={handleConfirmReset}>Reset</Button>
+        </DialogActions>
+      </Dialog>
+
       <Menu
         open={!!contextMenu}
         onClose={() => setContextMenu(null)}
@@ -247,6 +281,12 @@ export default function CommitTable({ commitList, connectionStyle, onCommitClick
             <ContentPasteIcon fontSize="small" />
           </ListItemIcon>
           <ListItemText primary="Copy hash" primaryTypographyProps={{ variant: "body2" }} />
+        </MenuItem>
+        <MenuItem onClick={handleReset} dense>
+          <ListItemIcon sx={{ minWidth: 28 }}>
+            <UndoIcon fontSize="small" />
+          </ListItemIcon>
+          <ListItemText primary="Reset to this commit" primaryTypographyProps={{ variant: "body2" }} />
         </MenuItem>
       </Menu>
     </>

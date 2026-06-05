@@ -152,7 +152,7 @@ function StatusFile({ file, onStage, onUnstage, onViewDiff, onViewBlame, onViewH
 }
 
 export default function ChangesPanel({ directory }) {
-  const { refreshKey, refresh: contextRefresh } = useContext(OrchidContext);
+  const { refreshKey, refresh: contextRefresh, setTabSignal } = useContext(OrchidContext);
   const [statusList, setStatusList] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -288,6 +288,7 @@ export default function ChangesPanel({ directory }) {
       setSuccess("Commit created successfully");
       refresh();
       contextRefresh();
+      setTabSignal("graph");
     }
   };
 
@@ -414,7 +415,7 @@ export default function ChangesPanel({ directory }) {
       )}
 
       {conflicted.length > 0 && (
-        <ConflictResolver directory={directory} conflictedFiles={conflicted} onRefresh={refresh} />
+        <ConflictResolver directory={directory} conflictedFiles={conflicted} onRefresh={() => { refresh(); contextRefresh(); }} onCommit={() => setTabSignal("graph")} />
       )}
 
       <Typography variant="overline" sx={{ display: "block", color: "text.secondary", mb: 0.5 }}>

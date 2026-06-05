@@ -15,7 +15,7 @@ import {
 import { OrchidContext } from "../OrchidContext.jsx";
 
 export default function Repository({ repositoryDirectory }) {
-  const { refreshKey, setNotRepo, tabSignal, setTabSignal } = useContext(OrchidContext);
+  const { refreshKey, setNotRepo, tabSignal, setTabSignal, refresh } = useContext(OrchidContext);
   const [commitList, setCommitList] = useState([]);
   const [tab, setTab] = useState("changes");
   const [commitFiles, setCommitFiles] = useState(null);
@@ -244,6 +244,18 @@ export default function Repository({ repositoryDirectory }) {
       await window.api.cherryPick(repositoryDirectory, commitHash);
       setSuccess("Cherry-picked " + commitHash);
       refresh();
+      setTabSignal("graph");
+    } catch (e) {
+      setError(e.message || String(e));
+    }
+  };
+
+  const handleReset = async (commitHash, resetMode) => {
+    if (!window.api) return;
+    try {
+      await window.api.resetCommit(repositoryDirectory, commitHash, resetMode);
+      setSuccess(`Reset (${resetMode}) to ${commitHash}`);
+      refresh();
     } catch (e) {
       setError(e.message || String(e));
     }
@@ -323,7 +335,7 @@ export default function Repository({ repositoryDirectory }) {
           )}
 
           <Box sx={{ flex: 1, minHeight: 0 }}>
-            <CommitTable commitList={commitList} connectionStyle={connectionStyle} onCommitClick={handleCommitClick} highlightIndex={highlightIndex} onCherryPick={handleCherryPick} onCheckout={handleCheckout} />
+            <CommitTable commitList={commitList} connectionStyle={connectionStyle} onCommitClick={handleCommitClick} highlightIndex={highlightIndex} onCherryPick={handleCherryPick} onCheckout={handleCheckout} onReset={handleReset} />
           </Box>
         </>
       )}

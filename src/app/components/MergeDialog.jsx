@@ -31,6 +31,7 @@ export default function MergeDialog({ onClose, defaultBranch }) {
       await window.api.merge(directory, source, strategy);
       setSuccess(`Merged ${source} into ${repoData.currentBranch}`);
       refresh();
+      setTabSignal("graph");
     } catch (e) {
       const msg = (e.message || String(e)).toLowerCase();
       console.log(msg)

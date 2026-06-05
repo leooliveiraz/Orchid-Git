@@ -6,7 +6,7 @@ import WarningAmberIcon from "@mui/icons-material/WarningAmber";
 import CallSplitIcon from "@mui/icons-material/CallSplit";
 import ConflictResolverDialog from "./ConflictResolverDialog.jsx";
 
-export default function ConflictResolver({ directory, conflictedFiles, onRefresh }) {
+export default function ConflictResolver({ directory, conflictedFiles, onRefresh, onCommit }) {
   const [showDialog, setShowDialog] = useState(false);
   const files = conflictedFiles || [];
 
@@ -52,6 +52,7 @@ export default function ConflictResolver({ directory, conflictedFiles, onRefresh
           conflictedFiles={files}
           onClose={() => setShowDialog(false)}
           onRefresh={onRefresh}
+          onCommit={onCommit}
         />
       )}
     </Box>
