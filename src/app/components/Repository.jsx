@@ -10,14 +10,14 @@ import SearchText from "./SearchText.jsx";
 import {
   Typography, Box, Tabs, Tab, FormControlLabel, Checkbox,
   TextField, ToggleButtonGroup, ToggleButton, Paper,
-  Menu, MenuItem, ListItemIcon, ListItemText, Chip, Divider, Alert,
+  Menu, MenuItem, ListItemIcon, ListItemText, Chip, Divider, Alert, Badge,
 } from "@mui/material";
 import { OrchidContext } from "../OrchidContext.jsx";
 
 export default function Repository({ repositoryDirectory }) {
   const { refreshKey, setNotRepo, tabSignal, setTabSignal, refresh } = useContext(OrchidContext);
   const [commitList, setCommitList] = useState([]);
-  const [tab, setTab] = useState("changes");
+  const [tab, setTab] = useState("graph");
   const [commitFiles, setCommitFiles] = useState(null);
   const [menuAnchor, setMenuAnchor] = useState(null);
   const [selectedCommit, setSelectedCommit] = useState(null);
@@ -30,6 +30,7 @@ export default function Repository({ repositoryDirectory }) {
   const [highlightIndex, setHighlightIndex] = useState(null);
   const [success, setSuccess] = useState(null);
   const [error, setError] = useState(null);
+  const [hasChanges, setHasChanges] = useState(false);
 
   useEffect(() => {
     if (tabSignal) {
@@ -179,6 +180,20 @@ export default function Repository({ repositoryDirectory }) {
     }
   }, [repositoryDirectory, useTopoOrder, allBranches, commitLimit, refreshKey]);
 
+  useEffect(() => {
+    let mounted = true;
+    async function checkChanges() {
+      if (!window.api) return;
+      try {
+        const status = await window.api.getStatus(repositoryDirectory);
+        if (mounted) setHasChanges(status.length > 0);
+      } catch (e) { /* ignore */ }
+    }
+    checkChanges();
+    const interval = setInterval(checkChanges, 10000);
+    return () => { mounted = false; clearInterval(interval); };
+  }, [repositoryDirectory, refreshKey]);
+
   function configureCommitList(result) {
     const commitList = [];
     const blocks = result.split("\0").filter(Boolean);
@@ -292,7 +307,7 @@ export default function Repository({ repositoryDirectory }) {
 
       <Tabs value={tab} onChange={(e, v) => setTab(v)} sx={{ mb: 1 }}>
         <Tab label="Graph" value="graph" />
-        <Tab label="Changes" value="changes" />
+        <Tab label={<Badge color="error" variant="dot" invisible={!hasChanges}>Changes</Badge>} value="changes" />
         <Tab label="Metrics" value="metrics" />
         <Tab label="Files" value="files" />
       </Tabs>
