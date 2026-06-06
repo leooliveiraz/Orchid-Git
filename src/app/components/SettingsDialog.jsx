@@ -16,6 +16,7 @@ export default function SettingsDialog({ onClose }) {
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
   const [skipConfirm, setSkipConfirm] = useState(() => localStorage.getItem("orchid-skip-repo-switch") === "true");
+  const [forcePushEnabled, setForcePushEnabled] = useState(() => localStorage.getItem("orchid-force-push-enabled") === "true");
 
   useEffect(() => {
     if (!directory || !window.api) return;
@@ -193,6 +194,15 @@ li{margin:8px 0}strong{color:#000}
                 }}
               />}
               label={<Typography variant="body2">Don't ask when switching repositories</Typography>}
+            />
+            <FormControlLabel
+              control={<Checkbox checked={forcePushEnabled}
+                onChange={e => {
+                  setForcePushEnabled(e.target.checked);
+                  localStorage.setItem("orchid-force-push-enabled", e.target.checked ? "true" : "false");
+                }}
+              />}
+              label={<Typography variant="body2">Enable force push</Typography>}
             />
 
             <Divider sx={{ mt: 2, mb: 1 }} />

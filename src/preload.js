@@ -56,6 +56,7 @@ contextBridge.exposeInMainWorld("api", {
   getDiffLines: (directory, filePath) => ipcRenderer.invoke("get-diff-lines", directory, filePath),
   getStagedDiff: (directory, filePath) => ipcRenderer.invoke("get-staged-diff", directory, filePath),
   push: (directory) => ipcRenderer.invoke("push", directory),
+  pushForce: (directory) => ipcRenderer.invoke("push-force", directory),
   pull: (directory) => ipcRenderer.invoke("pull", directory),
   fetch: (directory) => ipcRenderer.invoke("fetch", directory),
   getUserConfig: (directory) => ipcRenderer.invoke("get-user-config", directory),

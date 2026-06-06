@@ -686,6 +686,10 @@ ipcMain.handle("push", (event, directory) => {
   }
 });
 
+ipcMain.handle("push-force", (event, directory) => {
+  return runGit(["push", "--force-with-lease"], directory);
+});
+
 ipcMain.handle("pull", (event, directory) => {
   return runGit(["pull"], directory);
 });

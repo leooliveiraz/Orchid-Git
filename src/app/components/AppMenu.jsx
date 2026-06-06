@@ -75,6 +75,8 @@ export default function AppMenu({ onToggleMenu }) {
   const [syncLoading, setSyncLoading] = useState(false);
   const [syncError, setSyncError] = useState(null);
   const [syncSuccess, setSyncSuccess] = useState(null);
+  const [forcePushEnabled] = useState(() => localStorage.getItem("orchid-force-push-enabled") === "true");
+  const [showForceConfirm, setShowForceConfirm] = useState(false);
 
   function selectDirectory() {
     window.api.selectDirectory("").then((data) => {
@@ -91,6 +93,22 @@ export default function AppMenu({ onToggleMenu }) {
     try {
       await window.api.push(directory);
       setSyncSuccess("Pushed successfully");
+      setSyncAction(null);
+      refresh();
+    } catch (e) {
+      setSyncError(e.message || String(e));
+      setSyncAction(null);
+    }
+    setSyncLoading(false);
+  };
+
+  const handleForcePush = async () => {
+    setShowForceConfirm(false);
+    setSyncLoading(true);
+    setSyncError(null);
+    try {
+      await window.api.pushForce(directory);
+      setSyncSuccess("Force pushed successfully");
       setSyncAction(null);
       refresh();
     } catch (e) {
@@ -341,7 +359,7 @@ export default function AppMenu({ onToggleMenu }) {
         </Box>
       )}
 
-      {syncAction === "push" && (
+      {syncAction === "push" && !showForceConfirm && (
         <Box sx={OVERLAY_STYLE}>
           <Box sx={MODAL_STYLE}>
             <Typography variant="h6" sx={{ mb: 1 }}>Push</Typography>
@@ -366,7 +384,28 @@ export default function AppMenu({ onToggleMenu }) {
             )}
             <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 1 }}>
               <Button onClick={() => { setSyncAction(null); setSyncLoading(false); }} disabled={syncLoading}>Cancel</Button>
+              {forcePushEnabled && (
+                <Button color="error" variant="outlined" onClick={() => setShowForceConfirm(true)} disabled={syncLoading} sx={{ mr: "auto" }}>Force Push</Button>
+              )}
               <Button variant="contained" onClick={handlePush} disabled={syncLoading}>Push</Button>
+            </Box>
+          </Box>
+        </Box>
+      )}
+
+      {showForceConfirm && (
+        <Box sx={OVERLAY_STYLE}>
+          <Box sx={MODAL_STYLE}>
+            <Typography variant="h6" sx={{ mb: 1, color: "error.main" }}>Force Push</Typography>
+            <Alert severity="warning" sx={{ mb: 2 }}>
+              This will overwrite the remote history with your local history. Other collaborators may lose work. This action is destructive.
+            </Alert>
+            <Typography variant="body2" sx={{ mb: 2 }}>
+              Are you sure you want to force push using <code>--force-with-lease</code>?
+            </Typography>
+            <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 1 }}>
+              <Button onClick={() => setShowForceConfirm(false)}>Cancel</Button>
+              <Button color="error" variant="contained" onClick={handleForcePush}>Yes, force push</Button>
             </Box>
           </Box>
         </Box>
