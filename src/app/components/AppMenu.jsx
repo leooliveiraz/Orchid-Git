@@ -33,7 +33,7 @@ import ContentPasteIcon from "@mui/icons-material/ContentPaste";
 import AssignmentTurnedInIcon from '@mui/icons-material/AssignmentTurnedIn';
 import WatchLaterIcon from '@mui/icons-material/WatchLater';
 import ClearIcon from "@mui/icons-material/Clear";
-import React, { useContext, useState } from "react";
+import React, { useContext, useState, useEffect } from "react";
 import appIcon from "../../assets/icon.png";
 import { OrchidContext } from "../OrchidContext.jsx";
 import CloneDialog from "./CloneDialog.jsx";
@@ -75,7 +75,13 @@ export default function AppMenu({ onToggleMenu }) {
   const [syncLoading, setSyncLoading] = useState(false);
   const [syncError, setSyncError] = useState(null);
   const [syncSuccess, setSyncSuccess] = useState(null);
-  const [forcePushEnabled] = useState(() => localStorage.getItem("orchid-force-push-enabled") === "true");
+  const [forcePushEnabled, setForcePushEnabled] = useState(() => localStorage.getItem("orchid-force-push-enabled") === "true");
+
+  useEffect(() => {
+    const handler = (e) => setForcePushEnabled(e.detail);
+    window.addEventListener("force-push-setting-changed", handler);
+    return () => window.removeEventListener("force-push-setting-changed", handler);
+  }, []);
   const [showForceConfirm, setShowForceConfirm] = useState(false);
 
   function selectDirectory() {
@@ -173,7 +179,7 @@ export default function AppMenu({ onToggleMenu }) {
       }
       setCommitStaged(staged);
       setShowCommit(true);
-    } catch(e) {}
+    } catch (e) { }
   };
 
   return (

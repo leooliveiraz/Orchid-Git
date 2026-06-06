@@ -200,6 +200,7 @@ li{margin:8px 0}strong{color:#000}
                 onChange={e => {
                   setForcePushEnabled(e.target.checked);
                   localStorage.setItem("orchid-force-push-enabled", e.target.checked ? "true" : "false");
+                  window.dispatchEvent(new CustomEvent("force-push-setting-changed", { detail: e.target.checked }));
                 }}
               />}
               label={<Typography variant="body2">Enable force push</Typography>}
