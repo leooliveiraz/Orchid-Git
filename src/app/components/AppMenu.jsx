@@ -35,6 +35,7 @@ import WatchLaterIcon from '@mui/icons-material/WatchLater';
 import ClearIcon from "@mui/icons-material/Clear";
 import React, { useContext, useState, useEffect } from "react";
 import appIcon from "../../assets/icon.png";
+import pkg from "../../../package.json";
 import { OrchidContext } from "../OrchidContext.jsx";
 import CloneDialog from "./CloneDialog.jsx";
 import SettingsDialog from "./SettingsDialog.jsx";
@@ -213,6 +214,8 @@ export default function AppMenu({ onToggleMenu }) {
             <Typography variant="h6" component="div" sx={{ fontWeight: 600 }}>
               Orchid
             </Typography>
+            <Chip label={`v${pkg.version}`} size="small" variant="outlined"
+              sx={{ fontSize: "0.6rem", height: 18, color: "rgba(255,255,255,0.5)", borderColor: "rgba(255,255,255,0.2)" }} />
           </Box>
 
           <Tooltip title="Open repository">
