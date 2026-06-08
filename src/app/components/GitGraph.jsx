@@ -120,6 +120,7 @@ export default function GitGraph({ commit, index, commitList, connectionStyle, l
     : null;
 
   const hasParentAtDepth = (depth === parentDepth || depth === mergeDepth);
+
   function cx(d) { return Number.isFinite(d) ? d * LANE_WIDTH + 6 : 6; }
 
   const pd = commit.dad?.parentDistance;
@@ -134,17 +135,20 @@ export default function GitGraph({ commit, index, commitList, connectionStyle, l
       className="git-graph-svg"
       style={{ overflow: "visible", display: "block", position: "relative", zIndex: 10 }}
     >
-      {activeLanes.map(d => (
-        <rect
-          key={"ln" + d}
-          x={d * LANE_WIDTH + 5}
-          y={d === depth ? (hasSonAtDepth ? 0 : ROW_HEIGHT / 2 - CIRCLE_R) : 0}
-          width={2}
-          height={d === depth ? (hasParentAtDepth ? ROW_HEIGHT + 10 : 0) : ROW_HEIGHT + 10}
-          fill={COLORS[d % COLORS.length]}
-          opacity={1}
-        />
-      ))}
+      {activeLanes.map(d => {
+        let laneY = 0, laneH = ROW_HEIGHT + 10;
+        if (d === depth) {
+          const s = hasSonAtDepth, p = hasParentAtDepth;
+          if (s && p) { laneY = 0; laneH = ROW_HEIGHT + 10; }
+          else if (!s && p) { laneY = ROW_HEIGHT / 2 - CIRCLE_R; laneH = ROW_HEIGHT + 10; }
+          else if (s && !p) { laneY = 0; laneH = ROW_HEIGHT / 2 + CIRCLE_R; }
+          else { laneY = ROW_HEIGHT / 2 - CIRCLE_R; laneH = CIRCLE_R * 2; }
+        }
+        return (
+          <rect key={"ln" + d} x={d * LANE_WIDTH + 5} y={laneY} width={2} height={laneH}
+            fill={COLORS[d % COLORS.length]} opacity={1} />
+        );
+      })}
 
       {commit.dad && parentDepth != null && parentDepth !== depth && (
         <path
