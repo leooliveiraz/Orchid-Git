@@ -1,9 +1,9 @@
-import React, { useMemo, useRef, useEffect, useState } from "react";
+import React, { useMemo, useRef, useEffect, useState, useCallback } from "react";
 import GitGraph, { parseLabels } from "./GitGraph.jsx";
 import {
   TableContainer, Table, TableHead, TableBody, TableRow, TableCell, Paper,
   Menu, MenuItem, ListItemIcon, ListItemText, Dialog, DialogTitle, DialogContent, DialogActions, Button, Typography,
-  Chip, Tooltip, Box, Radio, RadioGroup, FormControlLabel,
+  Chip, Tooltip, Box, Radio, RadioGroup, FormControlLabel, TextField,
 } from "@mui/material";
 import ContentPasteIcon from "@mui/icons-material/ContentPaste";
 import CheckIcon from "@mui/icons-material/Check";
@@ -24,6 +24,8 @@ export default function CommitTable({ commitList, connectionStyle, onCommitClick
   const [confirmRevert, setConfirmRevert] = useState(false);
   const [confirmReset, setConfirmReset] = useState(false);
   const [resetMode, setResetMode] = useState("mixed");
+  const [selectedCommits, setSelectedCommits] = useState(new Set());
+  const [cherryPickHashes, setCherryPickHashes] = useState("");
 
   useEffect(() => {
     if (highlightIndex == null || !containerRef.current) return;
@@ -31,21 +33,54 @@ export default function CommitTable({ commitList, connectionStyle, onCommitClick
     containerRef.current.scrollTo({ top: highlightIndex * rowHeight, behavior: "smooth" });
   }, [highlightIndex]);
 
+  useEffect(() => {
+    function keyDown(e) {
+      if ((e.ctrlKey || e.metaKey) && e.key === "a") {
+        const target = e.target;
+        if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable)) return;
+        e.preventDefault();
+        setSelectedCommits(new Set(commitList.map(c => c.commit)));
+      }
+    }
+    document.addEventListener("keydown", keyDown);
+    return () => document.removeEventListener("keydown", keyDown);
+  }, [commitList]);
+
+  const handleRowClick = useCallback((e, commit) => {
+    if (e.ctrlKey || e.metaKey) {
+      e.stopPropagation();
+      setSelectedCommits(prev => {
+        const next = new Set(prev);
+        if (next.has(commit.commit)) next.delete(commit.commit);
+        else next.add(commit.commit);
+        return next;
+      });
+    } else {
+      setSelectedCommits(new Set([commit.commit]));
+      onCommitClick?.(commit, e);
+    }
+  }, [onCommitClick]);
+
   const handleContextMenu = (e, commit) => {
     e.preventDefault();
+    if (!selectedCommits.has(commit.commit)) {
+      setSelectedCommits(new Set([commit.commit]));
+    }
     setContextMenu({ left: e.clientX, top: e.clientY });
     setContextCommit(commit);
   };
 
   const handleCherryPick = () => {
     setContextMenu(null);
+    setCherryPickHashes([...selectedCommits].join(" "));
     setConfirmCherry(true);
   };
 
   const handleConfirmCherry = () => {
     setConfirmCherry(false);
-    if (contextCommit && onCherryPick) {
-      onCherryPick(contextCommit.commit);
+    const typed = cherryPickHashes.split(/\s+/).filter(Boolean);
+    if (typed.length > 0 && onCherryPick) {
+      onCherryPick(typed);
     }
   };
 
@@ -70,8 +105,9 @@ export default function CommitTable({ commitList, connectionStyle, onCommitClick
 
   const handleCopyHash = () => {
     setContextMenu(null);
-    if (contextCommit) {
-      navigator.clipboard.writeText(contextCommit.commit);
+    const hashes = [...selectedCommits];
+    if (hashes.length > 0) {
+      navigator.clipboard.writeText(hashes.join("\n"));
     }
   };
 
@@ -159,11 +195,15 @@ export default function CommitTable({ commitList, connectionStyle, onCommitClick
             <TableRow
               key={commit.commit}
               hover
-              onClick={(e) => onCommitClick?.(commit, e)}
+              onClick={(e) => handleRowClick(e, commit)}
               onContextMenu={(e) => handleContextMenu(e, commit)}
               sx={{
                 cursor: "pointer",
                 "&:last-child td": { borderBottom: 0 },
+                ...(selectedCommits.has(commit.commit) ? {
+                  bgcolor: "rgba(25, 118, 210, 0.12)",
+                  "&:hover": { bgcolor: "rgba(25, 118, 210, 0.18)" },
+                } : {}),
                 ...(index === highlightIndex ? {
                   animation: "highlight-pulse 3s ease-out",
                   "@keyframes highlight-pulse": {
@@ -238,19 +278,30 @@ export default function CommitTable({ commitList, connectionStyle, onCommitClick
       </Table>
       </TableContainer>
 
-      <Dialog open={confirmCherry} onClose={() => setConfirmCherry(false)} maxWidth="xs" fullWidth>
-        <DialogTitle>Cherry-pick commit</DialogTitle>
+      <Dialog open={confirmCherry} onClose={() => setConfirmCherry(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Cherry-pick commits</DialogTitle>
         <DialogContent>
-          <Typography variant="body2">
-            Cherry-pick <strong>{contextCommit?.commit}</strong> into the current branch?
+          <Typography variant="body2" sx={{ mb: 1 }}>
+            Enter commit hashes separated by space:
           </Typography>
-          <Typography variant="body2" sx={{ mt: 1, color: "text.secondary" }}>
-            {contextCommit?.message}
+          <TextField
+            autoFocus
+            fullWidth
+            multiline
+            minRows={2}
+            maxRows={6}
+            placeholder="e.g. a1b2c3d e4f5g6h i7j8k9l"
+            value={cherryPickHashes}
+            onChange={e => setCherryPickHashes(e.target.value)}
+            sx={{ fontFamily: "monospace", fontSize: "0.75rem" }}
+          />
+          <Typography variant="caption" sx={{ mt: 1, display: "block", color: "text.secondary" }}>
+            {cherryPickHashes.split(/\s+/).filter(Boolean).length} commit(s) to cherry-pick
           </Typography>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setConfirmCherry(false)}>Cancel</Button>
-          <Button variant="contained" onClick={handleConfirmCherry}>Cherry-pick</Button>
+          <Button variant="contained" onClick={handleConfirmCherry} disabled={!cherryPickHashes.split(/\s+/).filter(Boolean).length}>Cherry-pick</Button>
         </DialogActions>
       </Dialog>
 
@@ -304,7 +355,7 @@ export default function CommitTable({ commitList, connectionStyle, onCommitClick
           <ListItemIcon sx={{ minWidth: 28 }}>
             <ContentPasteIcon fontSize="small" />
           </ListItemIcon>
-          <ListItemText primary="Cherry-pick this commit" primaryTypographyProps={{ variant: "body2" }} />
+          <ListItemText primary={selectedCommits.size > 1 ? `Cherry-pick ${selectedCommits.size} commits` : "Cherry-pick this commit"} primaryTypographyProps={{ variant: "body2" }} />
         </MenuItem>
         <MenuItem onClick={handleRevert} dense>
           <ListItemIcon sx={{ minWidth: 28 }}>
@@ -316,7 +367,7 @@ export default function CommitTable({ commitList, connectionStyle, onCommitClick
           <ListItemIcon sx={{ minWidth: 28 }}>
             <ContentPasteIcon fontSize="small" />
           </ListItemIcon>
-          <ListItemText primary="Copy hash" primaryTypographyProps={{ variant: "body2" }} />
+          <ListItemText primary={selectedCommits.size > 1 ? `Copy ${selectedCommits.size} hashes` : "Copy hash"} primaryTypographyProps={{ variant: "body2" }} />
         </MenuItem>
         <MenuItem onClick={handleReset} dense>
           <ListItemIcon sx={{ minWidth: 28 }}>

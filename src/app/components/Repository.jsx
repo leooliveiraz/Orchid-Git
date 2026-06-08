@@ -255,13 +255,14 @@ export default function Repository({ repositoryDirectory }) {
     }
   };
 
-  const handleCherryPick = async (commitHash) => {
+  const handleCherryPick = async (commitHashes) => {
     if (isMerging) { setError("Resolva o merge antes de continuar"); return; }
     if (isReverting) { setError("Resolva o revert antes de continuar"); return; }
     if (!window.api) return;
+    const hashes = Array.isArray(commitHashes) ? commitHashes : [commitHashes];
     try {
-      await window.api.cherryPick(repositoryDirectory, commitHash);
-      setSuccess("Cherry-picked " + commitHash);
+      await window.api.cherryPick(repositoryDirectory, hashes);
+      setSuccess(`Cherry-picked ${hashes.length} commit(s)`);
       refresh();
       setTabSignal("graph");
     } catch (e) {

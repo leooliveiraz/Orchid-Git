@@ -25,4 +25,6 @@ export const OrchidContext = createContext({
   setIsMerging: () => {},
   isReverting: false,
   setIsReverting: () => {},
+  rebaseEditRequest: null,
+  setRebaseEditRequest: () => {},
 });

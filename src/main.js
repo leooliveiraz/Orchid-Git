@@ -1,10 +1,12 @@
 import { app, BrowserWindow } from "electron";
 const { dialog, Menu, MenuItem } = require("electron");
 import path from "node:path";
+import fs from "node:fs";
+import os from "node:os";
 import started from "electron-squirrel-startup";
 const ipcMain = require("electron").ipcMain;
 const childProcess = require("child_process");
-const isWindows = process.platform === "win32";
+const PLATFORM = process.platform;
 
 function runGit(args, cwd) {
   const result = childProcess.spawnSync("git", args, { cwd, encoding: "utf8" });
@@ -12,6 +14,27 @@ function runGit(args, cwd) {
   if (result.status === 1 && result.stdout.toLowerCase().indexOf("conflict" > -1)) throw new Error(result.stderr || `git merge failed: merge conflict`);
   if (result.status !== 0) throw new Error(result.stderr || `git command failed: ${args.join(" ")}`);
   return result.stdout;
+}
+
+function gitPath(pathStr) {
+  return pathStr.replace(/\\/g, "/");
+}
+
+function isWin() { return PLATFORM === "win32"; }
+function isMac() { return PLATFORM === "darwin"; }
+function isLinux() { return PLATFORM === "linux"; }
+
+function nodeExec() {
+  const exePath = process.execPath;
+  if (isWin()) return `"${exePath}"`;
+  return exePath;
+}
+
+function writeTempScript(name, content) {
+  const scriptPath = path.join(os.tmpdir(), name);
+  fs.writeFileSync(scriptPath, content, "utf8");
+  if (!isWin()) fs.chmodSync(scriptPath, 0o755);
+  return scriptPath;
 }
 
 let win = null;
@@ -189,6 +212,14 @@ ipcMain.handle("reset-commit", (event, directory, commitHash, resetMode) => {
   return runGit(["reset", `--${mode}`, commitHash], directory);
 });
 
+ipcMain.handle("cherry-pick", (event, { directory, commitHashes }) => {
+  let hashes = commitHashes;
+  if (typeof hashes === "string") hashes = hashes.split(/\s+/).filter(Boolean);
+  if (!Array.isArray(hashes)) hashes = [String(hashes)];
+  const args = ["cherry-pick"].concat(hashes);
+  return runGit(args, directory);
+});
+
 ipcMain.handle("revert-commit", (event, directory, commitHash) => {
   return runGit(["revert", "--no-edit", commitHash], directory);
 });
@@ -232,7 +263,7 @@ ipcMain.handle("save-file-content", (event, directory, filePath, content) => {
 });
 
 ipcMain.handle("get-file-at-commit", (event, directory, commitHash, filePath) => {
-  return runGit(["show", `${commitHash}:${filePath}`], directory).replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+  return runGit(["show", `${commitHash}:${gitPath(filePath)}`], directory).replace(/\r\n/g, "\n").replace(/\r/g, "\n");
 });
 
 ipcMain.handle("merge", (event, directory, branch, strategy) => {
@@ -326,35 +357,102 @@ ipcMain.handle("get-repo-files", (event, directory) => {
   return output.trim().split("\n").filter(Boolean).map(f => f.replace(/^"|"$/g, "")).sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }));
 });
 
-ipcMain.handle("execute-rebase", (event, directory, targetBranch, todoList) => {
-  const os = require("os");
-  const path = require("path");
-  const fs = require("fs");
+let rebaseEditResolve = null;
+ipcMain.handle("rebase-edit-response", (event, data) => {
+  if (rebaseEditResolve) {
+    rebaseEditResolve(data);
+    rebaseEditResolve = null;
+  }
+});
+
+ipcMain.handle("execute-rebase", async (event, directory, targetBranch, todoList) => {
+  console.log("[rebase] Starting rebase for", directory, "target:", targetBranch);
+  console.log("[rebase] Todo items:", todoList.length);
+
+  const rebaseMergeDir = path.join(directory, ".git", "rebase-merge");
+  const hasRebaseMerge = fs.existsSync(rebaseMergeDir);
+  console.log("[rebase] rebase-merge dir exists:", hasRebaseMerge);
+  if (hasRebaseMerge) {
+    console.log("[rebase] Aborting existing rebase before starting new one");
+    const abortResult = childProcess.spawnSync("git", ["rebase", "--abort"], { cwd: directory, encoding: "utf8" });
+    console.log("[rebase] Abort result:", abortResult.status, abortResult.stderr);
+  }
 
   const todoContent = todoList.map(item => `${item.action} ${item.hash} ${item.message}`).join("\n") + "\n";
   const todoFile = path.join(os.tmpdir(), `orchid-rebase-todo-${Date.now()}.txt`);
   fs.writeFileSync(todoFile, todoContent, "utf8");
+  console.log("[rebase] Todo file written:", todoFile);
 
-  const scriptFile = path.join(os.tmpdir(), `orchid-rebase-editor-${Date.now()}${process.platform === "win32" ? ".bat" : ".sh"}`);
-  if (process.platform === "win32") {
-    fs.writeFileSync(scriptFile, `@echo off\ncopy /y "${todoFile}" %1 >nul\n`, "utf8");
-  } else {
-    fs.writeFileSync(scriptFile, `#!/bin/sh\ncp "${todoFile}" "$1"\n`, "utf8");
-    fs.chmodSync(scriptFile, 0o755);
-  }
+  const seqEditor = writeTempScript(`orchid-rebase-seq-${Date.now()}.js`,
+    `const fs=require("fs");fs.copyFileSync("${gitPath(todoFile)}",process.argv[2]);process.exit(0);\n`);
 
-  const result = childProcess.spawnSync("git", ["rebase", "-i", targetBranch], {
-    cwd: directory,
-    encoding: "utf8",
-    env: { ...process.env, GIT_SEQUENCE_EDITOR: scriptFile },
+  const commDir = path.join(os.tmpdir(), `orchid-rebase-comm-${Date.now()}`);
+  fs.mkdirSync(commDir, { recursive: true });
+
+  const msgEditor = writeTempScript(`orchid-rebase-msg-${Date.now()}.js`,
+    `const fs=require("fs");const p=require("path");const c=fs.readFileSync(process.argv[2],"utf8");` +
+    `const req=p.join("${gitPath(commDir)}","request");` +
+    `const rsp=p.join("${gitPath(commDir)}","response");` +
+    `fs.writeFileSync(req,c,"utf8");` +
+    `while(!fs.existsSync(rsp)){Atomics.wait(new Int32Array(new SharedArrayBuffer(4)),0,0,200)}` +
+    `const rc=JSON.parse(fs.readFileSync(rsp,"utf8"));` +
+    `fs.writeFileSync(process.argv[2],rc.content,"utf8");` +
+    `try{fs.unlinkSync(req)}catch(e){}try{fs.unlinkSync(rsp)}catch(e){}process.exit(0);\n`);
+
+  const orchExe = `"${gitPath(process.execPath)}"`;
+  const editorCmd = `${orchExe} "${gitPath(msgEditor)}"`;
+  const seqCmd = `${orchExe} "${gitPath(seqEditor)}"`;
+
+  console.log("[rebase] GIT_SEQUENCE_EDITOR:", seqCmd);
+  console.log("[rebase] GIT_EDITOR:", editorCmd);
+
+  const result = await new Promise((resolve, reject) => {
+    const proc = childProcess.spawn("git", ["rebase", "-i", targetBranch], {
+      cwd: directory,
+      encoding: "utf8",
+      env: { ...process.env, GIT_SEQUENCE_EDITOR: seqCmd, GIT_EDITOR: editorCmd },
+    });
+
+    let stdout = "", stderr = "";
+    proc.stdout.on("data", d => stdout += d);
+    proc.stderr.on("data", d => stderr += d);
+
+    let processingReq = false;
+    const pollTimer = setInterval(async () => {
+      if (processingReq) return;
+      const reqFile = path.join(commDir, "request");
+      if (!fs.existsSync(reqFile)) return;
+      processingReq = true;
+      const content = fs.readFileSync(reqFile, "utf8");
+      try { fs.unlinkSync(reqFile); } catch (e) { }
+      console.log("[rebase] Editor request received, sending to renderer");
+      const response = await new Promise((res) => {
+        rebaseEditResolve = res;
+        event.sender.send("rebase-edit-request", { content });
+      });
+      console.log("[rebase] Editor response received");
+      fs.writeFileSync(path.join(commDir, "response"), JSON.stringify(response), "utf8");
+      processingReq = false;
+    }, 300);
+
+    proc.on("close", (code) => {
+      clearInterval(pollTimer);
+      console.log("[rebase] git rebase result status:", code);
+      console.log("[rebase] git rebase stdout:", stdout);
+      console.log("[rebase] git rebase stderr:", stderr);
+      if (code !== 0) reject(new Error(stderr || "Rebase failed"));
+      else resolve(stdout);
+    });
+    proc.on("error", (err) => { clearInterval(pollTimer); reject(err); });
   });
 
-  try { fs.unlinkSync(scriptFile); } catch (e) { }
+  try { fs.rmSync(commDir, { recursive: true, force: true }); } catch (e) { }
+  try { fs.unlinkSync(seqEditor); } catch (e) { }
+  try { fs.unlinkSync(msgEditor); } catch (e) { }
   try { fs.unlinkSync(todoFile); } catch (e) { }
 
-  if (result.error) throw result.error;
-  if (result.status !== 0) throw new Error(result.stderr || "Rebase failed");
-  return result.stdout;
+  console.log("[rebase] Rebase completed successfully");
+  return result;
 });
 
 ipcMain.handle("stash-apply", (event, directory, stashId) => {
@@ -724,7 +822,6 @@ ipcMain.handle("clone", async (event, url, destPath) => {
 
 ipcMain.handle("write-last-directory", (event, dirPath) => {
   if (app.isPackaged) return;
-  const fs = require("fs");
-  const target = ("lastDirectory.txt");
+  const target = path.join(app.getPath("userData"), "lastDirectory.txt");
   try { fs.writeFileSync(target, dirPath, "utf8"); } catch { }
 });

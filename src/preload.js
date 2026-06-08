@@ -25,7 +25,7 @@ contextBridge.exposeInMainWorld("api", {
   initRepo: (directory) => ipcRenderer.invoke("init-repo", directory),
   createTag: (directory, tagName) => ipcRenderer.invoke("create-tag", directory, tagName),
   merge: (directory, branch, strategy) => ipcRenderer.invoke("merge", directory, branch, strategy),
-  cherryPick: (directory, commitHash) => ipcRenderer.invoke("cherry-pick", directory, commitHash),
+  cherryPick: (directory, commitHashes) => ipcRenderer.invoke("cherry-pick", { directory, commitHashes }),
   revertCommit: (directory, commitHash) => ipcRenderer.invoke("revert-commit", directory, commitHash),
   getRebaseCommits: (directory, targetBranch) => ipcRenderer.invoke("get-rebase-commits", directory, targetBranch),
   getFileHistory: (directory, filePath) => ipcRenderer.invoke("get-file-history", directory, filePath),
@@ -88,5 +88,11 @@ contextBridge.exposeInMainWorld("api", {
     ipcRenderer.on("test-receive", (event, data) => {
       callback(data);
     })
-  }
+  },
+  onRebaseEditRequest: (callback) => {
+    const handler = (event, data) => callback(data);
+    ipcRenderer.on("rebase-edit-request", handler);
+    return () => ipcRenderer.removeListener("rebase-edit-request", handler);
+  },
+  sendRebaseEditResponse: (data) => ipcRenderer.invoke("rebase-edit-response", data),
 });

@@ -1,7 +1,7 @@
-import React, { useEffect, useState, useMemo, useCallback } from "react";
+import React, { useEffect, useState, useMemo, useCallback, useContext } from "react";
 import { OrchidContext } from "./OrchidContext.jsx";
 import LeftMenu from "./components/LeftMenu.jsx";
-import { Box, CssBaseline } from "@mui/material";
+import { Box, CssBaseline, Dialog, DialogTitle, DialogContent, DialogActions, Button, Typography, TextField } from "@mui/material";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import MainArea from "./components/MainArea.jsx";
 import AppMenu from "./components/AppMenu.jsx";
@@ -24,6 +24,43 @@ async function fetchRepoData(directory) {
   }
 }
 
+function RebaseEditDialog() {
+  const { rebaseEditRequest, setRebaseEditRequest } = useContext(OrchidContext);
+  const [edited, setEdited] = useState("");
+
+  useEffect(() => {
+    if (rebaseEditRequest) setEdited(rebaseEditRequest.content || "");
+  }, [rebaseEditRequest]);
+
+  const handleConfirm = () => {
+    if (window.api?.sendRebaseEditResponse) {
+      window.api.sendRebaseEditResponse({ content: edited });
+    }
+    setRebaseEditRequest(null);
+  };
+
+  return (
+    <Dialog open={!!rebaseEditRequest} onClose={() => {}} maxWidth="md" fullWidth disableEscapeKeyDown>
+      <DialogTitle>Edit commit message</DialogTitle>
+      <DialogContent>
+        <TextField
+          autoFocus
+          fullWidth
+          multiline
+          minRows={6}
+          maxRows={15}
+          value={edited}
+          onChange={e => setEdited(e.target.value)}
+          sx={{ fontFamily: "monospace", fontSize: "0.85rem", mt: 1 }}
+        />
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={handleConfirm} variant="contained">Use this message</Button>
+      </DialogActions>
+    </Dialog>
+  );
+}
+
 export default function Orchid() {
   const [directory, setDirectory] = useState(() => localStorage.getItem("orchid-last-dir") || "");
   const [themeMode, setThemeMode] = useState(() => localStorage.getItem("orchid-theme") || "light");
@@ -40,6 +77,15 @@ export default function Orchid() {
   const [syncWarning, setSyncWarning] = useState(null);
   const [isMerging, setIsMerging] = useState(false);
   const [isReverting, setIsReverting] = useState(false);
+  const [rebaseEditRequest, setRebaseEditRequest] = useState(null);
+
+  useEffect(() => {
+    if (!window.api?.onRebaseEditRequest) return;
+    const cleanup = window.api.onRebaseEditRequest((data) => {
+      setRebaseEditRequest(data);
+    });
+    return cleanup;
+  }, []);
 
   const refresh = useCallback(() => setRefreshKey(k => k + 1), []);
 
@@ -213,7 +259,7 @@ export default function Orchid() {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <OrchidContext.Provider value={{ directory, setDirectory, themeMode, toggleTheme, repoData, setRepoData, menuOpen, setMenuOpen, refresh, refreshKey, recentDirs, notRepo, setNotRepo, removeRecentDir, recentSort, setRecentSort: handleSetRecentSort, tabSignal, setTabSignal, syncWarning, setSyncWarning, isMerging, setIsMerging, isReverting, setIsReverting }}>
+      <OrchidContext.Provider value={{ directory, setDirectory, themeMode, toggleTheme, repoData, setRepoData, menuOpen, setMenuOpen, refresh, refreshKey, recentDirs, notRepo, setNotRepo, removeRecentDir, recentSort, setRecentSort: handleSetRecentSort, tabSignal, setTabSignal, syncWarning, setSyncWarning, isMerging, setIsMerging, isReverting, setIsReverting, rebaseEditRequest, setRebaseEditRequest }}>
         <Box sx={{ height: "100vh", display: "flex", flexDirection: "column" }}>
           <AppMenu onToggleMenu={() => setMenuOpen(prev => !prev)} />
           <Box sx={{ display: "flex", flex: 1, overflow: "hidden" }}>
@@ -221,6 +267,8 @@ export default function Orchid() {
             <MainArea />
           </Box>
         </Box>
+
+        <RebaseEditDialog />
       </OrchidContext.Provider>
     </ThemeProvider>
   );
