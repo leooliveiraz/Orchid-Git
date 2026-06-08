@@ -189,6 +189,10 @@ ipcMain.handle("reset-commit", (event, directory, commitHash, resetMode) => {
   return runGit(["reset", `--${mode}`, commitHash], directory);
 });
 
+ipcMain.handle("revert-commit", (event, directory, commitHash) => {
+  return runGit(["revert", "--no-edit", commitHash], directory);
+});
+
 ipcMain.handle("is-git-repo", (event, directory) => {
   try {
     runGit(["rev-parse", "--git-dir"], directory);
@@ -545,6 +549,16 @@ ipcMain.handle("check-merge-head", (event, directory) => {
   const path = require("path");
   const fs = require("fs");
   return fs.existsSync(path.join(directory, ".git", "MERGE_HEAD"));
+});
+
+ipcMain.handle("check-revert-head", (event, directory) => {
+  const path = require("path");
+  const fs = require("fs");
+  return fs.existsSync(path.join(directory, ".git", "REVERT_HEAD"));
+});
+
+ipcMain.handle("abort-revert", (event, directory) => {
+  return runGit(["revert", "--abort"], directory);
 });
 
 ipcMain.handle("get-merge-conflicted-files", (event, directory) => {

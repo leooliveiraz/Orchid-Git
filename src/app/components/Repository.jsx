@@ -15,7 +15,7 @@ import {
 import { OrchidContext } from "../OrchidContext.jsx";
 
 export default function Repository({ repositoryDirectory }) {
-  const { refreshKey, setNotRepo, tabSignal, setTabSignal, refresh } = useContext(OrchidContext);
+  const { refreshKey, setNotRepo, tabSignal, setTabSignal, refresh, isMerging, isReverting } = useContext(OrchidContext);
   const [commitList, setCommitList] = useState([]);
   const [tab, setTab] = useState("graph");
   const [commitFiles, setCommitFiles] = useState(null);
@@ -243,6 +243,8 @@ export default function Repository({ repositoryDirectory }) {
   };
 
   const handleCheckout = async (commitHash) => {
+    if (isMerging) { setError("Resolva o merge antes de continuar"); return; }
+    if (isReverting) { setError("Resolva o revert antes de continuar"); return; }
     if (!window.api) return;
     try {
       await window.api.checkoutCommit(repositoryDirectory, commitHash);
@@ -254,6 +256,8 @@ export default function Repository({ repositoryDirectory }) {
   };
 
   const handleCherryPick = async (commitHash) => {
+    if (isMerging) { setError("Resolva o merge antes de continuar"); return; }
+    if (isReverting) { setError("Resolva o revert antes de continuar"); return; }
     if (!window.api) return;
     try {
       await window.api.cherryPick(repositoryDirectory, commitHash);
@@ -265,7 +269,23 @@ export default function Repository({ repositoryDirectory }) {
     }
   };
 
+  const handleRevert = async (commitHash) => {
+    if (isMerging) { setError("Resolva o merge antes de continuar"); return; }
+    if (isReverting) { setError("Resolva o revert antes de continuar"); return; }
+    if (!window.api) return;
+    try {
+      await window.api.revertCommit(repositoryDirectory, commitHash);
+      setSuccess("Reverted " + commitHash);
+      refresh();
+      setTabSignal("graph");
+    } catch (e) {
+      setError(e.message || String(e));
+    }
+  };
+
   const handleReset = async (commitHash, resetMode) => {
+    if (isMerging) { setError("Resolva o merge antes de continuar"); return; }
+    if (isReverting) { setError("Resolva o revert antes de continuar"); return; }
     if (!window.api) return;
     try {
       await window.api.resetCommit(repositoryDirectory, commitHash, resetMode);
@@ -350,7 +370,7 @@ export default function Repository({ repositoryDirectory }) {
           )}
 
           <Box sx={{ flex: 1, minHeight: 0 }}>
-            <CommitTable commitList={commitList} connectionStyle={connectionStyle} onCommitClick={handleCommitClick} highlightIndex={highlightIndex} onCherryPick={handleCherryPick} onCheckout={handleCheckout} onReset={handleReset} />
+            <CommitTable commitList={commitList} connectionStyle={connectionStyle} onCommitClick={handleCommitClick} highlightIndex={highlightIndex} onCherryPick={handleCherryPick} onCheckout={handleCheckout} onRevert={handleRevert} onReset={handleReset} />
           </Box>
         </>
       )}

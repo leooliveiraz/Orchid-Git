@@ -7,7 +7,8 @@ import {
 } from "@mui/material";
 import ContentPasteIcon from "@mui/icons-material/ContentPaste";
 import CheckIcon from "@mui/icons-material/Check";
-import UndoIcon from "@mui/icons-material/Undo";
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import ReplayIcon from "@mui/icons-material/Replay";
 
 const COLORS = [
   "#2D3AC9", "#B041FD", "#FD63CE", "#FD3C2F",
@@ -15,11 +16,12 @@ const COLORS = [
   "#FF5722", "#607D8B", "#795548", "#9C27B0",
 ];
 
-export default function CommitTable({ commitList, connectionStyle, onCommitClick, highlightIndex, onCherryPick, onCheckout, onReset }) {
+export default function CommitTable({ commitList, connectionStyle, onCommitClick, highlightIndex, onCherryPick, onCheckout, onRevert, onReset }) {
   const containerRef = useRef(null);
   const [contextMenu, setContextMenu] = useState(null);
   const [contextCommit, setContextCommit] = useState(null);
   const [confirmCherry, setConfirmCherry] = useState(false);
+  const [confirmRevert, setConfirmRevert] = useState(false);
   const [confirmReset, setConfirmReset] = useState(false);
   const [resetMode, setResetMode] = useState("mixed");
 
@@ -44,6 +46,18 @@ export default function CommitTable({ commitList, connectionStyle, onCommitClick
     setConfirmCherry(false);
     if (contextCommit && onCherryPick) {
       onCherryPick(contextCommit.commit);
+    }
+  };
+
+  const handleRevert = () => {
+    setContextMenu(null);
+    setConfirmRevert(true);
+  };
+
+  const handleConfirmRevert = () => {
+    setConfirmRevert(false);
+    if (contextCommit && onRevert) {
+      onRevert(contextCommit.commit);
     }
   };
 
@@ -240,6 +254,22 @@ export default function CommitTable({ commitList, connectionStyle, onCommitClick
         </DialogActions>
       </Dialog>
 
+      <Dialog open={confirmRevert} onClose={() => setConfirmRevert(false)} maxWidth="xs" fullWidth>
+        <DialogTitle>Revert commit</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2">
+            Revert <strong>{contextCommit?.commit}</strong> by creating a new commit that undoes its changes?
+          </Typography>
+          <Typography variant="body2" sx={{ mt: 1, color: "text.secondary" }}>
+            {contextCommit?.message}
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setConfirmRevert(false)}>Cancel</Button>
+          <Button variant="contained" onClick={handleConfirmRevert}>Revert</Button>
+        </DialogActions>
+      </Dialog>
+
       <Dialog open={confirmReset} onClose={() => setConfirmReset(false)} maxWidth="xs" fullWidth>
         <DialogTitle>Reset to this commit</DialogTitle>
         <DialogContent>
@@ -276,6 +306,12 @@ export default function CommitTable({ commitList, connectionStyle, onCommitClick
           </ListItemIcon>
           <ListItemText primary="Cherry-pick this commit" primaryTypographyProps={{ variant: "body2" }} />
         </MenuItem>
+        <MenuItem onClick={handleRevert} dense>
+          <ListItemIcon sx={{ minWidth: 28 }}>
+            <ReplayIcon fontSize="small" />
+          </ListItemIcon>
+          <ListItemText primary="Revert this commit" primaryTypographyProps={{ variant: "body2" }} />
+        </MenuItem>
         <MenuItem onClick={handleCopyHash} dense>
           <ListItemIcon sx={{ minWidth: 28 }}>
             <ContentPasteIcon fontSize="small" />
@@ -284,7 +320,7 @@ export default function CommitTable({ commitList, connectionStyle, onCommitClick
         </MenuItem>
         <MenuItem onClick={handleReset} dense>
           <ListItemIcon sx={{ minWidth: 28 }}>
-            <UndoIcon fontSize="small" />
+            <ArrowBackIcon fontSize="small" />
           </ListItemIcon>
           <ListItemText primary="Reset to this commit" primaryTypographyProps={{ variant: "body2" }} />
         </MenuItem>

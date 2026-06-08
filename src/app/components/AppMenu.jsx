@@ -58,7 +58,7 @@ const MODAL_STYLE = {
 };
 
 export default function AppMenu({ onToggleMenu }) {
-  const { directory, setDirectory, themeMode, toggleTheme, refresh, setTabSignal, syncWarning, setSyncWarning, repoData } = useContext(OrchidContext);
+  const { directory, setDirectory, themeMode, toggleTheme, refresh, setTabSignal, syncWarning, setSyncWarning, repoData, isMerging, isReverting } = useContext(OrchidContext);
   const [showClone, setShowClone] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showNewBranch, setShowNewBranch] = useState(false);
@@ -94,6 +94,8 @@ export default function AppMenu({ onToggleMenu }) {
   }
 
   const handlePush = async () => {
+    if (isMerging) { setSyncError("Resolva o merge antes de continuar"); setSyncAction(null); return; }
+    if (isReverting) { setSyncError("Resolva o revert antes de continuar"); setSyncAction(null); return; }
     setSyncLoading(true);
     setSyncError(null);
     try {
@@ -109,6 +111,8 @@ export default function AppMenu({ onToggleMenu }) {
   };
 
   const handleForcePush = async () => {
+    if (isMerging) { setSyncError("Resolva o merge antes de continuar"); setShowForceConfirm(false); return; }
+    if (isReverting) { setSyncError("Resolva o revert antes de continuar"); setShowForceConfirm(false); return; }
     setShowForceConfirm(false);
     setSyncLoading(true);
     setSyncError(null);
@@ -125,6 +129,8 @@ export default function AppMenu({ onToggleMenu }) {
   };
 
   const handlePull = async () => {
+    if (isMerging) { setSyncError("Resolva o merge antes de continuar"); setSyncAction(null); return; }
+    if (isReverting) { setSyncError("Resolva o revert antes de continuar"); setSyncAction(null); return; }
     setSyncLoading(true);
     setSyncError(null);
     try {
@@ -140,6 +146,8 @@ export default function AppMenu({ onToggleMenu }) {
   };
 
   const handleFetch = async () => {
+    if (isMerging) { setSyncError("Resolva o merge antes de continuar"); return; }
+    if (isReverting) { setSyncError("Resolva o revert antes de continuar"); return; }
     setSyncLoading(true);
     setSyncError(null);
     try {
@@ -153,6 +161,8 @@ export default function AppMenu({ onToggleMenu }) {
   };
 
   const handleStashPush = async () => {
+    if (isMerging) { setSyncError("Resolva o merge antes de continuar"); return; }
+    if (isReverting) { setSyncError("Resolva o revert antes de continuar"); return; }
     if (!stashMessage.trim() || !window.api || !directory) return;
     setStashPushing(true);
     setSyncError(null);
@@ -169,6 +179,8 @@ export default function AppMenu({ onToggleMenu }) {
   };
 
   const handleOpenCommit = async () => {
+    if (isMerging) { setSyncError("Resolva o merge antes de continuar"); return; }
+    if (isReverting) { setSyncError("Resolva o revert antes de continuar"); return; }
     if (!window.api || !directory) return;
     try {
       const status = await window.api.getStatus(directory);
@@ -261,14 +273,14 @@ export default function AppMenu({ onToggleMenu }) {
           {directory && <Typography variant="body2" sx={{ color: "rgba(255,255,255,0.4)", userSelect: "none", mx: 0.5 }}>|</Typography>}
           {directory && (
             <Tooltip title="Create branch">
-              <IconButton color="inherit" onClick={() => setShowNewBranch(true)} sx={{ mr: 0.5 }}>
+              <IconButton color="inherit" onClick={() => { if (isMerging) { setSyncError("Resolva o merge antes de continuar"); return; } if (isReverting) { setSyncError("Resolva o revert antes de continuar"); return; } setShowNewBranch(true); }} sx={{ mr: 0.5 }}>
                 <CallSplitIcon />
               </IconButton>
             </Tooltip>
           )}
           {directory && (
             <Tooltip title="Merge branch">
-              <IconButton color="inherit" onClick={() => setShowMerge(true)} sx={{ mr: 0.5 }}>
+              <IconButton color="inherit" onClick={() => { if (isMerging) { setSyncError("Resolva o merge antes de continuar"); return; } if (isReverting) { setSyncError("Resolva o revert antes de continuar"); return; } setShowMerge(true); }} sx={{ mr: 0.5 }}>
                 <MergeIcon />
               </IconButton>
             </Tooltip>
@@ -282,21 +294,21 @@ export default function AppMenu({ onToggleMenu }) {
           )}
           {directory && (
             <Tooltip title="Cherry-pick commit">
-              <IconButton color="inherit" onClick={() => setShowCherryPick(true)} sx={{ mr: 0.5 }}>
+              <IconButton color="inherit" onClick={() => { if (isMerging) { setSyncError("Resolva o merge antes de continuar"); return; } if (isReverting) { setSyncError("Resolva o revert antes de continuar"); return; } setShowCherryPick(true); }} sx={{ mr: 0.5 }}>
                 <AssignmentTurnedInIcon />
               </IconButton>
             </Tooltip>
           )}
           {directory && (
             <Tooltip title="Interactive rebase">
-              <IconButton color="inherit" onClick={() => setShowRebase(true)} sx={{ mr: 0.5 }}>
+              <IconButton color="inherit" onClick={() => { if (isMerging) { setSyncError("Resolva o merge antes de continuar"); return; } if (isReverting) { setSyncError("Resolva o revert antes de continuar"); return; } setShowRebase(true); }} sx={{ mr: 0.5 }}>
                 <ChecklistIcon />
               </IconButton>
             </Tooltip>
           )}
           {directory && (
             <Tooltip title="Stash">
-              <IconButton color="inherit" onClick={() => setShowStashPush(true)} sx={{ mr: 0.5 }}>
+              <IconButton color="inherit" onClick={() => { if (isMerging) { setSyncError("Resolva o merge antes de continuar"); return; } if (isReverting) { setSyncError("Resolva o revert antes de continuar"); return; } setShowStashPush(true); }} sx={{ mr: 0.5 }}>
                 <WatchLaterIcon />
               </IconButton>
             </Tooltip>

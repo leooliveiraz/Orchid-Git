@@ -123,7 +123,7 @@ function Item({ label, active, badge, onDoubleClick, onClick, onDelete, onContex
 }
 
 export default function LeftMenu({ open }) {
-  const { directory, repoData, refresh, recentDirs, setDirectory, removeRecentDir, recentSort, setRecentSort } = useContext(OrchidContext);
+  const { directory, repoData, refresh, recentDirs, setDirectory, removeRecentDir, recentSort, setRecentSort, isMerging, isReverting } = useContext(OrchidContext);
   const branchStatusMap = useMemo(() => {
     if (!repoData?.branchesStatus) return {};
     const map = {};
@@ -171,6 +171,8 @@ export default function LeftMenu({ open }) {
   }, [message]);
 
   const handleBranchDblClick = useCallback(async (branch) => {
+    if (isMerging) { setMessageType("error"); setMessage("Resolva o merge antes de continuar"); return; }
+    if (isReverting) { setMessageType("error"); setMessage("Resolva o revert antes de continuar"); return; }
     if (!directory || !window.api) return;
     if (branch === repoData?.currentBranch) {
       setMessageType("info");
@@ -187,9 +189,11 @@ export default function LeftMenu({ open }) {
       setMessageType("error");
       setMessage(e.message || String(e));
     }
-  }, [directory, repoData, refresh]);
+  }, [directory, repoData, refresh, isMerging, isReverting]);
 
   const handleRemoteBranchDblClick = useCallback(async (branch) => {
+    if (isMerging) { setMessageType("error"); setMessage("Resolva o merge antes de continuar"); return; }
+    if (isReverting) { setMessageType("error"); setMessage("Resolva o revert antes de continuar"); return; }
     if (!directory || !window.api) return;
     const localName = branch.replace(/^[^/]+\//, "");
     if (localName === repoData?.currentBranch) {
@@ -207,7 +211,7 @@ export default function LeftMenu({ open }) {
       setMessageType("error");
       setMessage(e.message || String(e));
     }
-  }, [directory, repoData, refresh]);
+  }, [directory, repoData, refresh, isMerging, isReverting]);
 
   const handleBranchClick = useCallback((branch) => {
     if (branch === repoData?.currentBranch) return;
@@ -227,15 +231,19 @@ export default function LeftMenu({ open }) {
   }, [branchContext, handleBranchDblClick]);
 
   const handleContextMerge = useCallback(() => {
+    if (isMerging) { setMessageType("error"); setMessage("Resolva o merge antes de continuar"); return; }
+    if (isReverting) { setMessageType("error"); setMessage("Resolva o revert antes de continuar"); return; }
     const branch = branchContext?.branch;
     setBranchContext(null);
     if (branch) {
       setMergeBranch(branch);
       setShowMerge(true);
     }
-  }, [branchContext]);
+  }, [branchContext, isMerging, isReverting]);
 
   const handleStashDblClick = useCallback(async (stashId) => {
+    if (isMerging) { setMessageType("error"); setMessage("Resolva o merge antes de continuar"); return; }
+    if (isReverting) { setMessageType("error"); setMessage("Resolva o revert antes de continuar"); return; }
     if (!directory || !window.api) return;
     setMessage(null);
     try {
@@ -247,9 +255,11 @@ export default function LeftMenu({ open }) {
       setMessageType("error");
       setMessage(e.message || String(e));
     }
-  }, [directory, refresh]);
+  }, [directory, refresh, isMerging, isReverting]);
 
   const handleCreateBranch = async () => {
+    if (isMerging) { setMessageType("error"); setMessage("Resolva o merge antes de continuar"); return; }
+    if (isReverting) { setMessageType("error"); setMessage("Resolva o revert antes de continuar"); return; }
     if (!newBranchName.trim() || !directory || !window.api) return;
     setCreating(true);
     setMessage(null);
@@ -268,11 +278,15 @@ export default function LeftMenu({ open }) {
   };
 
   const openNewBranchDialog = useCallback(() => {
+    if (isMerging) { setMessageType("error"); setMessage("Resolva o merge antes de continuar"); return; }
+    if (isReverting) { setMessageType("error"); setMessage("Resolva o revert antes de continuar"); return; }
     setNewBranchName("");
     setShowNewBranch(true);
-  }, []);
+  }, [isMerging, isReverting]);
 
   const handleCreateTag = async () => {
+    if (isMerging) { setMessageType("error"); setMessage("Resolva o merge antes de continuar"); return; }
+    if (isReverting) { setMessageType("error"); setMessage("Resolva o revert antes de continuar"); return; }
     if (!newTagName.trim() || !directory || !window.api) return;
     setCreatingTag(true);
     setMessage(null);
@@ -291,11 +305,15 @@ export default function LeftMenu({ open }) {
   };
 
   const openNewTagDialog = useCallback(() => {
+    if (isMerging) { setMessageType("error"); setMessage("Resolva o merge antes de continuar"); return; }
+    if (isReverting) { setMessageType("error"); setMessage("Resolva o revert antes de continuar"); return; }
     setNewTagName("");
     setShowNewTag(true);
-  }, []);
+  }, [isMerging, isReverting]);
 
   const handleCreateStash = async () => {
+    if (isMerging) { setMessageType("error"); setMessage("Resolva o merge antes de continuar"); return; }
+    if (isReverting) { setMessageType("error"); setMessage("Resolva o revert antes de continuar"); return; }
     if (!stashMessage.trim() || !directory || !window.api) return;
     setCreatingStash(true);
     setMessage(null);
@@ -314,11 +332,15 @@ export default function LeftMenu({ open }) {
   };
 
   const openNewStashDialog = useCallback(() => {
+    if (isMerging) { setMessageType("error"); setMessage("Resolva o merge antes de continuar"); return; }
+    if (isReverting) { setMessageType("error"); setMessage("Resolva o revert antes de continuar"); return; }
     setStashMessage("");
     setShowNewStash(true);
-  }, []);
+  }, [isMerging, isReverting]);
 
   const handleDeleteBranch = useCallback(async (branch) => {
+    if (isMerging) { setMessageType("error"); setMessage("Resolva o merge antes de continuar"); return; }
+    if (isReverting) { setMessageType("error"); setMessage("Resolva o revert antes de continuar"); return; }
     if (!directory || !window.api) return;
     setMessage(null);
     try {
@@ -330,13 +352,17 @@ export default function LeftMenu({ open }) {
       setMessageType("error");
       setMessage(e.message || String(e));
     }
-  }, [directory, refresh]);
+  }, [directory, refresh, isMerging, isReverting]);
 
   const confirmDeleteBranch = useCallback((branch) => {
+    if (isMerging) { setMessageType("error"); setMessage("Resolva o merge antes de continuar"); return; }
+    if (isReverting) { setMessageType("error"); setMessage("Resolva o revert antes de continuar"); return; }
     setConfirmDelete({ type: "branch", name: branch, action: () => handleDeleteBranch(branch) });
-  }, [handleDeleteBranch]);
+  }, [handleDeleteBranch, isMerging, isReverting]);
 
   const handleDeleteTag = useCallback(async (tag) => {
+    if (isMerging) { setMessageType("error"); setMessage("Resolva o merge antes de continuar"); return; }
+    if (isReverting) { setMessageType("error"); setMessage("Resolva o revert antes de continuar"); return; }
     if (!directory || !window.api) return;
     setMessage(null);
     try {
@@ -348,13 +374,17 @@ export default function LeftMenu({ open }) {
       setMessageType("error");
       setMessage(e.message || String(e));
     }
-  }, [directory, refresh]);
+  }, [directory, refresh, isMerging, isReverting]);
 
   const confirmDeleteTag = useCallback((tag) => {
+    if (isMerging) { setMessageType("error"); setMessage("Resolva o merge antes de continuar"); return; }
+    if (isReverting) { setMessageType("error"); setMessage("Resolva o revert antes de continuar"); return; }
     setConfirmDelete({ type: "tag", name: tag, action: () => handleDeleteTag(tag) });
-  }, [handleDeleteTag]);
+  }, [handleDeleteTag, isMerging, isReverting]);
 
   const handleDropStash = useCallback(async (stashId) => {
+    if (isMerging) { setMessageType("error"); setMessage("Resolva o merge antes de continuar"); return; }
+    if (isReverting) { setMessageType("error"); setMessage("Resolva o revert antes de continuar"); return; }
     if (!directory || !window.api) return;
     setMessage(null);
     try {
@@ -366,13 +396,17 @@ export default function LeftMenu({ open }) {
       setMessageType("error");
       setMessage(e.message || String(e));
     }
-  }, [directory, refresh]);
+  }, [directory, refresh, isMerging, isReverting]);
 
   const confirmDropStash = useCallback((stashId) => {
+    if (isMerging) { setMessageType("error"); setMessage("Resolva o merge antes de continuar"); return; }
+    if (isReverting) { setMessageType("error"); setMessage("Resolva o revert antes de continuar"); return; }
     setConfirmDelete({ type: "stash", name: stashId, action: () => handleDropStash(stashId) });
-  }, [handleDropStash]);
+  }, [handleDropStash, isMerging, isReverting]);
 
   const handleDeleteRemoteBranch = useCallback(async (remoteName) => {
+    if (isMerging) { setMessageType("error"); setMessage("Resolva o merge antes de continuar"); return; }
+    if (isReverting) { setMessageType("error"); setMessage("Resolva o revert antes de continuar"); return; }
     if (!directory || !window.api) return;
     setMessage(null);
     try {
@@ -442,7 +476,7 @@ export default function LeftMenu({ open }) {
         )}
         {repoData ? (
           <>
-            <Section title="Branches" count={repoData.branches?.length ?? 0} expanded={expandedSections.branches !== false} onToggle={handleToggle("branches")} onAdd={openNewBranchDialog} onMerge={() => setShowMerge(true)}>
+            <Section title="Branches" count={repoData.branches?.length ?? 0} expanded={expandedSections.branches !== false} onToggle={handleToggle("branches")} onAdd={openNewBranchDialog} onMerge={() => { if (isMerging) { setMessageType("error"); setMessage("Resolva o merge antes de continuar"); return; } if (isReverting) { setMessageType("error"); setMessage("Resolva o revert antes de continuar"); return; } setShowMerge(true); }}>
               {repoData.branches?.map(b => {
                 const st = branchStatusMap[b];
                 const badge = st && (st.ahead > 0 || st.behind > 0) ? st : null;

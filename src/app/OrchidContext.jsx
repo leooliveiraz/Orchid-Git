@@ -21,4 +21,8 @@ export const OrchidContext = createContext({
   setTabSignal: () => {},
   syncWarning: null,
   setSyncWarning: () => {},
+  isMerging: false,
+  setIsMerging: () => {},
+  isReverting: false,
+  setIsReverting: () => {},
 });

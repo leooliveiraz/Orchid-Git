@@ -152,7 +152,7 @@ function StatusFile({ file, onStage, onUnstage, onViewDiff, onViewBlame, onViewH
 }
 
 export default function ChangesPanel({ directory }) {
-  const { refreshKey, refresh: contextRefresh, setTabSignal } = useContext(OrchidContext);
+  const { refreshKey, refresh: contextRefresh, setTabSignal, isMerging, isReverting, setIsMerging, setIsReverting } = useContext(OrchidContext);
   const [statusList, setStatusList] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -165,7 +165,7 @@ export default function ChangesPanel({ directory }) {
   const [discardConfirm, setDiscardConfirm] = useState(null);
   const [confirmAbort, setConfirmAbort] = useState(false);
   const [viewMode, setViewMode] = useState(() => localStorage.getItem("orchid-changes-view") || "flat");
-  const [isMerging, setIsMerging] = useState(false);
+  const [confirmAbortRevert, setConfirmAbortRevert] = useState(false);
   const [resolvedFiles, setResolvedFiles] = useState([]);
 
   const checkMergeStatus = useCallback(async () => {
@@ -182,7 +182,15 @@ export default function ChangesPanel({ directory }) {
     } catch (e) { /* ignore */ }
   }, [directory]);
 
-  useEffect(() => { checkMergeStatus(); }, [checkMergeStatus, refreshKey]);
+  const checkRevertStatus = useCallback(async () => {
+    if (!directory || !window.api?.checkRevertHead) return;
+    try {
+      const hasRevertHead = await window.api.checkRevertHead(directory);
+      setIsReverting(!!hasRevertHead);
+    } catch (e) { /* ignore */ }
+  }, [directory]);
+
+  useEffect(() => { checkMergeStatus(); checkRevertStatus(); }, [checkMergeStatus, checkRevertStatus, refreshKey]);
 
   const refresh = useCallback(async () => {
     if (!directory || !window.api) return;
@@ -196,7 +204,8 @@ export default function ChangesPanel({ directory }) {
     }
     setLoading(false);
     checkMergeStatus();
-  }, [directory, checkMergeStatus]);
+    checkRevertStatus();
+  }, [directory, checkMergeStatus, checkRevertStatus]);
 
   useEffect(() => {
     refresh();
@@ -311,6 +320,7 @@ export default function ChangesPanel({ directory }) {
   };
 
   const handleDiscardAll = async () => {
+    if (isReverting) { setError("Resolva o revert antes de continuar"); return; }
     setDiscardConfirm({ type: "all", path: "all changes", action: async () => {
       if (!window.api) return;
       try {
@@ -357,6 +367,22 @@ export default function ChangesPanel({ directory }) {
     }
   };
 
+  const handleAbortRevert = async () => {
+    if (!window.api) return;
+    setConfirmAbortRevert(false);
+    try {
+      if (await window.api.checkRevertHead(directory)) {
+        await window.api.abortRevert(directory);
+        setSuccess("Revert aborted successfully!");
+      } else {
+        setError("No revert in progress");
+      }
+      refresh();
+    } catch (e) {
+      setError(e.message || String(e));
+    }
+  };
+
   const staged = statusList.filter(f => f.staged);
   const unstaged = statusList.filter(f => !f.staged);
   const conflicted = statusList.filter(f => f.conflicted).map(f => f.path);
@@ -383,6 +409,7 @@ export default function ChangesPanel({ directory }) {
           {loading ? "Refreshing..." : `${statusList.length} file(s)`}
         </Typography>
         {isMerging && <Chip label="MERGING" size="small" color="warning" sx={{ fontWeight: 600, fontSize: "0.65rem" }} />}
+        {isReverting && <Chip label="REVERTING" size="small" color="warning" sx={{ fontWeight: 600, fontSize: "0.65rem" }} />}
         <Button size="small" variant="outlined" onClick={refresh}>Refresh</Button>
         <Button size="small" variant="outlined" onClick={handleStageAll}>Stage All</Button>
         <Button size="small" variant="contained" onClick={() => setShowCommit(true)} disabled={stagedWithResolved.length === 0}>
@@ -396,6 +423,11 @@ export default function ChangesPanel({ directory }) {
         {isMerging && (
           <Button size="small" variant="outlined" color="error" onClick={() => setConfirmAbort(true)}>
             Abort merge
+          </Button>
+        )}
+        {isReverting && (
+          <Button size="small" variant="outlined" color="error" onClick={() => setConfirmAbortRevert(true)}>
+            Abort revert
           </Button>
         )}
         <IconButton size="small" onClick={() => handleViewMode(viewMode === "flat" ? "tree" : "flat")}
@@ -540,6 +572,21 @@ export default function ChangesPanel({ directory }) {
             <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 1 }}>
               <Button onClick={() => setConfirmAbort(false)}>Keep editing</Button>
               <Button color="error" variant="contained" onClick={handleAbort}>Abort merge</Button>
+            </Box>
+          </Box>
+        </Box>
+      )}
+
+      {confirmAbortRevert && (
+        <Box sx={OVERLAY_STYLE}>
+          <Box sx={MODAL_STYLE}>
+            <Typography variant="h6" sx={{ mb: 1 }}>Abort revert?</Typography>
+            <Typography variant="body2" sx={{ mb: 2, color: "text.secondary" }}>
+              This will abort the current revert and discard all changes made by the revert so far.
+            </Typography>
+            <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 1 }}>
+              <Button onClick={() => setConfirmAbortRevert(false)}>Keep editing</Button>
+              <Button color="error" variant="contained" onClick={handleAbortRevert}>Abort revert</Button>
             </Box>
           </Box>
         </Box>
