@@ -1,8 +1,8 @@
 {
-  "name": "orchid",
-  "productName": "orchid",
+  "name": "orchid-git",
+  "productName": "Orchid Git",
   "version": "1.0.0",
-  "description": "My Electron application description",
+  "description": "Orchid Git - A desktop Git client with graph visualization, conflict resolution, and interactive rebase",
   "main": ".webpack/main",
   "scripts": {
     "start": "electron-forge start",
@@ -46,7 +46,7 @@
     "name": "leooliveiraz",
     "email": "leopdor@gmail.com"
   },
-  "license": "MIT",
+  "license": "UNLICENSED",
   "dependencies": {
     "@emotion/react": "^11.13.5",
     "@emotion/styled": "^11.13.5",
