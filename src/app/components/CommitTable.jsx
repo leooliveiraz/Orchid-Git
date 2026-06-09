@@ -211,9 +211,9 @@ export default function CommitTable({ commitList, connectionStyle, onCommitClick
                 ...(index === highlightIndex ? {
                   animation: "highlight-pulse 3s ease-out",
                   "@keyframes highlight-pulse": {
-                    "0%": { backgroundColor: "var(--bg-table-alt)", outline: "2px solid", outlineColor: "warning.main" },
-                    "70%": { backgroundColor: "var(--bg-table-alt)", outline: "2px solid", outlineColor: "warning.main" },
-                    "100%": { backgroundColor: "transparent", outline: "none" },
+                    "0%": { backgroundColor: "var(--bg-table-alt)" },
+                    "70%": { backgroundColor: "var(--bg-table-alt)" },
+                    "100%": { backgroundColor: "transparent" },
                   },
                 } : {}),
                 ...(index === headIdx ? { outline: "2px solid", outlineColor: "primary.main", outlineOffset: -1 } : {}),
