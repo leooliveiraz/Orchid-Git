@@ -28,6 +28,10 @@ export default function CommitTable({ commitList, connectionStyle, onCommitClick
   const [cherryPickHashes, setCherryPickHashes] = useState("");
 
   useEffect(() => {
+    setSelectedCommits(new Set());
+  }, [commitList]);
+
+  useEffect(() => {
     if (highlightIndex == null || !containerRef.current) return;
     const rowHeight = 24;
     containerRef.current.scrollTo({ top: highlightIndex * rowHeight, behavior: "smooth" });
@@ -159,7 +163,7 @@ export default function CommitTable({ commitList, connectionStyle, onCommitClick
     return { lanesAtRow: sorted, maxDepth };
   }, [commitList]);
 
-  const headIdx = commitList.findIndex(c => c.decoration && c.decoration.includes("HEAD"));
+  const headIdx = commitList.findIndex(c => c.decoration && c.decoration.split(", ").some(r => r === "HEAD" || r.startsWith("HEAD ->")));
 
   return (
     <>
@@ -212,7 +216,7 @@ export default function CommitTable({ commitList, connectionStyle, onCommitClick
                     "100%": { backgroundColor: "transparent", outline: "none" },
                   },
                 } : {}),
-                ...(index === headIdx && index !== highlightIndex ? { outline: "2px solid", outlineColor: "primary.main", outlineOffset: -1 } : {}),
+                ...(index === headIdx ? { outline: "2px solid", outlineColor: "primary.main", outlineOffset: -1 } : {}),
               }}
             >
               <TableCell sx={{ textAlign: "center", fontWeight: commit.merge ? 700 : 400, fontSize: "0.75rem", color: commit.merge ? (() => { const md = commit.merge?.parentIndex != null ? commitList[commit.merge.parentIndex]?.depth : null; return Number.isFinite(md) ? COLORS[md % COLORS.length] : "text.secondary"; })() : "text.secondary" }}>

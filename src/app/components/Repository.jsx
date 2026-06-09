@@ -174,6 +174,25 @@ export default function Repository({ repositoryDirectory }) {
           });
 
           setCommitList(commits);
+
+          const fallbackHeadIdx = commits.findIndex(c => c.decoration && c.decoration.split(", ").some(r => r === "HEAD" || r.startsWith("HEAD ->")));
+          setHighlightIndex(fallbackHeadIdx >= 0 ? fallbackHeadIdx : null);
+          setSelectedCommit(null);
+          setCommitFiles(null);
+          setCommitFileDiff(null);
+          setMenuAnchor(null);
+
+          if (window.api) {
+            const target = fallbackHeadIdx >= 0 ? commits[fallbackHeadIdx] : null;
+            if (target) {
+              window.api.getCommitFiles(repositoryDirectory, target.commit)
+                .then(files => {
+                  setSelectedCommit(target);
+                  setCommitFiles(files || []);
+                })
+                .catch(() => {});
+            }
+          }
         }).catch(er => {
           er.message.includes("not a git repository") && setNoteRepo(true)
         });
