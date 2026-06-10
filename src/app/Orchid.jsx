@@ -6,6 +6,8 @@ import { createTheme, ThemeProvider } from "@mui/material/styles";
 import MainArea from "./components/MainArea.jsx";
 import AppMenu from "./components/AppMenu.jsx";
 
+const BACKGROUND_FETCH_INTERVAL_MS = 5 * 60 * 1000;
+
 async function fetchRepoData(directory) {
   if (!directory || !window.api) return null;
   try {
@@ -152,6 +154,29 @@ export default function Orchid() {
     document.addEventListener("keydown", handler);
     return () => document.removeEventListener("keydown", handler);
   }, [refresh]);
+
+  useEffect(() => {
+    if (!directory || notRepo !== false) return;
+
+    let mounted = true;
+
+    async function backgroundFetch() {
+      if (!window.api?.fetch) return;
+      try {
+        await window.api.fetch(directory);
+        if (!mounted) return;
+
+        const data = await fetchRepoData(directory);
+        if (data && mounted) setRepoData(data);
+      } catch (e) {
+        if (mounted) setSyncWarning(`Background fetch failed: ${e.message}`);
+      }
+    }
+
+    backgroundFetch();
+    const intervalId = setInterval(backgroundFetch, BACKGROUND_FETCH_INTERVAL_MS);
+    return () => { mounted = false; clearInterval(intervalId); };
+  }, [directory, notRepo]);
 
   const toggleTheme = () => {
     setThemeMode((prev) => (prev === "light" ? "dark" : "light"));
