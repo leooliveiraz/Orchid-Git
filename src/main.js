@@ -64,7 +64,7 @@ const createWindow = () => {
 
   // Open the DevTools only in development mode.
   if (!app.isPackaged) {
-    mainWindow.webContents.openDevTools();
+    // mainWindow.webContents.openDevTools();
   }
   win = mainWindow;
 

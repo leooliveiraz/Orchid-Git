@@ -9,6 +9,7 @@ import SuccessSnackbar from "./SuccessSnackbar.jsx";
 import {
   Box, Button, Typography, List, ListItem, ListItemIcon, ListItemText,
   Chip, Alert, Dialog, DialogTitle, DialogContent, IconButton,
+  ToggleButtonGroup, ToggleButton,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import AccountTreeIcon from "@mui/icons-material/AccountTree";
@@ -45,27 +46,61 @@ function buildTree(files) {
   return root;
 }
 
-function TreeDir({ name, node, depth, ...handlers }) {
+function resolveCompact(node, name) {
+  let current = node;
+  let path = name;
+  let chain = [];
+  while (current) {
+    const dirs = Object.keys(current).filter(k => k !== "_files");
+    const files = current._files || [];
+    if (dirs.length === 1 && files.length === 0) {
+      chain.push(dirs[0]);
+      path = `${path}/${dirs[0]}`;
+      current = current[dirs[0]];
+    } else break;
+  }
+  return { node: current, chain, path };
+}
+
+function TreeDir({ name, node, depth, compact, ...handlers }) {
   const [open, setOpen] = useState(true);
-  const dirs = Object.keys(node).filter(k => k !== "_files");
-  const files = node._files || [];
+  let displayNode = node;
+  let displayName = name;
+  let chain = [];
+
+  if (compact) {
+    const resolved = resolveCompact(node, name);
+    displayNode = resolved.node;
+    displayName = resolved.path;
+    chain = resolved.chain;
+  }
+
+  const dirs = Object.keys(displayNode).filter(k => k !== "_files");
+  const files = displayNode._files || [];
+  const label = chain.length > 0 ? `${name}/.../${chain[chain.length - 1]}` : name;
 
   return (
     <>
       <ListItem dense sx={{ pl: 1 + depth * 2, py: 0.25, cursor: "pointer" }}
         onClick={() => setOpen(!open)}
+        title={displayName}
       >
         <ListItemIcon sx={{ minWidth: 24 }}>
           <Typography variant="body2" sx={{ color: "text.secondary", fontSize: "0.7rem" }}>
             {open ? "▼" : "▶"}
           </Typography>
         </ListItemIcon>
-        <ListItemText primary={name} primaryTypographyProps={{ variant: "body2", sx: { fontWeight: 600, fontSize: "0.75rem", color: "text.secondary" } }} />
+        <ListItemText primary={label} primaryTypographyProps={{ variant: "body2", sx: { fontWeight: 600, fontSize: "0.75rem", color: "text.secondary" } }} />
+        {chain.length > 0 && (
+          <Typography variant="caption" sx={{ color: "text.disabled", fontSize: "0.6rem", ml: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 120 }}>
+            {chain.slice(0, -1).join("/")}
+          </Typography>
+        )}
       </ListItem>
       {open && (
         <>
           {dirs.map(d => (
-            <TreeDir key={d} name={d} node={node[d]} depth={depth + 1} {...handlers} />
+            <TreeDir key={d} name={d} node={displayNode[d]} depth={depth + 1} compact={compact} {...handlers} />
           ))}
           {files.map(f => (
             <StatusFile key={f.path} file={f} depth={depth + 1} {...handlers} />
@@ -76,13 +111,13 @@ function TreeDir({ name, node, depth, ...handlers }) {
   );
 }
 
-function TreeList({ tree, handlers }) {
+function TreeList({ tree, compact, handlers }) {
   const dirs = Object.keys(tree).filter(k => k !== "_files").sort();
   const files = tree._files || [];
   return (
     <List dense>
       {dirs.map(d => (
-        <TreeDir key={d} name={d} node={tree[d]} depth={0} {...handlers} />
+        <TreeDir key={d} name={d} node={tree[d]} depth={0} compact={compact} {...handlers} />
       ))}
       {files.map(f => (
         <StatusFile key={f.path} file={f} depth={0} {...handlers} />
@@ -430,12 +465,18 @@ export default function ChangesPanel({ directory }) {
             Abort revert
           </Button>
         )}
-        <IconButton size="small" onClick={() => handleViewMode(viewMode === "flat" ? "tree" : "flat")}
-          sx={{ ml: "auto", color: "text.secondary" }}
-          title={viewMode === "flat" ? "Tree view" : "Flat view"}
-        >
-          {viewMode === "flat" ? <AccountTreeIcon fontSize="small" /> : <ListIcon fontSize="small" />}
-        </IconButton>
+        <ToggleButtonGroup size="small" value={viewMode} exclusive
+          onChange={(e, v) => v && handleViewMode(v)} sx={{ ml: "auto" }}>
+          <ToggleButton value="flat" sx={{ fontSize: "0.7rem", px: 1 }}>
+            <ListIcon fontSize="small" sx={{ mr: 0.5 }} /> Flat
+          </ToggleButton>
+          <ToggleButton value="tree" sx={{ fontSize: "0.7rem", px: 1 }}>
+            <AccountTreeIcon fontSize="small" sx={{ mr: 0.5 }} /> Tree
+          </ToggleButton>
+          <ToggleButton value="compact" sx={{ fontSize: "0.7rem", px: 1 }}>
+            <AccountTreeIcon fontSize="small" sx={{ mr: 0.5 }} /> Compact
+          </ToggleButton>
+        </ToggleButtonGroup>
       </Box>
 
       {error && <Alert severity="error" sx={{ mb: 1 }}>{error}</Alert>}
@@ -456,8 +497,8 @@ export default function ChangesPanel({ directory }) {
       {stagedWithResolved.length === 0 && (
         <Typography variant="body2" sx={{ color: "text.secondary", py: 1 }}>No staged files</Typography>
       )}
-      {stagedWithResolved.length > 0 && viewMode === "tree" ? (
-        <TreeList tree={treeStaged} handlers={{
+      {stagedWithResolved.length > 0 && (viewMode === "tree" || viewMode === "compact") ? (
+        <TreeList tree={treeStaged} compact={viewMode === "compact"} handlers={{
           onStage: handleStage, onUnstage: handleUnstage,
           onViewDiff: handleViewDiff, onViewBlame: handleViewBlame,
           onViewHistory: handleViewHistory, onViewFile: handleViewFile,
@@ -477,8 +518,8 @@ export default function ChangesPanel({ directory }) {
       {unstaged.length === 0 && (
         <Typography variant="body2" sx={{ color: "text.secondary", py: 1 }}>No changes</Typography>
       )}
-      {unstaged.length > 0 && viewMode === "tree" ? (
-        <TreeList tree={treeUnstaged} handlers={{
+      {unstaged.length > 0 && (viewMode === "tree" || viewMode === "compact") ? (
+        <TreeList tree={treeUnstaged} compact={viewMode === "compact"} handlers={{
           onStage: handleStage, onUnstage: handleUnstage,
           onViewDiff: handleViewDiff, onViewBlame: handleViewBlame,
           onViewHistory: handleViewHistory, onViewFile: handleViewFile,
