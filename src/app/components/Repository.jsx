@@ -6,7 +6,7 @@ import DiffViewer from "./DiffViewer.jsx";
 import MetricsPanel from "./MetricsPanel.jsx";
 import FileExplorer from "./FileExplorer.jsx";
 import SuccessSnackbar from "./SuccessSnackbar.jsx";
-import SearchText from "./SearchText.jsx";
+import CommitSearch from "./CommitSearch.jsx";
 import {
   Typography, Box, Tabs, Tab, FormControlLabel, Checkbox,
   TextField, ToggleButtonGroup, ToggleButton, Paper,
@@ -17,6 +17,7 @@ import { OrchidContext } from "../OrchidContext.jsx";
 export default function Repository({ repositoryDirectory }) {
   const { refreshKey, setNotRepo, tabSignal, setTabSignal, refresh, isMerging, isReverting, scrollToCommitHash, setScrollToCommitHash } = useContext(OrchidContext);
   const [commitList, setCommitList] = useState([]);
+  const [filteredCommitList, setFilteredCommitList] = useState([]);
   const [tab, setTab] = useState("graph");
   const [commitFiles, setCommitFiles] = useState(null);
   const [menuAnchor, setMenuAnchor] = useState(null);
@@ -185,6 +186,7 @@ export default function Repository({ repositoryDirectory }) {
           });
 
           setCommitList(commits);
+          setFilteredCommitList(commits);
 
           const fallbackHeadIdx = commits.findIndex(c => c.decoration && c.decoration.split(", ").some(r => r === "HEAD" || r.startsWith("HEAD ->")));
           setHighlightIndex(fallbackHeadIdx >= 0 ? fallbackHeadIdx : null);
@@ -395,13 +397,13 @@ export default function Repository({ repositoryDirectory }) {
           </Box>
 
           {showSearch && (
-            <Paper sx={{ position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 100, p: 1, borderTop: 1, borderColor: "divider", borderRadius: 0 }}>
-              <SearchText visible={showSearch} />
+            <Paper sx={{ position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 1300, p: 1, borderTop: 1, borderColor: "divider", borderRadius: 0 }}>
+              <CommitSearch commitList={commitList} visible={showSearch} onFilter={setFilteredCommitList} />
             </Paper>
           )}
 
           <Box sx={{ flex: 1, minHeight: 0 }}>
-            <CommitTable commitList={commitList} connectionStyle={connectionStyle} onCommitClick={handleCommitClick} highlightIndex={highlightIndex} onCherryPick={handleCherryPick} onCheckout={handleCheckout} onRevert={handleRevert} onReset={handleReset} />
+            <CommitTable commitList={filteredCommitList} connectionStyle={connectionStyle} onCommitClick={handleCommitClick} highlightIndex={highlightIndex} onCherryPick={handleCherryPick} onCheckout={handleCheckout} onRevert={handleRevert} onReset={handleReset} />
           </Box>
         </>
       )}

@@ -195,7 +195,15 @@ export default function CommitTable({ commitList, connectionStyle, onCommitClick
           </TableRow>
         </TableHead>
         <TableBody>
-          {commitList.map((commit, index) => (
+          {commitList.length === 0 ? (
+            <TableRow>
+              <TableCell colSpan={7} align="center" sx={{ py: 6 }}>
+                <Typography variant="body2" sx={{ color: "text.secondary" }}>
+                  No matching commits
+                </Typography>
+              </TableCell>
+            </TableRow>
+          ) : commitList.map((commit, index) => (
             <TableRow
               key={commit.commit}
               hover
