@@ -15,7 +15,7 @@ import {
 import { OrchidContext } from "../OrchidContext.jsx";
 
 export default function Repository({ repositoryDirectory }) {
-  const { refreshKey, setNotRepo, tabSignal, setTabSignal, refresh, isMerging, isReverting } = useContext(OrchidContext);
+  const { refreshKey, setNotRepo, tabSignal, setTabSignal, refresh, isMerging, isReverting, scrollToCommitHash, setScrollToCommitHash } = useContext(OrchidContext);
   const [commitList, setCommitList] = useState([]);
   const [tab, setTab] = useState("graph");
   const [commitFiles, setCommitFiles] = useState(null);
@@ -42,6 +42,17 @@ export default function Repository({ repositoryDirectory }) {
   useEffect(() => {
     localStorage.setItem("orchid-connection-style", connectionStyle);
   }, [connectionStyle]);
+
+  useEffect(() => {
+    if (!scrollToCommitHash || commitList.length === 0) return;
+    const idx = commitList.findIndex(c => scrollToCommitHash.startsWith(c.commit));
+    if (idx >= 0) {
+      setTab("graph");
+      setHighlightIndex(idx);
+      setTimeout(() => setHighlightIndex(null), 3000);
+    }
+    setScrollToCommitHash(null);
+  }, [scrollToCommitHash, commitList, setScrollToCommitHash]);
 
   useEffect(() => {
     function keyDown(e) {

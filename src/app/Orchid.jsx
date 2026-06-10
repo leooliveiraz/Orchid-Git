@@ -80,6 +80,7 @@ export default function Orchid() {
   const [isMerging, setIsMerging] = useState(false);
   const [isReverting, setIsReverting] = useState(false);
   const [rebaseEditRequest, setRebaseEditRequest] = useState(null);
+  const [scrollToCommitHash, setScrollToCommitHash] = useState(null);
 
   useEffect(() => {
     if (!window.api?.onRebaseEditRequest) return;
@@ -284,7 +285,7 @@ export default function Orchid() {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <OrchidContext.Provider value={{ directory, setDirectory, themeMode, toggleTheme, repoData, setRepoData, menuOpen, setMenuOpen, refresh, refreshKey, recentDirs, notRepo, setNotRepo, removeRecentDir, recentSort, setRecentSort: handleSetRecentSort, tabSignal, setTabSignal, syncWarning, setSyncWarning, isMerging, setIsMerging, isReverting, setIsReverting, rebaseEditRequest, setRebaseEditRequest }}>
+      <OrchidContext.Provider value={{ directory, setDirectory, themeMode, toggleTheme, repoData, setRepoData, menuOpen, setMenuOpen, refresh, refreshKey, recentDirs, notRepo, setNotRepo, removeRecentDir, recentSort, setRecentSort: handleSetRecentSort, tabSignal, setTabSignal, syncWarning, setSyncWarning, isMerging, setIsMerging, isReverting, setIsReverting, rebaseEditRequest, setRebaseEditRequest, scrollToCommitHash, setScrollToCommitHash }}>
         <Box sx={{ height: "100vh", display: "flex", flexDirection: "column" }}>
           <AppMenu onToggleMenu={() => setMenuOpen(prev => !prev)} />
           <Box sx={{ display: "flex", flex: 1, overflow: "hidden" }}>

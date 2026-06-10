@@ -27,4 +27,6 @@ export const OrchidContext = createContext({
   setIsReverting: () => {},
   rebaseEditRequest: null,
   setRebaseEditRequest: () => {},
+  scrollToCommitHash: null,
+  setScrollToCommitHash: () => {},
 });

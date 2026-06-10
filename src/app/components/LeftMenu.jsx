@@ -123,7 +123,7 @@ function Item({ label, active, badge, onDoubleClick, onClick, onDelete, onContex
 }
 
 export default function LeftMenu({ open }) {
-  const { directory, repoData, refresh, recentDirs, setDirectory, removeRecentDir, recentSort, setRecentSort, isMerging, isReverting } = useContext(OrchidContext);
+  const { directory, repoData, refresh, recentDirs, setDirectory, removeRecentDir, recentSort, setRecentSort, isMerging, isReverting, setScrollToCommitHash } = useContext(OrchidContext);
   const branchStatusMap = useMemo(() => {
     if (!repoData?.branchesStatus) return {};
     const map = {};
@@ -213,11 +213,29 @@ export default function LeftMenu({ open }) {
     }
   }, [directory, repoData, refresh, isMerging, isReverting]);
 
+  const scrollToRef = useCallback(async (ref) => {
+    if (!directory || !window.api?.getRefCommit) return;
+    try {
+      const hash = await window.api.getRefCommit(directory, ref);
+      setScrollToCommitHash(hash);
+    } catch (e) { }
+  }, [directory, setScrollToCommitHash]);
+
   const handleBranchClick = useCallback((branch) => {
-    if (branch === repoData?.currentBranch) return;
-    setMessageType("info");
-    setMessage("Double-click to switch branch");
-  }, [repoData]);
+    scrollToRef(`refs/heads/${branch}`);
+  }, [scrollToRef]);
+
+  const handleRemoteBranchClick = useCallback((branch) => {
+    scrollToRef(branch);
+  }, [scrollToRef]);
+
+  const handleTagClick = useCallback((tag) => {
+    scrollToRef(`refs/tags/${tag}`);
+  }, [scrollToRef]);
+
+  const handleStashClick = useCallback((stashId) => {
+    scrollToRef(stashId);
+  }, [scrollToRef]);
 
   const handleBranchContext = useCallback((e, branch) => {
     e.preventDefault();
@@ -497,19 +515,19 @@ export default function LeftMenu({ open }) {
 
             <Section title="Remote" count={repoData.remoteBranches?.length ?? 0} expanded={expandedSections.remote === true} onToggle={handleToggle("remote")}>
               {repoData.remoteBranches?.map(b => (
-                <Item key={b} label={b} onClick={() => handleBranchClick(b)} onDoubleClick={() => handleRemoteBranchDblClick(b)} onDelete={() => confirmDeleteRemoteBranch(b)} />
+                <Item key={b} label={b} onClick={() => handleRemoteBranchClick(b)} onDoubleClick={() => handleRemoteBranchDblClick(b)} onDelete={() => confirmDeleteRemoteBranch(b)} />
               ))}
             </Section>
 
             <Section title="Tags" count={repoData.tags?.length ?? 0} expanded={expandedSections.tags === true} onToggle={handleToggle("tags")} onAdd={openNewTagDialog}>
               {repoData.tags?.map(t => (
-                <Item key={t} label={t} onDelete={() => confirmDeleteTag(t)} />
+                <Item key={t} label={t} onClick={() => handleTagClick(t)} onDelete={() => confirmDeleteTag(t)} />
               ))}
             </Section>
 
             <Section title="Stash" count={repoData.stashList?.length ?? 0} expanded={expandedSections.stash === true} onToggle={handleToggle("stash")} onAdd={openNewStashDialog}>
               {repoData.stashList?.map(s => (
-                <Item key={s.id} label={`${s.id}: ${s.message}`} onDoubleClick={() => handleStashDblClick(s.id)} onDelete={() => confirmDropStash(s.id)} />
+                <Item key={s.id} label={`${s.id}: ${s.message}`} onClick={() => handleStashClick(s.id)} onDoubleClick={() => handleStashDblClick(s.id)} onDelete={() => confirmDropStash(s.id)} />
               ))}
             </Section>
           </>

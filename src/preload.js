@@ -29,6 +29,7 @@ contextBridge.exposeInMainWorld("api", {
   revertCommit: (directory, commitHash) => ipcRenderer.invoke("revert-commit", directory, commitHash),
   getRebaseCommits: (directory, targetBranch) => ipcRenderer.invoke("get-rebase-commits", directory, targetBranch),
   getFileHistory: (directory, filePath) => ipcRenderer.invoke("get-file-history", directory, filePath),
+  getRefCommit: (directory, ref) => ipcRenderer.invoke("get-ref-commit", directory, ref),
   getRepoFiles: (directory) => ipcRenderer.invoke("get-repo-files", directory),
   discardFile: (directory, filePath) => ipcRenderer.invoke("discard-file", directory, filePath),
   discardAll: (directory) => ipcRenderer.invoke("discard-all", directory),

@@ -260,6 +260,10 @@ ipcMain.handle("create-tag", (event, directory, tagName) => {
   return runGit(["tag", tagName], directory);
 });
 
+ipcMain.handle("get-ref-commit", (event, directory, ref) => {
+  return runGit(["rev-parse", ref], directory).trim();
+});
+
 ipcMain.handle("get-file-content", (event, directory, filePath) => {
   const path = require("path");
   const fs = require("fs");
