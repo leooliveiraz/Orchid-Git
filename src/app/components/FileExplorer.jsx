@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useMemo, useCallback } from "react";
 import {
   Box, Typography, LinearProgress, TextField, Paper, Chip, ToggleButtonGroup, ToggleButton, Button,
+  List, ListItem, ListItemIcon, ListItemText,
 } from "@mui/material";
 import FolderIcon from "@mui/icons-material/Folder";
 import FolderOpenIcon from "@mui/icons-material/FolderOpen";
@@ -140,22 +141,25 @@ export default function FileExplorer({ directory }) {
           const label = chain.length > 0 ? `${d.name}/.../${chain[chain.length - 1]}` : d.name;
           return (
             <Box key={d.name}>
-              <Box
+              <ListItem dense disablePadding
                 onClick={() => toggleDir(displayPath)}
-                sx={{ display: "flex", alignItems: "center", gap: 0.5, py: 0.25, px: 1, cursor: "pointer", borderRadius: 1, "&:hover": { bgcolor: "action.hover" }, opacity: chain.length > 0 ? 0.85 : 1 }}
+                sx={{ pl: 1, py: 0.15, cursor: "pointer", borderRadius: 1, opacity: chain.length > 0 ? 0.85 : 1 }}
                 title={displayPath}
               >
-                {isOpen ? <FolderOpenIcon sx={{ fontSize: 16, color: "warning.main" }} /> : <FolderIcon sx={{ fontSize: 16, color: "warning.main" }} />}
-                <Typography variant="body2" sx={{ fontWeight: 600, fontSize: "0.8125rem", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                  {label}
-                </Typography>
+                <ListItemIcon sx={{ minWidth: 28 }}>
+                  {isOpen ? <FolderOpenIcon sx={{ fontSize: 18, color: "warning.main" }} /> : <FolderIcon sx={{ fontSize: 18, color: "warning.main" }} />}
+                </ListItemIcon>
+                <ListItemText
+                  primary={label}
+                  primaryTypographyProps={{ variant: "body2", sx: { fontWeight: 600, fontSize: "0.8125rem", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" } }}
+                />
                 {chain.length > 0 && (
-                  <Typography variant="caption" sx={{ color: "text.disabled", fontSize: "0.6rem", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 120 }}>
+                  <Typography variant="caption" sx={{ color: "text.disabled", fontSize: "0.6rem", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 120, mr: 0.5 }}>
                     {chain.slice(0, -1).join("/")}
                   </Typography>
                 )}
-                <Typography variant="caption" sx={{ color: "text.disabled", ml: "auto" }}>{subCount}</Typography>
-              </Box>
+                <Typography variant="caption" sx={{ color: "text.disabled", minWidth: 20, textAlign: "right", mr: 1 }}>{subCount}</Typography>
+              </ListItem>
               {isOpen && <Box sx={{ pl: 2 }}>{renderTree(displayNode, displayPath, depth + 1)}</Box>}
             </Box>
           );
@@ -163,14 +167,20 @@ export default function FileExplorer({ directory }) {
         {sortedFiles.map(f => {
           const fullPath = prefix ? `${prefix}/${f}` : f;
           return (
-            <Box
-              key={f}
-              onClick={() => setViewFile(fullPath)}
-              sx={{ display: "flex", alignItems: "center", gap: 0.5, py: 0.2, px: 1, cursor: "pointer", borderRadius: 1, "&:hover": { bgcolor: "action.hover" } }}
+            <ListItem dense disablePadding key={f} onClick={() => setViewFile(fullPath)}
+              sx={{ pl: 1, py: 0.15, cursor: "pointer", borderRadius: 1 }}
             >
-              <InsertDriveFileIcon sx={{ fontSize: 14, color: "text.disabled" }} />
-              <Typography variant="body2" sx={{ fontSize: "0.75rem" }}>{f}</Typography>
-            </Box>
+              <ListItemIcon sx={{ minWidth: 28 }}>
+                <InsertDriveFileIcon sx={{ fontSize: 16, color: "text.disabled" }} />
+              </ListItemIcon>
+              <ListItemText
+                primary={f}
+                primaryTypographyProps={{
+                  variant: "body2",
+                  sx: { fontSize: "0.75rem", cursor: "pointer", "&:hover": { textDecoration: "underline" } },
+                }}
+              />
+            </ListItem>
           );
         })}
       </Box>
@@ -213,18 +223,32 @@ export default function FileExplorer({ directory }) {
       </Box>
 
       <Paper variant="outlined" sx={{ p: 0.5, maxHeight: "65vh", overflow: "auto" }}>
-        {view === "tree" && renderTree(tree, "", 0)}
+        {view === "tree" && (
+          <List dense disablePadding>
+            {renderTree(tree, "", 0)}
+          </List>
+        )}
 
-        {view === "flat" && filtered.map(f => (
-          <Box
-            key={f}
-            onClick={() => setHistoryFile(f)}
-            sx={{ display: "flex", alignItems: "center", gap: 0.5, py: 0.25, px: 1, cursor: "pointer", borderRadius: 1, "&:hover": { bgcolor: "action.hover" } }}
-          >
-            <InsertDriveFileIcon sx={{ fontSize: 14, color: "text.disabled" }} />
-            <Typography variant="body2" sx={{ fontSize: "0.75rem", fontFamily: "monospace" }}>{f}</Typography>
-          </Box>
-        ))}
+        {view === "flat" && (
+          <List dense disablePadding>
+            {filtered.map(f => (
+              <ListItem key={f} onClick={() => setViewFile(f)}
+                sx={{ py: 0.15, cursor: "pointer", borderRadius: 1 }}
+              >
+                <ListItemIcon sx={{ minWidth: 28 }}>
+                  <InsertDriveFileIcon sx={{ fontSize: 16, color: "text.disabled" }} />
+                </ListItemIcon>
+                <ListItemText
+                  primary={f}
+                  primaryTypographyProps={{
+                    variant: "body2",
+                    sx: { fontSize: "0.75rem", cursor: "pointer", "&:hover": { textDecoration: "underline" } },
+                  }}
+                />
+              </ListItem>
+            ))}
+          </List>
+        )}
 
         {filtered.length === 0 && (
           <Typography variant="body2" sx={{ color: "text.secondary", textAlign: "center", py: 4 }}>
