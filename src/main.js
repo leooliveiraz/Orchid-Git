@@ -16,6 +16,20 @@ function runGit(args, cwd) {
   return result.stdout;
 }
 
+function runGitAsync(args, cwd) {
+  return new Promise((resolve, reject) => {
+    const proc = childProcess.spawn("git", args, { cwd, encoding: "utf8" });
+    let stdout = "", stderr = "";
+    proc.stdout.on("data", d => stdout += d);
+    proc.stderr.on("data", d => stderr += d);
+    proc.on("close", code => {
+      if (code === 0) resolve(stdout.trim());
+      else reject(new Error(stderr.trim() || `git command failed: ${args.join(" ")}`));
+    });
+    proc.on("error", reject);
+  });
+}
+
 function gitPath(pathStr) {
   return pathStr.replace(/\\/g, "/");
 }
@@ -128,7 +142,7 @@ ipcMain.handle("select-directory", function (event, arg) {
   return dialog.showOpenDialog({ properties: ["openDirectory"] });
 });
 
-ipcMain.handle("get-repository-commits", function (event, directory, topoOrder, allCommits, limit) {
+ipcMain.handle("get-repository-commits", async (event, directory, topoOrder, allCommits, limit) => {
   if (!topoOrder) topoOrder = false;
   if (!allCommits) allCommits = false;
   const args = [
@@ -138,8 +152,7 @@ ipcMain.handle("get-repository-commits", function (event, directory, topoOrder, 
     ...(limit ? ["-n", String(limit)] : []),
     `--pretty=format:%h%n%p%n%an%n%ad%n%s%n%D%x00`,
   ];
-  const output = runGit(args, directory);
-  return output;
+  return await runGitAsync(args, directory);
 });
 
 ipcMain.handle("get-branches", (event, directory) => {
@@ -212,16 +225,16 @@ ipcMain.handle("reset-commit", (event, directory, commitHash, resetMode) => {
   return runGit(["reset", `--${mode}`, commitHash], directory);
 });
 
-ipcMain.handle("cherry-pick", (event, { directory, commitHashes }) => {
+ipcMain.handle("cherry-pick", async (event, { directory, commitHashes }) => {
   let hashes = commitHashes;
   if (typeof hashes === "string") hashes = hashes.split(/\s+/).filter(Boolean);
   if (!Array.isArray(hashes)) hashes = [String(hashes)];
   const args = ["cherry-pick"].concat(hashes);
-  return runGit(args, directory);
+  return await runGitAsync(args, directory);
 });
 
-ipcMain.handle("revert-commit", (event, directory, commitHash) => {
-  return runGit(["revert", "--no-edit", commitHash], directory);
+ipcMain.handle("revert-commit", async (event, directory, commitHash) => {
+  return await runGitAsync(["revert", "--no-edit", commitHash], directory);
 });
 
 ipcMain.handle("is-git-repo", (event, directory) => {
@@ -266,13 +279,13 @@ ipcMain.handle("get-file-at-commit", (event, directory, commitHash, filePath) =>
   return runGit(["show", `${commitHash}:${gitPath(filePath)}`], directory).replace(/\r\n/g, "\n").replace(/\r/g, "\n");
 });
 
-ipcMain.handle("merge", (event, directory, branch, strategy) => {
+ipcMain.handle("merge", async (event, directory, branch, strategy) => {
   const args = ["merge"];
   if (strategy === "squash") args.push("--squash");
   else if (strategy === "no-ff") args.push("--no-ff");
   else if (strategy === "ff-only") args.push("--ff-only");
   args.push(branch);
-  return runGit(args, directory);
+  return await runGitAsync(args, directory);
 });
 
 ipcMain.handle("discard-file", (event, directory, filePath) => {
@@ -479,9 +492,9 @@ ipcMain.handle("delete-tag", (event, directory, tagName) => {
   return runGit(["tag", "-d", tagName], directory);
 });
 
-ipcMain.handle("delete-remote-branch", (event, directory, remoteName) => {
+ipcMain.handle("delete-remote-branch", async (event, directory, remoteName) => {
   const branch = remoteName.replace(/^origin\//, "");
-  return runGit(["push", "origin", "--delete", branch], directory);
+  return await runGitAsync(["push", "origin", "--delete", branch], directory);
 });
 
 ipcMain.handle("get-origin-url", (event, directory) => {
@@ -504,19 +517,19 @@ ipcMain.handle("get-status", (event, directory) => {
   return parseStatusOutput(output);
 });
 
-ipcMain.handle("get-repo-metrics", (event, directory) => {
-  const output = runGit(["log", "--format=%an|%ad", "--date=short", "-n", "5000"], directory);
+ipcMain.handle("get-repo-metrics", async (event, directory) => {
+  const output = await runGitAsync(["log", "--format=%an|%ad", "--date=short", "-n", "5000"], directory);
   return output.trim().split("\n").filter(Boolean).map(line => {
     const [author, date] = line.split("|");
     return { author: author || "Unknown", date: date || "0000-00-00" };
   });
 });
 
-ipcMain.handle("get-repo-metrics-extra", (event, directory) => {
+ipcMain.handle("get-repo-metrics-extra", async (event, directory) => {
   let hourData = [], topFiles = [], totalAdded = 0, totalDeleted = 0;
 
   try {
-    const hourOutput = runGit(["log", "--format=%ad", "--date=format:%H", "-n", "5000"], directory);
+    const hourOutput = await runGitAsync(["log", "--format=%ad", "--date=format:%H", "-n", "5000"], directory);
     const hours = hourOutput.trim().split("\n").filter(Boolean).map(Number);
     const hourCounts = {};
     hours.forEach(h => { hourCounts[h] = (hourCounts[h] || 0) + 1; });
@@ -524,7 +537,7 @@ ipcMain.handle("get-repo-metrics-extra", (event, directory) => {
   } catch (e) { }
 
   try {
-    const fileOutput = runGit(["log", "--diff-filter=AMDR", "--name-only", "--oneline", "-n", "2000"], directory);
+    const fileOutput = await runGitAsync(["log", "--diff-filter=AMDR", "--name-only", "--oneline", "-n", "2000"], directory);
     const fileCounts = {};
     fileOutput.trim().split("\n").filter(Boolean).forEach(line => {
       if (/^[0-9a-f]{7,}\s/i.test(line)) return;
@@ -537,7 +550,7 @@ ipcMain.handle("get-repo-metrics-extra", (event, directory) => {
   } catch (e) { }
 
   try {
-    const numstatOutput = runGit(["log", "--numstat", "--oneline", "-n", "2000"], directory);
+    const numstatOutput = await runGitAsync(["log", "--numstat", "--oneline", "-n", "2000"], directory);
     numstatOutput.trim().split("\n").filter(Boolean).forEach(line => {
       const clean = line.replace(/\r$/, "");
       const parts = clean.split("\t");
@@ -700,8 +713,8 @@ ipcMain.handle("get-commit-file-diff", (event, directory, commitHash, filePath) 
   return runGit(["diff-tree", "--no-commit-id", "-r", "-p", commitHash, "--", filePath], directory);
 });
 
-ipcMain.handle("get-blame", (event, directory, filePath) => {
-  const output = runGit(["blame", "--line-porcelain", filePath], directory);
+ipcMain.handle("get-blame", async (event, directory, filePath) => {
+  const output = await runGitAsync(["blame", "--line-porcelain", filePath], directory);
   const lines = [];
   const split = output.split("\n");
   let i = 0;
@@ -785,29 +798,29 @@ ipcMain.handle("set-user-config", (event, directory, name, email) => {
   return "ok";
 });
 
-ipcMain.handle("push", (event, directory) => {
+ipcMain.handle("push", async (event, directory) => {
   try {
-    return runGit(["push"], directory);
+    return await runGitAsync(["push"], directory);
   } catch (e) {
     const msg = e.message || "";
     if (msg.includes("has no upstream")) {
       const branch = runGit(["rev-parse", "--abbrev-ref", "HEAD"], directory).trim();
-      return runGit(["push", "--set-upstream", "origin", branch], directory);
+      return await runGitAsync(["push", "--set-upstream", "origin", branch], directory);
     }
     throw e;
   }
 });
 
-ipcMain.handle("push-force", (event, directory) => {
-  return runGit(["push", "--force-with-lease"], directory);
+ipcMain.handle("push-force", async (event, directory) => {
+  return await runGitAsync(["push", "--force-with-lease"], directory);
 });
 
-ipcMain.handle("pull", (event, directory) => {
-  return runGit(["pull"], directory);
+ipcMain.handle("pull", async (event, directory) => {
+  return await runGitAsync(["pull"], directory);
 });
 
-ipcMain.handle("fetch", (event, directory) => {
-  return runGit(["fetch", "--all"], directory);
+ipcMain.handle("fetch", async (event, directory) => {
+  return await runGitAsync(["fetch", "--all"], directory);
 });
 
 ipcMain.handle("clone", async (event, url, destPath) => {
@@ -817,7 +830,7 @@ ipcMain.handle("clone", async (event, url, destPath) => {
   } catch {
     throw new Error("Invalid repository URL");
   }
-  return runGit(["clone", url, destPath]);
+  return await runGitAsync(["clone", url, destPath]);
 });
 
 ipcMain.handle("write-last-directory", (event, dirPath) => {
