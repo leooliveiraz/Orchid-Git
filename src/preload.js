@@ -35,6 +35,8 @@ contextBridge.exposeInMainWorld("api", {
   discardAll: (directory) => ipcRenderer.invoke("discard-all", directory),
   getDiscardHunks: (directory, filePath) => ipcRenderer.invoke("get-discard-hunks", directory, filePath),
   discardHunks: (directory, filePath, hunkIds) => ipcRenderer.invoke("discard-hunks", directory, filePath, hunkIds),
+  addGitignoreEntry: (directory, entry) => ipcRenderer.invoke("add-gitignore-entry", directory, entry),
+  removeGitignoreEntry: (directory, entry) => ipcRenderer.invoke("remove-gitignore-entry", directory, entry),
   getFileContent: (directory, filePath) => ipcRenderer.invoke("get-file-content", directory, filePath),
   saveFileContent: (directory, filePath, content) => ipcRenderer.invoke("save-file-content", directory, filePath, content),
   getFileAtCommit: (directory, commitHash, filePath) => ipcRenderer.invoke("get-file-at-commit", directory, commitHash, filePath),

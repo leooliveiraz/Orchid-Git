@@ -9,7 +9,7 @@ import SuccessSnackbar from "./SuccessSnackbar.jsx";
 import {
   Box, Button, Typography, List, ListItem, ListItemIcon, ListItemText,
   Chip, Alert, Dialog, DialogTitle, DialogContent, IconButton,
-  ToggleButtonGroup, ToggleButton,
+  ToggleButtonGroup, ToggleButton, Menu, MenuItem,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import AccountTreeIcon from "@mui/icons-material/AccountTree";
@@ -131,9 +131,10 @@ const STATUS_COLORS = {
   "??": "#6a737d", "!!": "#6a737d",
 };
 
-function StatusFile({ file, onStage, onUnstage, onViewDiff, onViewBlame, onViewHistory, onViewFile, onDiscard, onDiscardHunks, depth = 0 }) {
+function StatusFile({ file, onStage, onUnstage, onViewDiff, onViewBlame, onViewHistory, onViewFile, onDiscard, onDiscardHunks, onContextMenu, depth = 0 }) {
   return (
     <ListItem
+      onContextMenu={(e) => onContextMenu?.(e, file)}
       secondaryAction={
         <Box sx={{ display: "flex", gap: 0.5 }}>
           {file.staged ? (
@@ -201,6 +202,7 @@ export default function ChangesPanel({ directory }) {
   const [confirmAbort, setConfirmAbort] = useState(false);
   const [viewMode, setViewMode] = useState(() => localStorage.getItem("orchid-changes-view") || "flat");
   const [confirmAbortRevert, setConfirmAbortRevert] = useState(false);
+  const [contextMenu, setContextMenu] = useState(null);
   const [resolvedFiles, setResolvedFiles] = useState([]);
 
   const checkMergeStatus = useCallback(async () => {
@@ -437,6 +439,28 @@ export default function ChangesPanel({ directory }) {
     localStorage.setItem("orchid-changes-view", mode);
   }, []);
 
+  const handleContextMenu = useCallback((e, file) => {
+    e.preventDefault();
+    setContextMenu({ left: e.clientX, top: e.clientY, file });
+  }, []);
+
+  const handleAddToGitignore = useCallback(async () => {
+    if (!contextMenu || !directory || !window.api?.addGitignoreEntry) return;
+    const entry = contextMenu.file.path;
+    try {
+      const result = await window.api.addGitignoreEntry(directory, entry);
+      if (result.status === "added") {
+        setSuccess(`Added "${entry}" to .gitignore`);
+      } else if (result.status === "already-present") {
+        setSuccess(`"${entry}" is already in .gitignore`);
+      }
+      refresh();
+    } catch (e) {
+      setError(e.message || String(e));
+    }
+    setContextMenu(null);
+  }, [contextMenu, directory, refresh]);
+
   return (
     <Box sx={{ py: 1 }}>
       <Box sx={{ display: "flex", gap: 1, alignItems: "center", mb: 1, flexWrap: "wrap" }}>
@@ -503,11 +527,12 @@ export default function ChangesPanel({ directory }) {
           onViewDiff: handleViewDiff, onViewBlame: handleViewBlame,
           onViewHistory: handleViewHistory, onViewFile: handleViewFile,
           onDiscard: handleDiscardFile, onDiscardHunks: handleDiscardHunks,
+          onContextMenu: handleContextMenu,
         }} />
       ) : (
         <List dense>
           {stagedWithResolved.map(f => (
-            <StatusFile key={"staged-" + f.path} file={f} onStage={handleStage} onUnstage={handleUnstage} onViewDiff={handleViewDiff} onViewBlame={handleViewBlame} onViewHistory={handleViewHistory} onViewFile={handleViewFile} onDiscard={handleDiscardFile} onDiscardHunks={handleDiscardHunks} />
+            <StatusFile key={"staged-" + f.path} file={f} onStage={handleStage} onUnstage={handleUnstage} onViewDiff={handleViewDiff} onViewBlame={handleViewBlame} onViewHistory={handleViewHistory} onViewFile={handleViewFile} onDiscard={handleDiscardFile} onDiscardHunks={handleDiscardHunks} onContextMenu={handleContextMenu} />
           ))}
         </List>
       )}
@@ -524,11 +549,12 @@ export default function ChangesPanel({ directory }) {
           onViewDiff: handleViewDiff, onViewBlame: handleViewBlame,
           onViewHistory: handleViewHistory, onViewFile: handleViewFile,
           onDiscard: handleDiscardFile, onDiscardHunks: handleDiscardHunks,
+          onContextMenu: handleContextMenu,
         }} />
       ) : (
         <List dense>
           {unstaged.map(f => (
-            <StatusFile key={"unstaged-" + f.path} file={f} onStage={handleStage} onUnstage={handleUnstage} onViewDiff={handleViewDiff} onViewBlame={handleViewBlame} onViewHistory={handleViewHistory} onViewFile={handleViewFile} onDiscard={handleDiscardFile} onDiscardHunks={handleDiscardHunks} />
+            <StatusFile key={"unstaged-" + f.path} file={f} onStage={handleStage} onUnstage={handleUnstage} onViewDiff={handleViewDiff} onViewBlame={handleViewBlame} onViewHistory={handleViewHistory} onViewFile={handleViewFile} onDiscard={handleDiscardFile} onDiscardHunks={handleDiscardHunks} onContextMenu={handleContextMenu} />
           ))}
         </List>
       )}
@@ -583,6 +609,14 @@ export default function ChangesPanel({ directory }) {
           onClose={() => setFileViewer(null)}
         />
       )}
+
+      <Menu open={!!contextMenu} onClose={() => setContextMenu(null)}
+        anchorReference="anchorPosition"
+        anchorPosition={contextMenu ? { left: contextMenu.left, top: contextMenu.top } : undefined}>
+        <MenuItem onClick={handleAddToGitignore} dense>
+          Add &ldquo;{contextMenu?.file?.path}&rdquo; to .gitignore
+        </MenuItem>
+      </Menu>
 
       <SuccessSnackbar message={success} onClose={() => setSuccess(null)} />
 

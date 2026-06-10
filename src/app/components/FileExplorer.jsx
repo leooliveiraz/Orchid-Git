@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useMemo, useCallback } from "react";
 import {
   Box, Typography, LinearProgress, TextField, Paper, Chip, ToggleButtonGroup, ToggleButton, Button,
-  List, ListItem, ListItemIcon, ListItemText,
+  List, ListItem, ListItemIcon, ListItemText, Menu, MenuItem,
 } from "@mui/material";
 import FolderIcon from "@mui/icons-material/Folder";
 import FolderOpenIcon from "@mui/icons-material/FolderOpen";
@@ -11,6 +11,7 @@ import UnfoldMoreIcon from "@mui/icons-material/UnfoldMore";
 import UnfoldLessIcon from "@mui/icons-material/UnfoldLess";
 import AccountTreeIcon from "@mui/icons-material/AccountTree";
 import FileViewDialog from "./FileViewDialog.jsx";
+import SuccessSnackbar from "./SuccessSnackbar.jsx";
 
 function buildTree(files) {
   const root = { name: "", children: {}, files: [] };
@@ -58,6 +59,8 @@ export default function FileExplorer({ directory }) {
   const [search, setSearch] = useState("");
   const [viewFile, setViewFile] = useState(null);
   const [expanded, setExpanded] = useState(new Set());
+  const [contextMenu, setContextMenu] = useState(null);
+  const [success, setSuccess] = useState(null);
 
   useEffect(() => {
     if (!directory || !window.api) return;
@@ -99,6 +102,41 @@ export default function FileExplorer({ directory }) {
   const collapseAll = useCallback(() => {
     setExpanded(new Set());
   }, []);
+
+  const handleContextMenu = useCallback((e, entryPath) => {
+    e.preventDefault();
+    setContextMenu({ left: e.clientX, top: e.clientY, entryPath });
+  }, []);
+
+  const handleAddToGitignore = useCallback(async () => {
+    if (!contextMenu || !directory || !window.api?.addGitignoreEntry) return;
+    try {
+      const result = await window.api.addGitignoreEntry(directory, contextMenu.entryPath);
+      if (result.status === "added") {
+        setSuccess(`Added "${contextMenu.entryPath}" to .gitignore`);
+      } else if (result.status === "already-present") {
+        setSuccess(`"${contextMenu.entryPath}" is already in .gitignore`);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+    setContextMenu(null);
+  }, [contextMenu, directory]);
+
+  const handleRemoveFromGitignore = useCallback(async () => {
+    if (!contextMenu || !directory || !window.api?.removeGitignoreEntry) return;
+    try {
+      const result = await window.api.removeGitignoreEntry(directory, contextMenu.entryPath);
+      if (result.status === "removed") {
+        setSuccess(`Removed "${contextMenu.entryPath}" from .gitignore`);
+      } else if (result.status === "not-found") {
+        setSuccess(`"${contextMenu.entryPath}" not found in .gitignore`);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+    setContextMenu(null);
+  }, [contextMenu, directory]);
 
   function resolveCompact(node, prefix) {
     let current = node;
@@ -143,6 +181,7 @@ export default function FileExplorer({ directory }) {
             <Box key={d.name}>
               <ListItem dense disablePadding
                 onClick={() => toggleDir(displayPath)}
+                onContextMenu={(e) => handleContextMenu(e, displayPath + "/")}
                 sx={{ pl: 1, py: 0.15, cursor: "pointer", borderRadius: 1, opacity: chain.length > 0 ? 0.85 : 1 }}
                 title={displayPath}
               >
@@ -168,6 +207,7 @@ export default function FileExplorer({ directory }) {
           const fullPath = prefix ? `${prefix}/${f}` : f;
           return (
             <ListItem dense disablePadding key={f} onClick={() => setViewFile(fullPath)}
+              onContextMenu={(e) => handleContextMenu(e, fullPath)}
               sx={{ pl: 1, py: 0.15, cursor: "pointer", borderRadius: 1 }}
             >
               <ListItemIcon sx={{ minWidth: 28 }}>
@@ -233,6 +273,7 @@ export default function FileExplorer({ directory }) {
           <List dense disablePadding>
             {filtered.map(f => (
               <ListItem key={f} onClick={() => setViewFile(f)}
+                onContextMenu={(e) => handleContextMenu(e, f)}
                 sx={{ py: 0.15, cursor: "pointer", borderRadius: 1 }}
               >
                 <ListItemIcon sx={{ minWidth: 28 }}>
@@ -264,6 +305,19 @@ export default function FileExplorer({ directory }) {
           onClose={() => setViewFile(null)}
         />
       )}
+
+      <Menu open={!!contextMenu} onClose={() => setContextMenu(null)}
+        anchorReference="anchorPosition"
+        anchorPosition={contextMenu ? { left: contextMenu.left, top: contextMenu.top } : undefined}>
+        <MenuItem onClick={handleAddToGitignore} dense>
+          Add to .gitignore
+        </MenuItem>
+        <MenuItem onClick={handleRemoveFromGitignore} dense>
+          Remove from .gitignore
+        </MenuItem>
+      </Menu>
+
+      <SuccessSnackbar message={success} onClose={() => setSuccess(null)} />
     </Box>
   );
 }

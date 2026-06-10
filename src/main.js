@@ -279,6 +279,28 @@ ipcMain.handle("save-file-content", (event, directory, filePath, content) => {
   return "ok";
 });
 
+ipcMain.handle("add-gitignore-entry", (event, directory, entry) => {
+  const gitignorePath = path.join(directory, ".gitignore");
+  let content = "";
+  if (fs.existsSync(gitignorePath)) content = fs.readFileSync(gitignorePath, "utf8");
+  const lines = content.split("\n").map(l => l.trim());
+  if (lines.includes(entry)) return { ok: true, status: "already-present" };
+  content += (content.endsWith("\n") ? "" : "\n") + entry + "\n";
+  fs.writeFileSync(gitignorePath, content, "utf8");
+  return { ok: true, status: "added" };
+});
+
+ipcMain.handle("remove-gitignore-entry", (event, directory, entry) => {
+  const gitignorePath = path.join(directory, ".gitignore");
+  if (!fs.existsSync(gitignorePath)) return { ok: true, status: "not-found" };
+  let content = fs.readFileSync(gitignorePath, "utf8");
+  const lines = content.split("\n");
+  const filtered = lines.filter(l => l.trim() !== entry);
+  if (filtered.length === lines.length) return { ok: true, status: "not-found" };
+  fs.writeFileSync(gitignorePath, filtered.join("\n"), "utf8");
+  return { ok: true, status: "removed" };
+});
+
 ipcMain.handle("get-file-at-commit", (event, directory, commitHash, filePath) => {
   return runGit(["show", `${commitHash}:${gitPath(filePath)}`], directory).replace(/\r\n/g, "\n").replace(/\r/g, "\n");
 });
