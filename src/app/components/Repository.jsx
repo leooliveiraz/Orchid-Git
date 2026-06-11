@@ -1,6 +1,6 @@
 ﻿import React, { useEffect, useState, useContext } from "react";
 import "./Repository.css";
-import CommitTable from "./CommitTable.jsx";
+import CommitTable, { formatDate } from "./CommitTable.jsx";
 import ChangesPanel from "./ChangesPanel.jsx";
 import DiffViewer from "./DiffViewer.jsx";
 import MetricsPanel from "./MetricsPanel.jsx";
@@ -15,7 +15,7 @@ import {
 import { OrchidContext } from "../OrchidContext.jsx";
 
 export default function Repository({ repositoryDirectory }) {
-  const { refreshKey, setNotRepo, tabSignal, setTabSignal, refresh, isMerging, isReverting, scrollToCommitHash, setScrollToCommitHash } = useContext(OrchidContext);
+  const { refreshKey, setNotRepo, tabSignal, setTabSignal, refresh, isMerging, isReverting, scrollToCommitHash, setScrollToCommitHash, dateFormat } = useContext(OrchidContext);
   const [commitList, setCommitList] = useState([]);
   const [filteredCommitList, setFilteredCommitList] = useState([]);
   const [tab, setTab] = useState("graph");
@@ -403,7 +403,7 @@ export default function Repository({ repositoryDirectory }) {
           )}
 
           <Box sx={{ flex: 1, minHeight: 0 }}>
-            <CommitTable commitList={filteredCommitList} connectionStyle={connectionStyle} onCommitClick={handleCommitClick} highlightIndex={highlightIndex} onCherryPick={handleCherryPick} onCheckout={handleCheckout} onRevert={handleRevert} onReset={handleReset} />
+            <CommitTable commitList={filteredCommitList} connectionStyle={connectionStyle} onCommitClick={handleCommitClick} highlightIndex={highlightIndex} onCherryPick={handleCherryPick} onCheckout={handleCheckout} onRevert={handleRevert} onReset={handleReset} dateFormat={dateFormat} />
           </Box>
         </>
       )}
@@ -451,7 +451,7 @@ export default function Repository({ repositoryDirectory }) {
             </Typography>
             <Box sx={{ display: "flex", gap: 2, fontSize: "0.75rem", color: "text.secondary" }}>
               <span>{selectedCommit.author}</span>
-              <span>{selectedCommit.date}</span>
+              <span>{formatDate(selectedCommit.date, dateFormat)}</span>
             </Box>
           </Box>
         )}

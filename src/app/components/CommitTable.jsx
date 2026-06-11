@@ -10,13 +10,46 @@ import CheckIcon from "@mui/icons-material/Check";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import ReplayIcon from "@mui/icons-material/Replay";
 
+export function getRelativeTime(date) {
+  const now = new Date();
+  const diffSec = Math.round((date - now) / 1000);
+  const abs = Math.abs(diffSec);
+  const rtf = new Intl.RelativeTimeFormat(undefined, { numeric: "auto" });
+  if (abs < 60) return rtf.format(0, "second");
+  if (abs < 3600) return rtf.format(Math.round(diffSec / 60), "minute");
+  if (abs < 86400) return rtf.format(Math.round(diffSec / 3600), "hour");
+  if (abs < 2592000) return rtf.format(Math.round(diffSec / 86400), "day");
+  if (abs < 31536000) return rtf.format(Math.round(diffSec / 2592000), "month");
+  return rtf.format(Math.round(diffSec / 31536000), "year");
+}
+
+export function formatDate(dateStr, formatKey) {
+  if (!formatKey) return dateStr;
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return dateStr;
+  switch (formatKey) {
+    case "locale-date":
+      return new Intl.DateTimeFormat(undefined, { dateStyle: "medium" }).format(d);
+    case "locale-datetime":
+      return new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" }).format(d);
+    case "locale-full":
+      return new Intl.DateTimeFormat(undefined, { dateStyle: "full", timeStyle: "medium" }).format(d);
+    case "relative":
+      return getRelativeTime(d);
+    case "iso":
+      return d.toISOString().replace("T", " ").slice(0, 16);
+    default:
+      return dateStr;
+  }
+}
+
 const COLORS = [
   "#2D3AC9", "#B041FD", "#FD63CE", "#FD3C2F",
   "#fc8225", "#3B8C33", "#F9A825", "#00BCD4",
   "#FF5722", "#607D8B", "#795548", "#9C27B0",
 ];
 
-export default function CommitTable({ commitList, connectionStyle, onCommitClick, highlightIndex, onCherryPick, onCheckout, onRevert, onReset }) {
+export default function CommitTable({ commitList, connectionStyle, onCommitClick, highlightIndex, onCherryPick, onCheckout, onRevert, onReset, dateFormat }) {
   const containerRef = useRef(null);
   const [contextMenu, setContextMenu] = useState(null);
   const [contextCommit, setContextCommit] = useState(null);
@@ -282,7 +315,7 @@ export default function CommitTable({ commitList, connectionStyle, onCommitClick
                 {commit.author}
               </TableCell>
               <TableCell sx={{ fontSize: "0.75rem", whiteSpace: "nowrap" }}>
-                {commit.date}
+                {formatDate(commit.date, dateFormat)}
               </TableCell>
             </TableRow>
           ))}

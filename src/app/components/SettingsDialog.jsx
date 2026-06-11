@@ -3,11 +3,12 @@ import {
   Dialog, DialogTitle, DialogContent, DialogActions,
   Button, TextField, Alert, LinearProgress,
   FormControlLabel, Checkbox, Typography, Box, Divider,
+  FormControl, InputLabel, Select, MenuItem,
 } from "@mui/material";
 import { OrchidContext } from "../OrchidContext.jsx";
 
 export default function SettingsDialog({ onClose }) {
-  const { directory } = useContext(OrchidContext);
+  const { directory, dateFormat, setDateFormat } = useContext(OrchidContext);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [originUrl, setOriginUrl] = useState("");
@@ -205,6 +206,21 @@ li{margin:8px 0}strong{color:#000}
               />}
               label={<Typography variant="body2">Enable force push</Typography>}
             />
+
+            <Divider sx={{ mt: 2, mb: 1 }} />
+            <Typography variant="overline" sx={{ display: "block", color: "text.secondary", mb: 1 }}>Display</Typography>
+            <FormControl fullWidth size="small" sx={{ mb: 1 }}>
+              <InputLabel>Date format</InputLabel>
+              <Select value={dateFormat} label="Date format"
+                onChange={e => setDateFormat(e.target.value)}>
+                <MenuItem value="">Default (git native)</MenuItem>
+                <MenuItem value="locale-date">Locale date</MenuItem>
+                <MenuItem value="locale-datetime">Locale date + time</MenuItem>
+                <MenuItem value="locale-full">Locale full</MenuItem>
+                <MenuItem value="relative">Relative (X ago)</MenuItem>
+                <MenuItem value="iso">ISO 8601</MenuItem>
+              </Select>
+            </FormControl>
 
             <Divider sx={{ mt: 2, mb: 1 }} />
             <Typography variant="caption" sx={{ color: "text.secondary", display: "block" }}>
