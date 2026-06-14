@@ -268,6 +268,12 @@ export default function Repository({ repositoryDirectory }) {
     }
   };
 
+  const handleChildClick = (childIndex) => {
+    setMenuAnchor(null);
+    setHighlightIndex(childIndex);
+    setTimeout(() => setHighlightIndex(null), 3000);
+  };
+
   const handleParentClick = (parentIndex) => {
     setMenuAnchor(null);
     setHighlightIndex(parentIndex);
@@ -327,6 +333,22 @@ export default function Repository({ repositoryDirectory }) {
     } catch (e) {
       setError(e.message || String(e));
     }
+  };
+
+  const getChildCommits = () => {
+    if (!selectedCommit) return [];
+    const children = [];
+    if (selectedCommit.sons?.length) {
+      selectedCommit.sons.forEach(s => children.push({ ...s, childIndex: s.index }));
+    }
+    if (selectedCommit.sonsMerge?.length) {
+      selectedCommit.sonsMerge.forEach(s => {
+        if (!children.some(c => c.commit === s.commit)) {
+          children.push({ ...s, childIndex: s.index });
+        }
+      });
+    }
+    return children;
   };
 
   const getParentCommits = () => {
@@ -495,6 +517,27 @@ export default function Repository({ repositoryDirectory }) {
                 </Typography>
                 <Typography variant="caption" sx={{ color: "text.secondary", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: "0.7rem" }}>
                   {p.message}
+                </Typography>
+              </Box>
+            ))}
+          </Box>
+        )}
+        {getChildCommits().length > 0 && (
+          <Box sx={{ px: 2, py: 1, borderBottom: 1, borderColor: "divider", bgcolor: "action.hover" }}>
+            <Typography variant="caption" sx={{ fontWeight: 600, color: "text.secondary", mb: 0.5, display: "block" }}>
+              Children
+            </Typography>
+            {getChildCommits().map(c => (
+              <Box
+                key={c.commit}
+                onClick={() => handleChildClick(c.childIndex)}
+                sx={{ display: "flex", gap: 1, alignItems: "center", cursor: "pointer", py: 0.5, px: 1, borderRadius: 1, "&:hover": { bgcolor: "action.selected" } }}
+              >
+                <Typography variant="caption" sx={{ fontFamily: "monospace", color: "primary.main", fontSize: "0.7rem" }}>
+                  {c.commit}
+                </Typography>
+                <Typography variant="caption" sx={{ color: "text.secondary", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: "0.7rem" }}>
+                  {c.message}
                 </Typography>
               </Box>
             ))}
