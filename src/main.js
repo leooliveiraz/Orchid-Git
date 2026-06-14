@@ -1,4 +1,4 @@
-import { app, BrowserWindow } from "electron";
+import { app, BrowserWindow, shell } from "electron";
 const { dialog, Menu, MenuItem } = require("electron");
 import path from "node:path";
 import fs from "node:fs";
@@ -863,4 +863,28 @@ ipcMain.handle("write-last-directory", (event, dirPath) => {
   if (app.isPackaged) return;
   const target = path.join(app.getPath("userData"), "lastDirectory.txt");
   try { fs.writeFileSync(target, dirPath, "utf8"); } catch { }
+});
+
+ipcMain.handle("create-pr", async (event, directory, options = {}) => {
+  const { headBranch, baseBranch, title } = options;
+
+  const branch = headBranch || runGit(["rev-parse", "--abbrev-ref", "HEAD"], directory).trim();
+  if (branch === "HEAD") throw new Error("Cannot create a pull request from a detached HEAD state.");
+
+  let remoteUrl;
+  try {
+    remoteUrl = runGit(["remote", "get-url", "origin"], directory).trim();
+  } catch {
+    throw new Error("No remote configured. Set a remote origin to create pull requests.");
+  }
+
+  const { buildPullRequestUrl } = require("./app/utils/providerDetector");
+  const prUrl = buildPullRequestUrl(remoteUrl, branch, baseBranch || "main");
+
+  if (!prUrl) {
+    throw new Error("Could not determine a valid pull request URL for this repository's remote.");
+  }
+
+  await shell.openExternal(prUrl);
+  return { ok: true, url: prUrl };
 });
