@@ -33,6 +33,7 @@ import ContentPasteIcon from "@mui/icons-material/ContentPaste";
 import AssignmentTurnedInIcon from '@mui/icons-material/AssignmentTurnedIn';
 import WatchLaterIcon from '@mui/icons-material/WatchLater';
 import ClearIcon from "@mui/icons-material/Clear";
+import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import React, { useContext, useState, useEffect } from "react";
 import appIcon from "../../assets/icon.png";
 import pkg from "../../../package.json";
@@ -46,6 +47,7 @@ import CommitDialog from "./CommitDialog.jsx";
 import RebaseDialog from "./RebaseDialog.jsx";
 import InitRepoDialog from "./InitRepoDialog.jsx";
 import SuccessSnackbar from "./SuccessSnackbar.jsx";
+import CreatePRDialog from "./CreatePRDialog.jsx";
 
 const OVERLAY_STYLE = {
   position: "fixed", inset: 0, bgcolor: "rgba(0,0,0,0.4)",
@@ -65,6 +67,7 @@ export default function AppMenu({ onToggleMenu }) {
   const [showNewBranch, setShowNewBranch] = useState(false);
   const [showMerge, setShowMerge] = useState(false);
   const [showCherryPick, setShowCherryPick] = useState(false);
+  const [showCreatePR, setShowCreatePR] = useState(false);
   const [showRebase, setShowRebase] = useState(false);
   const [showInit, setShowInit] = useState(false);
   const [showCommit, setShowCommit] = useState(false);
@@ -296,6 +299,13 @@ export default function AppMenu({ onToggleMenu }) {
             </Tooltip>
           )}
           {directory && (
+            <Tooltip title="Create Pull Request">
+              <IconButton color="inherit" onClick={() => { if (isMerging) { setSyncError("Resolva o merge antes de continuar"); return; } if (isReverting) { setSyncError("Resolva o revert antes de continuar"); return; } setShowCreatePR(true); }} sx={{ mr: 0.5 }}>
+                <OpenInNewIcon />
+              </IconButton>
+            </Tooltip>
+          )}
+          {directory && (
             <Tooltip title="Cherry-pick commit">
               <IconButton color="inherit" onClick={() => { if (isMerging) { setSyncError("Resolva o merge antes de continuar"); return; } if (isReverting) { setSyncError("Resolva o revert antes de continuar"); return; } setShowCherryPick(true); }} sx={{ mr: 0.5 }}>
                 <AssignmentTurnedInIcon />
@@ -351,6 +361,7 @@ export default function AppMenu({ onToggleMenu }) {
       {showMerge && <MergeDialog onClose={() => setShowMerge(false)} />}
       {showCherryPick && <CherryPickDialog onClose={() => setShowCherryPick(false)} />}
       {showRebase && <RebaseDialog onClose={() => setShowRebase(false)} />}
+      {showCreatePR && <CreatePRDialog onClose={() => setShowCreatePR(false)} />}
       {showInit && <InitRepoDialog onClose={() => setShowInit(false)} />}
       {showCommit && <CommitDialog directory={directory} stagedFiles={commitStaged} onClose={(did) => { setShowCommit(false); if (did) refresh(); }} />}
 

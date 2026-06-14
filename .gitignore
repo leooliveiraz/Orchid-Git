@@ -93,3 +93,4 @@ typings/
 out/
 
 test/e2e/screenshots
+lastDirectory.txt
