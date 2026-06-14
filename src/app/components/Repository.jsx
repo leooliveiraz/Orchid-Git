@@ -86,7 +86,7 @@ export default function Repository({ repositoryDirectory }) {
         .then((result) => {
           const commits = configureCommitList(result);
 
-          window.api?.saveFileContent?.(repositoryDirectory, "repo-log.txt", result).catch(() => {});
+          window.api?.saveRepoLog?.(result).catch(() => {});
 
           commits.forEach((commit, index) => {
             commit.index = index;

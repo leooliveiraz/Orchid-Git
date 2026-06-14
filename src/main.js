@@ -865,6 +865,11 @@ ipcMain.handle("write-last-directory", (event, dirPath) => {
   try { fs.writeFileSync(target, dirPath, "utf8"); } catch { }
 });
 
+ipcMain.handle("save-repo-log", (event, content) => {
+  const target = path.join(app.getAppPath(), "repo-log.txt");
+  try { fs.writeFileSync(target, content, "utf8"); } catch { }
+});
+
 ipcMain.handle("create-pr", async (event, directory, options = {}) => {
   const { headBranch, baseBranch, title } = options;
 
