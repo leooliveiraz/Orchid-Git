@@ -9,7 +9,7 @@ import SuccessSnackbar from "./SuccessSnackbar.jsx";
 import CommitSearch from "./CommitSearch.jsx";
 import {
   Typography, Box, Tabs, Tab, FormControlLabel, Checkbox,
-  TextField, ToggleButtonGroup, ToggleButton, Paper,
+  TextField, Paper,
   Menu, MenuItem, ListItemIcon, ListItemText, Chip, Divider, Alert, Badge,
 } from "@mui/material";
 import { OrchidContext } from "../OrchidContext.jsx";
@@ -27,7 +27,6 @@ export default function Repository({ repositoryDirectory }) {
   const [useTopoOrder, setUseTopoOrder] = useState(() => JSON.parse(localStorage.getItem("orchid-topo-order") ?? "true"));
   const [commitLimit, setCommitLimit] = useState(() => JSON.parse(localStorage.getItem("orchid-commit-limit") ?? "10000"));
   const [showSearch, setShowSearch] = useState(false);
-  const [connectionStyle, setConnectionStyle] = useState(() => localStorage.getItem("orchid-connection-style") || "bezier");
   const [highlightIndex, setHighlightIndex] = useState(null);
   const [success, setSuccess] = useState(null);
   const [error, setError] = useState(null);
@@ -39,10 +38,6 @@ export default function Repository({ repositoryDirectory }) {
       setTimeout(() => { setTabSignal(null) }, 1000);
     }
   }, [tabSignal]);
-
-  useEffect(() => {
-    localStorage.setItem("orchid-connection-style", connectionStyle);
-  }, [connectionStyle]);
 
   useEffect(() => {
     if (!scrollToCommitHash || commitList.length === 0) return;
@@ -88,105 +83,6 @@ export default function Repository({ repositoryDirectory }) {
 
           window.api?.saveRepoLog?.(result).catch(() => {});
 
-          commits.forEach((commit, index) => {
-            commit.index = index;
-            commit.sons = [];
-            commit.sonsNumber = 0;
-          });
-
-          const map = {};
-          commits.forEach(c => map[c.commit] = c);
-
-          commits.forEach(commit => {
-            const parents = commit.parent.split(" ");
-            parents.forEach((p, idx) => {
-              const parent = map[p];
-              if (!parent) return;
-              if (idx === 0) {
-                parent.sons.push(commit);
-                parent.sonsNumber = parent.sons.length;
-              } else {
-                if (!parent.sonsMerge) parent.sonsMerge = [];
-                parent.sonsMerge.push(commit);
-                parent.sonsMergeNumber = parent.sonsMerge.length;
-              }
-            });
-          });
-
-          commits.forEach((commit, index) => {
-            const parents = commit.parent.split(" ");
-            const firstParent = map[parents[0]];
-            if (firstParent) {
-              commit.dad = {
-                dad: firstParent,
-                parentIndex: firstParent.index,
-                parentDistance: firstParent.index - index,
-              };
-            }
-            if (parents.length > 1) {
-              const secondParent = map[parents[1]];
-              if (secondParent) {
-                commit.merge = {
-                  hash: parents[1],
-                  parent: secondParent,
-                  parentIndex: secondParent.index,
-                  parentDistance: secondParent.index - index,
-                };
-              }
-            }
-          });
-
-          const oc = {};
-          function occupy(row, depth) {
-            if (!oc[row]) oc[row] = new Set();
-            oc[row].add(depth);
-          }
-          function isFree(row, depth) {
-            return !oc[row] || !oc[row].has(depth);
-          }
-          function firstFree(row, prefer) {
-            for (let offset = 0; offset <= 50; offset++) {
-              for (const d of [prefer + offset, prefer - offset]) {
-                if (d >= 0 && isFree(row, d)) return d;
-              }
-            }
-            return prefer;
-          }
-
-          commits.forEach((commit, index) => {
-            if (index === 0) {
-              commit.depth = 0;
-              occupy(0, 0);
-            } else {
-              const prev = commits[index - 1];
-              if (prev.dad?.parentIndex === index) {
-                let d = prev.depth;
-                if (commit.sons?.length) {
-                  const vals = commit.sons.filter(s => Number.isFinite(s.depth)).map(s => s.depth);
-                  d = vals.length ? Math.min(...vals) : 0;
-                }
-                commit.depth = d;
-                occupy(index, d);
-              } else if (commit.sons?.length) {
-                const vals = commit.sons.filter(s => Number.isFinite(s.depth)).map(s => s.depth);
-                const minDepth = vals.length ? Math.min(...vals) : 0;
-                commit.depth = minDepth;
-                occupy(index, minDepth);
-              } else {
-                const d = firstFree(index, 0);
-                commit.depth = d;
-                occupy(index, d);
-              }
-            }
-
-            if (commit.dad) {
-              for (let r = index + 1; r <= commit.dad.parentIndex; r++) {
-                if (!isFree(r, commit.depth)) break;
-                occupy(r, commit.depth);
-              }
-            }
-          });
-
           setCommitList(commits);
           setFilteredCommitList(commits);
 
@@ -209,7 +105,7 @@ export default function Repository({ repositoryDirectory }) {
             }
           }
         }).catch(er => {
-          er.message.includes("not a git repository") && setNoteRepo(true)
+          er.message.includes("not a git repository") && setNotRepo(true)
         });
     }
   }, [repositoryDirectory, useTopoOrder, allBranches, commitLimit, refreshKey]);
@@ -270,18 +166,6 @@ export default function Repository({ repositoryDirectory }) {
     }
   };
 
-  const handleChildClick = (childIndex) => {
-    setMenuAnchor(null);
-    setHighlightIndex(childIndex);
-    setTimeout(() => setHighlightIndex(null), 3000);
-  };
-
-  const handleParentClick = (parentIndex) => {
-    setMenuAnchor(null);
-    setHighlightIndex(parentIndex);
-    setTimeout(() => setHighlightIndex(null), 3000);
-  };
-
   const handleCheckout = async (commitHash) => {
     if (isMerging) { setError("Resolva o merge antes de continuar"); return; }
     if (isReverting) { setError("Resolva o revert antes de continuar"); return; }
@@ -337,36 +221,6 @@ export default function Repository({ repositoryDirectory }) {
     }
   };
 
-  const getChildCommits = () => {
-    if (!selectedCommit) return [];
-    const children = [];
-    if (selectedCommit.sons?.length) {
-      selectedCommit.sons.forEach(s => children.push({ ...s, childIndex: s.index }));
-    }
-    if (selectedCommit.sonsMerge?.length) {
-      selectedCommit.sonsMerge.forEach(s => {
-        if (!children.some(c => c.commit === s.commit)) {
-          children.push({ ...s, childIndex: s.index });
-        }
-      });
-    }
-    return children;
-  };
-
-  const getParentCommits = () => {
-    if (!selectedCommit || !commitList.length) return [];
-    const result = [];
-    if (selectedCommit.dad?.parentIndex != null) {
-      const parent = commitList[selectedCommit.dad.parentIndex];
-      if (parent) result.push({ ...parent, parentIndex: selectedCommit.dad.parentIndex });
-    }
-    if (selectedCommit.merge?.parentIndex != null) {
-      const parent = commitList[selectedCommit.merge.parentIndex];
-      if (parent && parent.commit !== result[0]?.commit) result.push({ ...parent, parentIndex: selectedCommit.merge.parentIndex });
-    }
-    return result;
-  };
-
   const STATUS_COLORS = {
     M: "#e6a817", A: "#28a745", D: "#d73a49", R: "#6f42c1",
   };
@@ -408,16 +262,6 @@ export default function Repository({ repositoryDirectory }) {
               onChange={e => setCommitLimit(Number(e.target.value))}
               sx={{ width: 100 }}
             />
-            <ToggleButtonGroup
-              size="small"
-              value={connectionStyle}
-              exclusive
-              onChange={(e, v) => v && setConnectionStyle(v)}
-            >
-              {["bezier", "angular", "straight", "step", "teardrop", "rounded", "elbow"].map(mode => (
-                <ToggleButton key={mode} value={mode}>{mode}</ToggleButton>
-              ))}
-            </ToggleButtonGroup>
           </Box>
 
           {showSearch && (
@@ -427,7 +271,7 @@ export default function Repository({ repositoryDirectory }) {
           )}
 
           <Box sx={{ flex: 1, minHeight: 0 }}>
-            <CommitTable commitList={filteredCommitList} connectionStyle={connectionStyle} onCommitClick={handleCommitClick} highlightIndex={highlightIndex} onCherryPick={handleCherryPick} onCheckout={handleCheckout} onRevert={handleRevert} onReset={handleReset} dateFormat={dateFormat} />
+            <CommitTable commitList={filteredCommitList} onCommitClick={handleCommitClick} highlightIndex={highlightIndex} onCherryPick={handleCherryPick} onCheckout={handleCheckout} onRevert={handleRevert} onReset={handleReset} dateFormat={dateFormat} />
           </Box>
         </>
       )}
@@ -501,48 +345,6 @@ export default function Repository({ repositoryDirectory }) {
                 );
               });
             })()}
-          </Box>
-        )}
-        {getParentCommits().length > 0 && (
-          <Box sx={{ px: 2, py: 1, borderBottom: 1, borderColor: "divider", bgcolor: "action.hover" }}>
-            <Typography variant="caption" sx={{ fontWeight: 600, color: "text.secondary", mb: 0.5, display: "block" }}>
-              Parents
-            </Typography>
-            {getParentCommits().map(p => (
-              <Box
-                key={p.commit}
-                onClick={() => handleParentClick(p.parentIndex)}
-                sx={{ display: "flex", gap: 1, alignItems: "center", cursor: "pointer", py: 0.5, px: 1, borderRadius: 1, "&:hover": { bgcolor: "action.selected" } }}
-              >
-                <Typography variant="caption" sx={{ fontFamily: "monospace", color: "primary.main", fontSize: "0.7rem" }}>
-                  {p.commit}
-                </Typography>
-                <Typography variant="caption" sx={{ color: "text.secondary", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: "0.7rem" }}>
-                  {p.message}
-                </Typography>
-              </Box>
-            ))}
-          </Box>
-        )}
-        {getChildCommits().length > 0 && (
-          <Box sx={{ px: 2, py: 1, borderBottom: 1, borderColor: "divider", bgcolor: "action.hover" }}>
-            <Typography variant="caption" sx={{ fontWeight: 600, color: "text.secondary", mb: 0.5, display: "block" }}>
-              Children
-            </Typography>
-            {getChildCommits().map(c => (
-              <Box
-                key={c.commit}
-                onClick={() => handleChildClick(c.childIndex)}
-                sx={{ display: "flex", gap: 1, alignItems: "center", cursor: "pointer", py: 0.5, px: 1, borderRadius: 1, "&:hover": { bgcolor: "action.selected" } }}
-              >
-                <Typography variant="caption" sx={{ fontFamily: "monospace", color: "primary.main", fontSize: "0.7rem" }}>
-                  {c.commit}
-                </Typography>
-                <Typography variant="caption" sx={{ color: "text.secondary", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: "0.7rem" }}>
-                  {c.message}
-                </Typography>
-              </Box>
-            ))}
           </Box>
         )}
         <Divider />

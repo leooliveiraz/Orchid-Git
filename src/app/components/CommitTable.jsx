@@ -213,7 +213,7 @@ export default function CommitTable({ commitList, onCommitClick, highlightIndex,
                 ...(index === headIdx ? { outline: "2px solid", outlineColor: "primary.main", outlineOffset: -1 } : {}),
               }}
             >
-              <TableCell sx={{ textAlign: "center", fontWeight: commit.merge ? 700 : 400, fontSize: "0.75rem", color: "text.secondary" }}>
+              <TableCell sx={{ textAlign: "center", fontWeight: 400, fontSize: "0.75rem", color: "text.secondary" }}>
                 {index}
               </TableCell>
               <TableCell sx={{ fontFamily: "monospace", fontSize: "0.75rem", color: "text.secondary" }}>
