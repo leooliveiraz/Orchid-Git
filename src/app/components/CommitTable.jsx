@@ -8,6 +8,8 @@ import ContentPasteIcon from "@mui/icons-material/ContentPaste";
 import CheckIcon from "@mui/icons-material/Check";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import ReplayIcon from "@mui/icons-material/Replay";
+import CommitCircle from "./graph/CommitCircle.jsx";
+import { LANE_COLORS, LANE_WIDTH, ROW_HEIGHT } from "./graph/constants.js";
 
 export function getRelativeTime(date) {
   const now = new Date();
@@ -165,7 +167,9 @@ export default function CommitTable({ commitList, onCommitClick, highlightIndex,
             <TableCell sx={{ width: 40, textAlign: "center", fontWeight: 600, color: "text.secondary", fontSize: "0.75rem" }}>
               #
             </TableCell>
-
+            <TableCell sx={{ fontWeight: 600, fontSize: "0.75rem", color: "text.secondary", width: 100 }}>
+              Graph
+            </TableCell>
             <TableCell sx={{ fontWeight: 600, fontSize: "0.75rem", color: "text.secondary" }}>
               Hash
             </TableCell>
@@ -183,7 +187,7 @@ export default function CommitTable({ commitList, onCommitClick, highlightIndex,
         <TableBody>
           {commitList.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={5} align="center" sx={{ py: 6 }}>
+              <TableCell colSpan={6} align="center" sx={{ py: 6 }}>
                 <Typography variant="body2" sx={{ color: "text.secondary" }}>
                   No matching commits
                 </Typography>
@@ -215,6 +219,11 @@ export default function CommitTable({ commitList, onCommitClick, highlightIndex,
             >
               <TableCell sx={{ textAlign: "center", fontWeight: 400, fontSize: "0.75rem", color: "text.secondary" }}>
                 {index}
+              </TableCell>
+              <TableCell sx={{ p: 0, verticalAlign: "middle" }}>
+                <svg width={LANE_WIDTH + 10} height={ROW_HEIGHT} style={{ overflow: "visible", display: "block" }}>
+                  <CommitCircle lane={0} color={LANE_COLORS[0]} />
+                </svg>
               </TableCell>
               <TableCell sx={{ fontFamily: "monospace", fontSize: "0.75rem", color: "text.secondary" }}>
                 {commit.commit}
