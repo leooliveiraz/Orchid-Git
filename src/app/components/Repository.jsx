@@ -175,7 +175,16 @@ export default function Repository({ repositoryDirectory }) {
           columns.splice(colIdx, 0, parentHash);
         }
       }
-      console.log(c.index, columns)
+
+      c.connections = [];
+      for (let p = 0; p < c.parentList.length; p++) {
+        const parentLane = columns.indexOf(c.parentList[p].hash);
+        if (parentLane !== -1 && parentLane !== colIdx) {
+          c.connections.push({ fromLane: colIdx, toLane: parentLane });
+        }
+      }
+
+      console.log(c.index, columns, c.connections)
     }
     console.log(commitList)
     return commitList;

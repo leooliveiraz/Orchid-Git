@@ -10,6 +10,7 @@ import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import ReplayIcon from "@mui/icons-material/Replay";
 import CommitCircle from "./graph/CommitCircle.jsx";
 import LaneLine from "./graph/LaneLine.jsx";
+import ConnectionPath from "./graph/ConnectionPath.jsx";
 import { LANE_COLORS, LANE_WIDTH, ROW_HEIGHT } from "./graph/constants.js";
 
 export function getRelativeTime(date) {
@@ -227,9 +228,18 @@ export default function CommitTable({ commitList, onCommitClick, highlightIndex,
               <TableCell sx={{ p: 0, verticalAlign: "middle" }}>
                 <svg width={Math.max((commit.lane?.length || 1) * LANE_WIDTH + 10, 24)} height={ROW_HEIGHT} style={{ overflow: "visible", display: "block" }}>
                   {(commit.lane || []).map(entry =>
-                    entry.type === "commit"
-                      ? <CommitCircle key={entry.lane} lane={entry.lane} color={LANE_COLORS[entry.lane % LANE_COLORS.length]} />
-                      : <LaneLine key={entry.lane} lane={entry.lane} color={LANE_COLORS[entry.lane % LANE_COLORS.length]} />
+                    entry.type === "line" && <LaneLine key={entry.lane} lane={entry.lane} color={LANE_COLORS[entry.lane % LANE_COLORS.length]} />
+                  )}
+                  {commit.connections?.map(conn => (
+                    <ConnectionPath
+                      key={`c-${conn.toLane}`}
+                      fromLane={conn.fromLane}
+                      toLane={conn.toLane}
+                      color={LANE_COLORS[conn.toLane % LANE_COLORS.length]}
+                    />
+                  ))}
+                  {(commit.lane || []).map(entry =>
+                    entry.type === "commit" && <CommitCircle key={entry.lane} lane={entry.lane} color={LANE_COLORS[entry.lane % LANE_COLORS.length]} />
                   )}
                 </svg>
               </TableCell>
