@@ -144,14 +144,40 @@ export default function Repository({ repositoryDirectory }) {
   }
 
   function configureGraphData(commitList) {
-    const commitHashMap = {}
+    const commitHashMap = {};
     for (const commit of commitList) {
       commitHashMap[commit.hash] = commit;
     }
     for (const commit of commitList) {
-      commit.parentList = extractDad(commit, commitHashMap)
+      commit.parentList = extractParentList(commit, commitHashMap);
     }
-    console.log(commitHashMap)
+
+    const columns = [];
+
+    for (const c of commitList) {
+      let colIdx = columns.indexOf(c.hash);
+      if (colIdx === -1) {
+        columns.push(c.hash);
+        colIdx = columns.length - 1;
+      }
+
+      c.lane = columns.map((hash, i) =>
+        i === colIdx
+          ? { type: "commit", lane: i, commit: c }
+          : { type: "line", lane: i, sourceCommit: commitHashMap[hash] || null, destCommit: c }
+      );
+
+      columns.splice(colIdx, 1);
+
+      for (let p = c.parentList.length - 1; p >= 0; p--) {
+        const parentHash = c.parentList[p].hash;
+        if (!columns.includes(parentHash)) {
+          columns.splice(colIdx, 0, parentHash);
+        }
+      }
+      console.log(c.index, columns)
+    }
+    console.log(commitList)
     return commitList;
   }
 
@@ -161,13 +187,16 @@ export default function Repository({ repositoryDirectory }) {
     return commit ? commit.index : -1;
   }
 
-  function extractDad(commit, commitHashMap) {
+  function extractParentList(commit, commitHashMap) {
     if (!commit.parent) return [];
     return commit.parent.split(" ").filter(Boolean).map(h => commitHashMap[h]).filter(Boolean);
   }
 
-  function configureCommitLine(commit, commitList, index) {
-    commit.line = [];
+  function getCommitDistance(hashA, hashB, commitList) {
+    const a = commitList.find(c => c.hash.startsWith(hashA));
+    const b = commitList.find(c => c.hash.startsWith(hashB));
+    if (!a || !b) return -1;
+    return Math.abs(b.index - a.index);
   }
 
   const handleCommitClick = async (commit, event) => {
