@@ -41,7 +41,7 @@ export default function Repository({ repositoryDirectory }) {
 
   useEffect(() => {
     if (!scrollToCommitHash || commitList.length === 0) return;
-    const idx = commitList.findIndex(c => scrollToCommitHash.startsWith(c.commit));
+    const idx = commitList.findIndex(c => scrollToCommitHash.startsWith(c.hash));
     if (idx >= 0) {
       setTab("graph");
       setHighlightIndex(idx);
@@ -81,7 +81,7 @@ export default function Repository({ repositoryDirectory }) {
         .then((result) => {
           const commits = configureCommitList(result);
 
-          window.api?.saveRepoLog?.(result).catch(() => {});
+          window.api?.saveRepoLog?.(result).catch(() => { });
 
           setCommitList(commits);
           setFilteredCommitList(commits);
@@ -96,12 +96,12 @@ export default function Repository({ repositoryDirectory }) {
           if (window.api) {
             const target = fallbackHeadIdx >= 0 ? commits[fallbackHeadIdx] : null;
             if (target) {
-              window.api.getCommitFiles(repositoryDirectory, target.commit)
+              window.api.getCommitFiles(repositoryDirectory, target.hash)
                 .then(files => {
                   setSelectedCommit(target);
                   setCommitFiles(files || []);
                 })
-                .catch(() => {});
+                .catch(() => { });
             }
           }
         }).catch(er => {
@@ -130,7 +130,7 @@ export default function Repository({ repositoryDirectory }) {
     blocks.forEach((block) => {
       const lines = block.trimStart().split("\n");
       commitList.push({
-        commit: lines[0] || "",
+        hash: lines[0] || "",
         parent: lines[1] || "",
         author: lines[2] || "",
         date: lines[3] || "",
@@ -138,13 +138,21 @@ export default function Repository({ repositoryDirectory }) {
         decoration: (lines[5] || "").trim(),
       });
     });
+    return configureGraphData(commitList);
+  }
+
+  function configureGraphData(commitList) {
+    for (let index = 0; index < commitList.length; index++) {
+      const commit = commitList[index];
+      console.log(commit)
+    };
     return commitList;
   }
 
   const handleCommitClick = async (commit, event) => {
     if (!window.api) return;
     try {
-      const files = await window.api.getCommitFiles(repositoryDirectory, commit.commit);
+      const files = await window.api.getCommitFiles(repositoryDirectory, commit.hash);
       setSelectedCommit(commit);
       setCommitFiles(files || []);
       setMenuAnchor({ left: event.clientX, top: event.clientY });
@@ -157,9 +165,9 @@ export default function Repository({ repositoryDirectory }) {
     setMenuAnchor(null);
     if (!window.api) return;
     try {
-      const diff = await window.api.getCommitFileDiff(repositoryDirectory, selectedCommit.commit, file.path);
+      const diff = await window.api.getCommitFileDiff(repositoryDirectory, selectedCommit.hash, file.path);
       if (diff && diff.trim()) {
-        setCommitFileDiff({ fileName: `${file.path} (${selectedCommit.commit})`, diffText: diff });
+        setCommitFileDiff({ fileName: `${file.path} (${selectedCommit.hash})`, diffText: diff });
       }
     } catch (e) {
       // silently ignore
@@ -312,7 +320,7 @@ export default function Repository({ repositoryDirectory }) {
         {selectedCommit && (
           <Box sx={{ px: 2, py: 1.5, borderBottom: 1, borderColor: "divider" }}>
             <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5, fontFamily: "monospace", fontSize: "0.75rem" }}>
-              {selectedCommit.commit}
+              {selectedCommit.hash}
             </Typography>
             <Typography variant="body2" sx={{ mb: 0.5, fontSize: "0.8125rem", wordBreak: "break-word" }}>
               {selectedCommit.message}

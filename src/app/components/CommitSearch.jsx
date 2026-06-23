@@ -14,7 +14,7 @@ function matchesField(commit, field, query) {
   const q = query.toLowerCase();
   switch (field) {
     case "hash":
-      return commit.commit.toLowerCase().includes(q);
+      return commit.hash.toLowerCase().includes(q);
     case "author":
       return commit.author.toLowerCase().includes(q);
     case "message":
@@ -22,7 +22,7 @@ function matchesField(commit, field, query) {
     case "date":
       return commit.date.toLowerCase().includes(q);
     default: {
-      if (commit.commit.toLowerCase().includes(q)) return true;
+      if (commit.hash.toLowerCase().includes(q)) return true;
       if (commit.author.toLowerCase().includes(q)) return true;
       if (commit.message.toLowerCase().includes(q)) return true;
       if (commit.date.toLowerCase().includes(q)) return true;

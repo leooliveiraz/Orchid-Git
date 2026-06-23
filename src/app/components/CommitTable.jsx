@@ -71,7 +71,7 @@ export default function CommitTable({ commitList, onCommitClick, highlightIndex,
         const target = e.target;
         if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable)) return;
         e.preventDefault();
-        setSelectedCommits(new Set(commitList.map(c => c.commit)));
+        setSelectedCommits(new Set(commitList.map(c => c.hash)));
       }
     }
     document.addEventListener("keydown", keyDown);
@@ -83,20 +83,20 @@ export default function CommitTable({ commitList, onCommitClick, highlightIndex,
       e.stopPropagation();
       setSelectedCommits(prev => {
         const next = new Set(prev);
-        if (next.has(commit.commit)) next.delete(commit.commit);
-        else next.add(commit.commit);
+        if (next.has(commit.hash)) next.delete(commit.hash);
+        else next.add(commit.hash);
         return next;
       });
     } else {
-      setSelectedCommits(new Set([commit.commit]));
+      setSelectedCommits(new Set([commit.hash]));
       onCommitClick?.(commit, e);
     }
   }, [onCommitClick]);
 
   const handleContextMenu = (e, commit) => {
     e.preventDefault();
-    if (!selectedCommits.has(commit.commit)) {
-      setSelectedCommits(new Set([commit.commit]));
+    if (!selectedCommits.has(commit.hash)) {
+      setSelectedCommits(new Set([commit.hash]));
     }
     setContextMenu({ left: e.clientX, top: e.clientY });
     setContextCommit(commit);
@@ -124,14 +124,14 @@ export default function CommitTable({ commitList, onCommitClick, highlightIndex,
   const handleConfirmRevert = () => {
     setConfirmRevert(false);
     if (contextCommit && onRevert) {
-      onRevert(contextCommit.commit);
+      onRevert(contextCommit.hash);
     }
   };
 
   const handleCheckout = () => {
     setContextMenu(null);
     if (contextCommit && onCheckout) {
-      onCheckout(contextCommit.commit);
+      onCheckout(contextCommit.hash);
     }
   };
 
@@ -152,7 +152,7 @@ export default function CommitTable({ commitList, onCommitClick, highlightIndex,
   const handleConfirmReset = () => {
     setConfirmReset(false);
     if (contextCommit && onReset) {
-      onReset(contextCommit.commit, resetMode);
+      onReset(contextCommit.hash, resetMode);
     }
   };
 
@@ -195,14 +195,14 @@ export default function CommitTable({ commitList, onCommitClick, highlightIndex,
             </TableRow>
           ) : commitList.map((commit, index) => (
             <TableRow
-              key={commit.commit}
+              key={commit.hash}
               hover
               onClick={(e) => handleRowClick(e, commit)}
               onContextMenu={(e) => handleContextMenu(e, commit)}
               sx={{
                 cursor: "pointer",
                 "&:last-child td": { borderBottom: 0 },
-                ...(selectedCommits.has(commit.commit) ? {
+                ...(selectedCommits.has(commit.hash) ? {
                   bgcolor: "rgba(25, 118, 210, 0.12)",
                   "&:hover": { bgcolor: "rgba(25, 118, 210, 0.18)" },
                 } : {}),
@@ -226,7 +226,7 @@ export default function CommitTable({ commitList, onCommitClick, highlightIndex,
                 </svg>
               </TableCell>
               <TableCell sx={{ fontFamily: "monospace", fontSize: "0.75rem", color: "text.secondary" }}>
-                {commit.commit}
+                {commit.hash}
               </TableCell>
               <TableCell sx={{ fontSize: "0.8125rem", maxWidth: 400, overflow: "hidden", textOverflow: "ellipsis" }}>
                 {commit.message}
@@ -274,7 +274,7 @@ export default function CommitTable({ commitList, onCommitClick, highlightIndex,
         <DialogTitle>Revert commit</DialogTitle>
         <DialogContent>
           <Typography variant="body2">
-            Revert <strong>{contextCommit?.commit}</strong> by creating a new commit that undoes its changes?
+            Revert <strong>{contextCommit?.hash}</strong> by creating a new commit that undoes its changes?
           </Typography>
           <Typography variant="body2" sx={{ mt: 1, color: "text.secondary" }}>
             {contextCommit?.message}
@@ -290,7 +290,7 @@ export default function CommitTable({ commitList, onCommitClick, highlightIndex,
         <DialogTitle>Reset to this commit</DialogTitle>
         <DialogContent>
           <Typography variant="body2" sx={{ mb: 2 }}>
-            Reset <strong>{contextCommit?.commit}</strong>?
+            Reset <strong>{contextCommit?.hash}</strong>?
           </Typography>
           <RadioGroup value={resetMode} onChange={(e) => setResetMode(e.target.value)}>
             <FormControlLabel value="soft" control={<Radio size="small" />} label={<Typography variant="body2">Soft — keep all changes staged</Typography>} />
