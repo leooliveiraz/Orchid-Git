@@ -127,11 +127,13 @@ export default function Repository({ repositoryDirectory }) {
   function configureCommitList(result) {
     const commitList = [];
     const blocks = result.split("\0").filter(Boolean);
-    blocks.forEach((block) => {
+    blocks.forEach((block, index) => {
       const lines = block.trimStart().split("\n");
       commitList.push({
+        index: index,
         hash: lines[0] || "",
         parent: lines[1] || "",
+        parentList: [],
         author: lines[2] || "",
         date: lines[3] || "",
         message: lines[4] || "",
@@ -142,11 +144,30 @@ export default function Repository({ repositoryDirectory }) {
   }
 
   function configureGraphData(commitList) {
-    for (let index = 0; index < commitList.length; index++) {
-      const commit = commitList[index];
-      console.log(commit)
-    };
+    const commitHashMap = {}
+    for (const commit of commitList) {
+      commitHashMap[commit.hash] = commit;
+    }
+    for (const commit of commitList) {
+      commit.parentList = extractDad(commit, commitHashMap)
+    }
+    console.log(commitHashMap)
     return commitList;
+  }
+
+  function getCommitIndex(hash, commitHashMap) {
+    if (!hash || !commitHashMap) return -1;
+    const commit = commitHashMap[hash];
+    return commit ? commit.index : -1;
+  }
+
+  function extractDad(commit, commitHashMap) {
+    if (!commit.parent) return [];
+    return commit.parent.split(" ").filter(Boolean).map(h => commitHashMap[h]).filter(Boolean);
+  }
+
+  function configureCommitLine(commit, commitList, index) {
+    commit.line = [];
   }
 
   const handleCommitClick = async (commit, event) => {
