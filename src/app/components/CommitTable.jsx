@@ -2,7 +2,7 @@ import React, { useRef, useEffect, useState, useCallback } from "react";
 import {
   TableContainer, Table, TableHead, TableBody, TableRow, TableCell, Paper,
   Menu, MenuItem, ListItemIcon, ListItemText, Dialog, DialogTitle, DialogContent, DialogActions, Button, Typography,
-  Box, Radio, RadioGroup, FormControlLabel, TextField,
+  Box, Radio, RadioGroup, FormControlLabel, TextField, Chip,
 } from "@mui/material";
 import ContentPasteIcon from "@mui/icons-material/ContentPaste";
 import CheckIcon from "@mui/icons-material/Check";
@@ -179,6 +179,9 @@ export default function CommitTable({ commitList, onCommitClick, highlightIndex,
               Parent
             </TableCell>
             <TableCell sx={{ fontWeight: 600, fontSize: "0.75rem", color: "text.secondary" }}>
+              Decoration
+            </TableCell>
+            <TableCell sx={{ fontWeight: 600, fontSize: "0.75rem", color: "text.secondary" }}>
               Message
             </TableCell>
             <TableCell sx={{ fontWeight: 600, fontSize: "0.75rem", color: "text.secondary" }}>
@@ -192,7 +195,7 @@ export default function CommitTable({ commitList, onCommitClick, highlightIndex,
         <TableBody>
           {commitList.length === 0 ? (
             <TableRow>
-              <TableCell colSpan={7} align="center" sx={{ py: 6 }}>
+              <TableCell colSpan={8} align="center" sx={{ py: 6 }}>
                 <Typography variant="body2" sx={{ color: "text.secondary" }}>
                   No matching commits
                 </Typography>
@@ -250,6 +253,28 @@ export default function CommitTable({ commitList, onCommitClick, highlightIndex,
                 {commit.parent ? commit.parent.split(" ").filter(Boolean).map((p, i) => (
                   <span key={i}>{i > 0 && <span style={{ margin: "0 2px" }}> </span>}{p.slice(0, 7)}</span>
                 )) : ""}
+              </TableCell>
+              <TableCell sx={{ fontSize: "0.75rem" }}>
+                {commit.decoration ? (() => {
+                  const parts = commit.decoration.split(", ");
+                  return parts.map((part, i) => {
+                    const t = part.trim();
+                    if (!t || t === "HEAD") return null;
+                    const isHead = t.startsWith("HEAD -> ");
+                    const isTag = t.startsWith("tag: ");
+                    const isRemote = t.startsWith("origin/");
+                    const name = isHead ? t.slice(8) : isTag ? t.slice(5) : t;
+                    const chipColor = isHead ? "#e6a817" : isTag ? "#28a745" : isRemote ? "#6a737d" : "#1976d2";
+                    return (
+                      <Chip
+                        key={i}
+                        label={name}
+                        size="small"
+                        sx={{ fontSize: "0.65rem", height: 20, m: 0.25, color: "#fff", fontWeight: isHead ? 700 : 400, backgroundColor: chipColor }}
+                      />
+                    );
+                  });
+                })() : ""}
               </TableCell>
               <TableCell sx={{ fontSize: "0.8125rem", maxWidth: 400, overflow: "hidden", textOverflow: "ellipsis" }}>
                 {commit.message}
