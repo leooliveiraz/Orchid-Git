@@ -204,6 +204,23 @@ export default function Repository({ repositoryDirectory }) {
       c.lineConnections.length > 0 ?? console.log('ac', c.lineConnections)
       // console.log(c.index, columns, c.lane, c.connections)
     }
+
+    for (let i = 1; i < commitList.length; i++) {
+      const curr = commitList[i];
+      const prev = commitList[i - 1];
+      curr.diagonalConnections = [];
+      for (const entry of curr.lane) {
+        if (entry.type === "line" && entry.sourceCommit) {
+          const prevEntry = prev.lane.find(
+            e => e.type === "line" && e.sourceCommit?.hash === entry.sourceCommit?.hash
+          );
+          if (prevEntry && prevEntry.lane !== entry.lane) {
+            curr.diagonalConnections.push({ fromLane: prevEntry.lane, toLane: entry.lane });
+          }
+        }
+      }
+    }
+
     return commitList;
   }
 

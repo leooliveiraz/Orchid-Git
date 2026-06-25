@@ -13,6 +13,7 @@ import LaneLine from "./graph/LaneLine.jsx";
 import ConnectionPath from "./graph/ConnectionPath.jsx";
 import { LANE_COLORS, LANE_WIDTH, ROW_HEIGHT } from "./graph/constants.js";
 import ConnectionPathToLine from "./graph/ConnectionPathToLine.jsx";
+import DiagonalPath from "./graph/DiagonalPath.jsx";
 
 export function getRelativeTime(date) {
   const now = new Date();
@@ -231,6 +232,14 @@ export default function CommitTable({ commitList, onCommitClick, highlightIndex,
                 </TableCell>
                 <TableCell sx={{ p: 0, verticalAlign: "middle" }}>
                   <svg width={Math.max((commit.lane?.length || 1) * LANE_WIDTH + 10, 24)} height={ROW_HEIGHT} style={{ overflow: "visible", display: "block" }}>
+                    {commit.diagonalConnections?.map((conn, i) => (
+                      <DiagonalPath
+                        key={`d-${i}`}
+                        fromLane={conn.fromLane}
+                        toLane={conn.toLane}
+                        color={LANE_COLORS[conn.toLane % LANE_COLORS.length]}
+                      />
+                    ))}
                     {(commit.lane || []).map(entry =>
                       entry.type === "line" && <LaneLine key={entry.lane} lane={entry.lane} color={LANE_COLORS[entry.lane % LANE_COLORS.length]} />
                     )}
