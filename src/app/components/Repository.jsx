@@ -153,40 +153,57 @@ export default function Repository({ repositoryDirectory }) {
     }
 
     const columns = [];
-
-    for (const c of commitList) {
-      let colIdx = columns.indexOf(c.hash);
+    const columnsList = []
+    for (let index = 0; index < commitList.length; index++) {
+      const c = commitList[index];
+      let colIdx = columns.findIndex(col => col.hashCommit === c.hash);
       if (colIdx === -1) {
-        columns.push(c.hash);
+        columns.push({ hashCommit: c.hash, hashOriginCommit: c.hash });
         colIdx = columns.length - 1;
       }
 
-      c.lane = columns.map((hash, i) =>
+      c.lane = columns.map((col, i) =>
         i === colIdx
           ? { type: "commit", lane: i, commit: c }
-          : { type: "line", lane: i, sourceCommit: commitHashMap[hash] || null, destCommit: c }
+          : { type: "line", lane: i, sourceCommit: commitHashMap[col.hashOriginCommit] || null, destCommit: commitHashMap[col.hashCommit] }
       );
 
       columns.splice(colIdx, 1);
 
       for (let p = c.parentList.length - 1; p >= 0; p--) {
         const parentHash = c.parentList[p].hash;
-        if (!columns.includes(parentHash)) {
-          columns.splice(colIdx, 0, parentHash);
+        if (!columns.some(col => col.hashCommit === parentHash)) {
+          columns.splice(colIdx, 0, { hashCommit: parentHash, hashOriginCommit: c.hash });
         }
       }
 
+      columnsList.push([...columns])
       c.connections = [];
+
       for (let p = 0; p < c.parentList.length; p++) {
-        const parentLane = columns.indexOf(c.parentList[p].hash);
+        const parentLane = columns.findIndex(col => col.hashCommit === c.parentList[p].hash);
         if (parentLane !== -1 && parentLane !== colIdx) {
           c.connections.push({ fromLane: colIdx, toLane: parentLane });
         }
       }
 
-      console.log(c.index, columns, c.connections)
+      c.hasParentInLane = !!columns[colIdx] && c.parentList.some(p => p.hash === columns[colIdx]?.hashCommit);
+
+      c.lineConnections = []
+      if (index > 0) {
+        const commitBefore = commitList[index - 1]
+        commitBefore.lane.forEach((lane) => {
+          if (lane.type === "line") {
+            if (lane.destCommit.hash === c.hash) {
+              c.lineConnections.push({ fromLane: colIdx, toLane: lane.lane });
+            }
+          }
+        })
+
+      }
+      c.lineConnections.length > 0 ?? console.log('ac', c.lineConnections)
+      // console.log(c.index, columns, c.lane, c.connections)
     }
-    console.log(commitList)
     return commitList;
   }
 
