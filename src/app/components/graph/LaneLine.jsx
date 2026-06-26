@@ -9,6 +9,7 @@ export default function LaneLine({ lane, color }) {
 
   return (
     <rect
+      className="LaneLine"
       x={x}
       y={half}
       width={2}

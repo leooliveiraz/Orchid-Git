@@ -10,6 +10,7 @@ export default function LaneLineDown({ lane, color }) {
 
   return (
     <rect
+      className="LaneLineDown"
       x={x}
       y={height}
       width={2}

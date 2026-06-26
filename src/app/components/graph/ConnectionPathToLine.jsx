@@ -2,8 +2,10 @@ import React from "react";
 import { LANE_WIDTH, ROW_HEIGHT } from "./constants.js";
 import { LANE_CENTER_X } from "./utils.js";
 
-const y1 = ROW_HEIGHT / 2;
-const y2 = ROW_HEIGHT / 2 - (ROW_HEIGHT / 4);
+
+const HALF = ROW_HEIGHT / 2;
+const y1 = HALF;
+const y2 = HALF - (ROW_HEIGHT);
 export default function ConnectionPathToLine({ fromLane, toLane, color }) {
   const x1 = LANE_CENTER_X(fromLane);
   const x2 = LANE_CENTER_X(toLane);
@@ -33,5 +35,5 @@ export function buildPath(x1, y1, x2, y2) {
   const cp2X = x2;
   const cp2Y = y2 - dy * 0.35;
 
-  return `M ${x1},${y1} C ${cp1X},${cp1Y} ${cp2X},${cp2Y} ${x2},${y2}`;
+  return `M ${x1},${y1} C ${cp1X},${cp1Y} ${cp2X},${-cp2Y} ${x2},${y2}`;
 }

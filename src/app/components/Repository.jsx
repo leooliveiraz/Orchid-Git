@@ -161,11 +161,16 @@ export default function Repository({ repositoryDirectory }) {
         columns.push({ hashCommit: c.hash, hashOriginCommit: c.hash });
         colIdx = columns.length - 1;
       }
+      c.lane = columns.map((col, i) => {
+        const sameIndex = (i === colIdx)
+        if (sameIndex) {
+          c.laneIndex = i;
+          return { type: "commit", lane: i, commit: c }
+        } else {
+          return { type: "line", lane: i, sourceCommit: commitHashMap[col.hashOriginCommit] || null, destCommit: commitHashMap[col.hashCommit] }
+        }
+      }
 
-      c.lane = columns.map((col, i) =>
-        i === colIdx
-          ? { type: "commit", lane: i, commit: c }
-          : { type: "line", lane: i, sourceCommit: commitHashMap[col.hashOriginCommit] || null, destCommit: commitHashMap[col.hashCommit] }
       );
 
       columns.splice(colIdx, 1);
@@ -194,8 +199,9 @@ export default function Repository({ repositoryDirectory }) {
         const commitBefore = commitList[index - 1]
         commitBefore.lane.forEach((lane) => {
           if (lane.type === "line") {
-            if (lane.destCommit.hash === c.hash) {
+            if (lane.destCommit.hash === c.hash ) {
               c.lineConnections.push({ fromLane: colIdx, toLane: lane.lane });
+              lane.finalLane = true;
             }
           }
         })
@@ -215,11 +221,15 @@ export default function Repository({ repositoryDirectory }) {
             e => e.type === "line" && e.sourceCommit?.hash === entry.sourceCommit?.hash
           );
           if (prevEntry && prevEntry.lane !== entry.lane) {
+            prevEntry.finalLane = true
             curr.diagonalConnections.push({ fromLane: prevEntry.lane, toLane: entry.lane });
           }
         }
       }
     }
+    commitList.forEach(commit => {
+      console.log(commit.index, commit);
+    })
 
     return commitList;
   }
@@ -327,7 +337,7 @@ export default function Repository({ repositoryDirectory }) {
   };
 
   return (
-    <Box sx={{ p: 2, height: "100%", display: "flex", flexDirection: "column", overflow: "hidden" }}>
+    <Box sx={{ p: 2, height: "100%", display: "flex", flexDirection: "column", overflow: "hidden" }} id="repository">
       <Box sx={{ mb: 2, borderBottom: "1px solid", borderColor: "divider", pb: 1.5 }}>
         <Typography variant="h6" sx={{ fontWeight: 400, letterSpacing: "-0.02em", color: "text.primary", lineHeight: 1.3 }}>
           {repositoryDirectory.split(/[/\\]/).pop()}

@@ -245,8 +245,10 @@ export default function CommitTable({ commitList, onCommitClick, highlightIndex,
                     {(commit.lane || []).map(entry =>
                       entry.type === "line" &&
                       <>
-                        {commit.diagonalConnections.find(conn => conn.toLane === entry.lane) ? <LaneLineDown key={entry.lane} lane={entry.lane} color={LANE_COLORS[entry.lane % LANE_COLORS.length]} /> :
-                          <LaneLine key={entry.lane} lane={entry.lane} color={LANE_COLORS[entry.lane % LANE_COLORS.length]} />}
+                        {commit.diagonalConnections.find(conn => conn.toLane === entry.lane && !entry.finalLane) ?
+                          <LaneLineDown key={entry.lane} lane={entry.lane} color={LANE_COLORS[entry.lane % LANE_COLORS.length]} /> :
+                          entry.finalLane ? <LaneLineUp key={entry.lane} lane={entry.lane} color={LANE_COLORS[entry.lane % LANE_COLORS.length]} />
+                            : <LaneLine key={entry.lane} lane={entry.lane} color={LANE_COLORS[entry.lane % LANE_COLORS.length]} />}
                       </>
                     )}
                     {commit.hasParentInLane && commit.lane?.map(entry =>
