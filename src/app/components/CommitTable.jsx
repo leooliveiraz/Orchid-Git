@@ -10,6 +10,8 @@ import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import ReplayIcon from "@mui/icons-material/Replay";
 import CommitCircle from "./graph/CommitCircle.jsx";
 import LaneLine from "./graph/LaneLine.jsx";
+import LaneLineDown from "./graph/LaneLineDown.jsx";
+import LaneLineUp from "./graph/LaneLineUp.jsx";
 import ConnectionPath from "./graph/ConnectionPath.jsx";
 import { LANE_COLORS, LANE_WIDTH, ROW_HEIGHT } from "./graph/constants.js";
 import ConnectionPathToLine from "./graph/ConnectionPathToLine.jsx";
@@ -180,9 +182,9 @@ export default function CommitTable({ commitList, onCommitClick, highlightIndex,
               <TableCell sx={{ fontWeight: 600, fontSize: "0.75rem", color: "text.secondary" }}>
                 Parent
               </TableCell>
-            <TableCell sx={{ fontWeight: 600, fontSize: "0.75rem", color: "text.secondary" }}>
-              Decoration
-            </TableCell>
+              <TableCell sx={{ fontWeight: 600, fontSize: "0.75rem", color: "text.secondary" }}>
+                Decoration
+              </TableCell>
               <TableCell sx={{ fontWeight: 600, fontSize: "0.75rem", color: "text.secondary" }}>
                 Message
               </TableCell>
@@ -241,7 +243,11 @@ export default function CommitTable({ commitList, onCommitClick, highlightIndex,
                       />
                     ))}
                     {(commit.lane || []).map(entry =>
-                      entry.type === "line" && <LaneLine key={entry.lane} lane={entry.lane} color={LANE_COLORS[entry.lane % LANE_COLORS.length]} />
+                      entry.type === "line" &&
+                      <>
+                        {commit.diagonalConnections.find(conn => conn.toLane === entry.lane) ? <LaneLineDown key={entry.lane} lane={entry.lane} color={LANE_COLORS[entry.lane % LANE_COLORS.length]} /> :
+                          <LaneLine key={entry.lane} lane={entry.lane} color={LANE_COLORS[entry.lane % LANE_COLORS.length]} />}
+                      </>
                     )}
                     {commit.hasParentInLane && commit.lane?.map(entry =>
                       entry.type === "commit" && <LaneLine key={`bg-${entry.lane}`} lane={entry.lane} color={LANE_COLORS[entry.lane % LANE_COLORS.length]} />
@@ -276,28 +282,28 @@ export default function CommitTable({ commitList, onCommitClick, highlightIndex,
                     <span key={i}>{i > 0 && <span style={{ margin: "0 2px" }}> </span>}{p}</span>
                   )) : ""}
                 </TableCell>
-              <TableCell sx={{ fontSize: "0.75rem" }}>
-                {commit.decoration ? (() => {
-                  const parts = commit.decoration.split(", ");
-                  return parts.map((part, i) => {
-                    const t = part.trim();
-                    if (!t || t === "HEAD") return null;
-                    const isHead = t.startsWith("HEAD -> ");
-                    const isTag = t.startsWith("tag: ");
-                    const isRemote = t.startsWith("origin/");
-                    const name = isHead ? t.slice(8) : isTag ? t.slice(5) : t;
-                    const chipColor = isHead ? "#e6a817" : isTag ? "#28a745" : isRemote ? "#6a737d" : "#1976d2";
-                    return (
-                      <Chip
-                        key={i}
-                        label={name}
-                        size="small"
-                        sx={{ fontSize: "0.65rem", height: 20, m: 0.25, color: "#fff", fontWeight: isHead ? 700 : 400, backgroundColor: chipColor }}
-                      />
-                    );
-                  });
-                })() : ""}
-              </TableCell>
+                <TableCell sx={{ fontSize: "0.75rem" }}>
+                  {commit.decoration ? (() => {
+                    const parts = commit.decoration.split(", ");
+                    return parts.map((part, i) => {
+                      const t = part.trim();
+                      if (!t || t === "HEAD") return null;
+                      const isHead = t.startsWith("HEAD -> ");
+                      const isTag = t.startsWith("tag: ");
+                      const isRemote = t.startsWith("origin/");
+                      const name = isHead ? t.slice(8) : isTag ? t.slice(5) : t;
+                      const chipColor = isHead ? "#e6a817" : isTag ? "#28a745" : isRemote ? "#6a737d" : "#1976d2";
+                      return (
+                        <Chip
+                          key={i}
+                          label={name}
+                          size="small"
+                          sx={{ fontSize: "0.65rem", height: 20, m: 0.25, color: "#fff", fontWeight: isHead ? 700 : 400, backgroundColor: chipColor }}
+                        />
+                      );
+                    });
+                  })() : ""}
+                </TableCell>
                 <TableCell sx={{ fontSize: "0.8125rem", maxWidth: 400, overflow: "hidden", textOverflow: "ellipsis" }}>
                   {commit.message}
                 </TableCell>
