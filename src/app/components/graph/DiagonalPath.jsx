@@ -1,12 +1,12 @@
 import React from "react";
 import { LANE_WIDTH, ROW_HEIGHT } from "./constants.js";
 import { LANE_CENTER_X } from "./utils.js";
+const y1 = 0;
+const y2 = ROW_HEIGHT;
 
 export default function DiagonalPath({ fromLane, toLane, color }) {
   const x1 = LANE_CENTER_X(fromLane);
-  const y1 = 0;
   const x2 = LANE_CENTER_X(toLane);
-  const y2 = ROW_HEIGHT;
 
   return (
     <path
