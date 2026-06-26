@@ -3,8 +3,9 @@ import { LANE_WIDTH, ROW_HEIGHT } from "./constants.js";
 import { LANE_LINE_X } from "./utils.js";
 
 const half = ROW_HEIGHT / 2;
-const height = ROW_HEIGHT + 12;
-export default function LaneLine({ lane, color }) {
+const height = half + ROW_HEIGHT;
+
+export default function LaneLineDown({ lane, color }) {
   const x = LANE_LINE_X(lane);
 
   return (
