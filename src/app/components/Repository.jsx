@@ -165,7 +165,7 @@ export default function Repository({ repositoryDirectory }) {
         const sameIndex = (i === colIdx)
         if (sameIndex) {
           c.laneIndex = i;
-          return { type: "commit", lane: i, commit: c }
+          return { type: "commit", lane: i, commit: c, sourceCommit: commitHashMap[col.hashOriginCommit] || null, destCommit: commitHashMap[col.hashCommit] }
         } else {
           return { type: "line", lane: i, sourceCommit: commitHashMap[col.hashOriginCommit] || null, destCommit: commitHashMap[col.hashCommit] }
         }
@@ -193,7 +193,16 @@ export default function Repository({ repositoryDirectory }) {
       }
 
       c.hasParentInLane = !!columns[colIdx] && c.parentList.some(p => p.hash === columns[colIdx]?.hashCommit);
-
+      if (c.hasParentInLane) {
+        const parentInLane = c.parentList.find(p => p.hash === columns[colIdx]?.hashCommit);
+        c.lane.forEach(entry => {
+          if (entry.type === "commit" && entry.lane === colIdx) {
+            entry.sourceCommit = c;
+            entry.destCommit = parentInLane;
+          }
+        });
+      }
+ 
       c.lineConnections = []
       if (index > 0) {
         const commitBefore = commitList[index - 1]
@@ -225,7 +234,6 @@ export default function Repository({ repositoryDirectory }) {
         }
       }
     }
-
     return commitList;
   }
 

@@ -161,6 +161,11 @@ export default function CommitTable({ commitList, onCommitClick, highlightIndex,
   };
 
   const headIdx = commitList.findIndex(c => c.decoration && c.decoration.split(", ").some(r => r === "HEAD" || r.startsWith("HEAD ->")));
+  const commitColorHashMap = {};
+
+  commitList.forEach(commit => {
+    commitColorHashMap[commit.hash] = LANE_COLORS[commit.laneIndex % LANE_COLORS.length]
+  });
 
   return (
     <>
@@ -229,7 +234,7 @@ export default function CommitTable({ commitList, onCommitClick, highlightIndex,
                 }}
               >
                 <TableCell sx={{ textAlign: "center", fontWeight: 400, fontSize: "0.75rem", color: "text.secondary" }}>
-                  {index}
+                  {commit.index}
                 </TableCell>
                 <TableCell sx={{ p: 0, verticalAlign: "middle" }}>
                   <svg width={Math.max((commit.lane?.length || 1) * LANE_WIDTH + 10, 24)} height={ROW_HEIGHT} style={{ overflow: "visible", display: "block" }}>
@@ -238,30 +243,37 @@ export default function CommitTable({ commitList, onCommitClick, highlightIndex,
                         key={`d-${i}`}
                         fromLane={conn.fromLane}
                         toLane={conn.toLane}
-                        color={LANE_COLORS[conn.toLane % LANE_COLORS.length]}
+                        color={commitColorHashMap[conn.toHash]}
                         fromHash={conn.fromHash}
                         toHash={conn.toHash}
                       />
                     ))}
-                    {(commit.lane || []).map(entry =>
-                      entry.type === "line" &&
-                      <>
-                        {commit.diagonalConnections.find(conn => conn.toLane === entry.lane && !entry.finalLane) ?
-                          <LaneLine key={entry.lane} lane={entry.lane} color={LANE_COLORS[entry.lane % LANE_COLORS.length]} sourceCommit={entry.sourceCommit} destCommit={entry.destCommit} /> :
-                          entry.finalLane ?
+                    {(commit.lane || []).map(lane =>
+                      lane.type === "line" &&
+                      <React.Fragment key={lane.lane}>
+                        {commit.diagonalConnections.find(conn => conn.toLane === lane.lane && !lane.finalLane) ?
+                          <LaneLine lane={lane.lane} color={commitColorHashMap[lane.destCommit?.hash]} sourceCommit={lane.sourceCommit} destCommit={lane.destCommit} modeA={true} /> :
+                          lane.finalLane ?
                             null
-                            : <LaneLine key={entry.lane} lane={entry.lane} color={LANE_COLORS[entry.lane % LANE_COLORS.length]} sourceCommit={entry.sourceCommit} destCommit={entry.destCommit} />}
-                      </>
+                            : <LaneLine lane={lane.lane} color={commitColorHashMap[lane.destCommit?.hash]} sourceCommit={lane.sourceCommit} destCommit={lane.destCommit} modeB={true} />}
+                      </React.Fragment>
                     )}
-                    {commit.hasParentInLane && commit.lane?.map(entry =>
-                      entry.type === "commit" && <LaneLine key={`bg-${entry.lane}`} lane={entry.lane} color={LANE_COLORS[entry.lane % LANE_COLORS.length]} sourceCommit={entry.sourceCommit} destCommit={entry.destCommit} />
+                    {commit.hasParentInLane && commit.lane?.map(lane =>
+                      lane.type === "commit" &&
+                      <LaneLine
+                        key={`bg-${lane.lane}`}
+                        lane={lane.lane}
+                        color={commitColorHashMap[lane.destCommit?.hash]}
+                        modeC={true}
+                        sourceCommit={lane.sourceCommit} 
+                        destCommit={lane.destCommit} />
                     )}
                     {commit.connections?.map(conn => (
                       <ConnectionPath
                         key={`c-${conn.toLane}`}
                         fromLane={conn.fromLane}
                         toLane={conn.toLane}
-                        color={LANE_COLORS[conn.toLane % LANE_COLORS.length]}
+                        color={commitColorHashMap[conn.toLane > conn.fromLane ? conn.toHash : conn.fromHash]}
                         fromHash={conn.fromHash}
                         toHash={conn.toHash}
                       />
@@ -272,13 +284,13 @@ export default function CommitTable({ commitList, onCommitClick, highlightIndex,
                         key={`c-${conn.toLane}`}
                         fromLane={conn.fromLane}
                         toLane={conn.toLane}
-                        color={LANE_COLORS[conn.toLane % LANE_COLORS.length]}
+                        color={commitColorHashMap[conn.toLane < conn.fromLane ? conn.toHash : conn.fromHash]}
                         fromHash={conn.fromHash}
                         toHash={conn.toHash}
                       />
                     ))}
                     {(commit.lane || []).map(entry =>
-                      entry.type === "commit" && <CommitCircle key={entry.lane} lane={entry.lane} color={LANE_COLORS[entry.lane % LANE_COLORS.length]} />
+                      entry.type === "commit" && <CommitCircle key={entry.lane} lane={entry.lane} color={commitColorHashMap[commit.hash]} />
                     )}
                   </svg>
                 </TableCell>

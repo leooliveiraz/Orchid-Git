@@ -4,12 +4,11 @@ import { LANE_LINE_X } from "./utils.js";
 
 const half = (ROW_HEIGHT_TOTAL / 2)
 const height = ROW_HEIGHT_TOTAL;
-export default function LaneLine({ lane, color, sourceCommit, destCommit }) {
+export default function LaneLine({ lane, color, sourceCommit, destCommit, modeB, modeA, modeC }) {
   const x = LANE_LINE_X(lane);
-
   return (
     <rect
-      className="LaneLine"
+      className={modeA ? "LaneLineA" : modeB ? "LaneLineB" : "LaneLineC"}
       x={x}
       y={half}
       width={STROKE_W}
