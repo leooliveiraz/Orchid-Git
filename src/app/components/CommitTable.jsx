@@ -182,9 +182,7 @@ export default function CommitTable({ commitList, onCommitClick, highlightIndex,
               <TableCell sx={{ fontWeight: 600, fontSize: "0.75rem", color: "text.secondary" }}>
                 Hash
               </TableCell>
-              <TableCell sx={{ fontWeight: 600, fontSize: "0.75rem", color: "text.secondary" }}>
-                Parent
-              </TableCell>
+              <TableCell sx={{ display: "none" }} />
               <TableCell sx={{ fontWeight: 600, fontSize: "0.75rem", color: "text.secondary" }}>
                 Decoration
               </TableCell>
@@ -202,7 +200,7 @@ export default function CommitTable({ commitList, onCommitClick, highlightIndex,
           <TableBody>
             {commitList.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} align="center" sx={{ py: 6 }}>
+                <TableCell colSpan={7} align="center" sx={{ py: 6 }}>
                   <Typography variant="body2" sx={{ color: "text.secondary" }}>
                     No matching commits
                   </Typography>
@@ -297,11 +295,7 @@ export default function CommitTable({ commitList, onCommitClick, highlightIndex,
                 <TableCell sx={{ fontFamily: "monospace", fontSize: "0.75rem", color: "text.secondary" }}>
                   {commit.hash}
                 </TableCell>
-                <TableCell sx={{ fontFamily: "monospace", fontSize: "0.75rem", color: "text.secondary" }}>
-                  {commit.parent ? commit.parent.split(" ").filter(Boolean).map((p, i) => (
-                    <span key={i}>{i > 0 && <span style={{ margin: "0 2px" }}> </span>}{p}</span>
-                  )) : ""}
-                </TableCell>
+                <TableCell sx={{ display: "none" }} />
                 <TableCell sx={{ fontSize: "0.75rem", paddingBottom: "0px", paddingTop: "0px" }}>
                   {commit.decoration ? (() => {
                     const parts = commit.decoration.split(", ");
