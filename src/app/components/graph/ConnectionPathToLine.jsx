@@ -1,5 +1,5 @@
 import React from "react";
-import { LANE_WIDTH, ROW_BORDER_BOTTOM, ROW_HEIGHT, ROW_HEIGHT_TOTAL } from "./constants.js";
+import { LANE_WIDTH, ROW_BORDER_BOTTOM, ROW_HEIGHT, ROW_HEIGHT_TOTAL, STROKE_W } from "./constants.js";
 import { LANE_CENTER_X } from "./utils.js";
 
 
@@ -16,7 +16,7 @@ export default function ConnectionPathToLine({ fromLane, toLane, color, fromHash
       d={buildPath(x1, y1, x2, y2)}
       stroke={color}
       fill="none"
-      strokeWidth={2}
+      strokeWidth={STROKE_W}
       strokeLinecap="round"
     >
       <title>{fromHash || "?"} → {toHash || "?"}</title>

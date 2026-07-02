@@ -220,7 +220,7 @@ export default function Repository({ repositoryDirectory }) {
           );
           if (prevEntry && prevEntry.lane !== entry.lane) {
             prevEntry.finalLane = true
-            curr.diagonalConnections.push({ fromLane: prevEntry.lane, toLane: entry.lane, prevIsFinalLane: true, fromHash: entry.sourceCommit?.hash, toHash: entry.destCommit?.hash });
+            curr.diagonalConnections.push({ fromLane: prevEntry.lane, toLane: entry.lane, fromHash: entry.sourceCommit?.hash, toHash: entry.destCommit?.hash });
           }
         }
       }

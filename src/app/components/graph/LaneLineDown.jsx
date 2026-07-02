@@ -1,5 +1,5 @@
 import React from "react";
-import { LANE_WIDTH, ROW_HEIGHT } from "./constants.js";
+import { LANE_WIDTH, ROW_HEIGHT, STROKE_W } from "./constants.js";
 import { LANE_LINE_X } from "./utils.js";
 
 const half = ROW_HEIGHT / 2;
@@ -13,7 +13,7 @@ export default function LaneLineDown({ lane, color, sourceCommit, destCommit }) 
       className="LaneLineDown"
       x={x}
       y={height}
-      width={2}
+      width={STROKE_W}
       height={height}
       fill={color}
       opacity={1}

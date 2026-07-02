@@ -1,5 +1,5 @@
 import React from "react";
-import { LANE_WIDTH, ROW_HEIGHT } from "./constants.js";
+import { LANE_WIDTH, ROW_HEIGHT, STROKE_W } from "./constants.js";
 import { LANE_LINE_X } from "./utils.js";
 
 const half = (ROW_HEIGHT / 1.5);
@@ -13,7 +13,7 @@ export default function LaneLineUp({ lane, color, sourceCommit, destCommit }) {
       className="LaneLineUp"
       x={x}
       y={half}
-      width={2}
+      width={STROKE_W}
       height={height}
       fill={color}
       opacity={1}
