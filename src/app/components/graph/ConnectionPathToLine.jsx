@@ -1,23 +1,26 @@
 import React from "react";
-import { LANE_WIDTH, ROW_HEIGHT } from "./constants.js";
+import { LANE_WIDTH, ROW_BORDER_BOTTOM, ROW_HEIGHT, ROW_HEIGHT_TOTAL } from "./constants.js";
 import { LANE_CENTER_X } from "./utils.js";
 
 
-const HALF = ROW_HEIGHT / 2;
+const HALF = ROW_HEIGHT_TOTAL / 2;
 const y1 = HALF;
-const y2 = HALF - (ROW_HEIGHT);
-export default function ConnectionPathToLine({ fromLane, toLane, color }) {
+const y2 = HALF - ROW_HEIGHT_TOTAL;
+export default function ConnectionPathToLine({ fromLane, toLane, color, fromHash, toHash }) {
   const x1 = LANE_CENTER_X(fromLane);
   const x2 = LANE_CENTER_X(toLane);
 
   return (
     <path
+      className="ConnectionPathToLine"
       d={buildPath(x1, y1, x2, y2)}
       stroke={color}
       fill="none"
       strokeWidth={2}
       strokeLinecap="round"
-    />
+    >
+      <title>{fromHash || "?"} → {toHash || "?"}</title>
+    </path>
   );
 }
 
@@ -35,5 +38,5 @@ export function buildPath(x1, y1, x2, y2) {
   const cp2X = x2;
   const cp2Y = y2 - dy * 0.35;
 
-  return `M ${x1},${y1} C ${cp1X},${cp1Y} ${cp2X},${-cp2Y} ${x2},${y2}`;
+  return `M ${x1},${y1} ${x2},${y2}`;
 }

@@ -5,7 +5,7 @@ import { LANE_LINE_X } from "./utils.js";
 const half = ROW_HEIGHT / 2;
 const height = ROW_HEIGHT;
 
-export default function LaneLineDown({ lane, color }) {
+export default function LaneLineDown({ lane, color, sourceCommit, destCommit }) {
   const x = LANE_LINE_X(lane);
 
   return (
@@ -17,6 +17,8 @@ export default function LaneLineDown({ lane, color }) {
       height={height}
       fill={color}
       opacity={1}
-    />
+    >
+      <title>{sourceCommit?.hash || "?"} → {destCommit?.hash || "?"}</title>
+    </rect>
   );
 }

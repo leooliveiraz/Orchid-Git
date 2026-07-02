@@ -2,10 +2,10 @@ import React from "react";
 import { LANE_WIDTH, ROW_HEIGHT } from "./constants.js";
 import { LANE_LINE_X } from "./utils.js";
 
-const half = ROW_HEIGHT / 2;
-const height = ROW_HEIGHT/1.3;
+const half = (ROW_HEIGHT / 1.5);
+const height = (ROW_HEIGHT / 1.5);
 
-export default function LaneLineUp({ lane, color }) {
+export default function LaneLineUp({ lane, color, sourceCommit, destCommit }) {
   const x = LANE_LINE_X(lane);
 
   return (

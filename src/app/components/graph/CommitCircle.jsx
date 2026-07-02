@@ -7,6 +7,7 @@ export default function CommitCircle({ lane, color }) {
 
   return (
     <circle
+      className="CommitCircle"
       cx={cx}
       cy={cy}
       r={CIRCLE_R}

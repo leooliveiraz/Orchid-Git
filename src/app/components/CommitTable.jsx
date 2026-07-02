@@ -10,8 +10,6 @@ import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import ReplayIcon from "@mui/icons-material/Replay";
 import CommitCircle from "./graph/CommitCircle.jsx";
 import LaneLine from "./graph/LaneLine.jsx";
-import LaneLineDown from "./graph/LaneLineDown.jsx";
-import LaneLineUp from "./graph/LaneLineUp.jsx";
 import ConnectionPath from "./graph/ConnectionPath.jsx";
 import { LANE_COLORS, LANE_WIDTH, ROW_HEIGHT } from "./graph/constants.js";
 import ConnectionPathToLine from "./graph/ConnectionPathToLine.jsx";
@@ -209,6 +207,7 @@ export default function CommitTable({ commitList, onCommitClick, highlightIndex,
               <TableRow
                 key={commit.hash}
                 hover
+                style={{ height: "32px" }}
                 onClick={(e) => handleRowClick(e, commit)}
                 onContextMenu={(e) => handleContextMenu(e, commit)}
                 sx={{
@@ -240,19 +239,22 @@ export default function CommitTable({ commitList, onCommitClick, highlightIndex,
                         fromLane={conn.fromLane}
                         toLane={conn.toLane}
                         color={LANE_COLORS[conn.toLane % LANE_COLORS.length]}
+                        fromHash={conn.fromHash}
+                        toHash={conn.toHash}
                       />
                     ))}
                     {(commit.lane || []).map(entry =>
                       entry.type === "line" &&
                       <>
                         {commit.diagonalConnections.find(conn => conn.toLane === entry.lane && !entry.finalLane) ?
-                          <LaneLineDown key={entry.lane} lane={entry.lane} color={LANE_COLORS[entry.lane % LANE_COLORS.length]} /> :
-                          entry.finalLane ? <LaneLineUp key={entry.lane} lane={entry.lane} color={LANE_COLORS[entry.lane % LANE_COLORS.length]} />
-                            : <LaneLine key={entry.lane} lane={entry.lane} color={LANE_COLORS[entry.lane % LANE_COLORS.length]} />}
+                          <LaneLine key={entry.lane} lane={entry.lane} color={LANE_COLORS[entry.lane % LANE_COLORS.length]} sourceCommit={entry.sourceCommit} destCommit={entry.destCommit} /> :
+                          entry.finalLane ?
+                            null
+                            : <LaneLine key={entry.lane} lane={entry.lane} color={LANE_COLORS[entry.lane % LANE_COLORS.length]} sourceCommit={entry.sourceCommit} destCommit={entry.destCommit} />}
                       </>
                     )}
                     {commit.hasParentInLane && commit.lane?.map(entry =>
-                      entry.type === "commit" && <LaneLine key={`bg-${entry.lane}`} lane={entry.lane} color={LANE_COLORS[entry.lane % LANE_COLORS.length]} />
+                      entry.type === "commit" && <LaneLine key={`bg-${entry.lane}`} lane={entry.lane} color={LANE_COLORS[entry.lane % LANE_COLORS.length]} sourceCommit={entry.sourceCommit} destCommit={entry.destCommit} />
                     )}
                     {commit.connections?.map(conn => (
                       <ConnectionPath
@@ -260,6 +262,8 @@ export default function CommitTable({ commitList, onCommitClick, highlightIndex,
                         fromLane={conn.fromLane}
                         toLane={conn.toLane}
                         color={LANE_COLORS[conn.toLane % LANE_COLORS.length]}
+                        fromHash={conn.fromHash}
+                        toHash={conn.toHash}
                       />
                     ))}
 
@@ -269,6 +273,8 @@ export default function CommitTable({ commitList, onCommitClick, highlightIndex,
                         fromLane={conn.fromLane}
                         toLane={conn.toLane}
                         color={LANE_COLORS[conn.toLane % LANE_COLORS.length]}
+                        fromHash={conn.fromHash}
+                        toHash={conn.toHash}
                       />
                     ))}
                     {(commit.lane || []).map(entry =>
@@ -284,7 +290,7 @@ export default function CommitTable({ commitList, onCommitClick, highlightIndex,
                     <span key={i}>{i > 0 && <span style={{ margin: "0 2px" }}> </span>}{p}</span>
                   )) : ""}
                 </TableCell>
-                <TableCell sx={{ fontSize: "0.75rem" }}>
+                <TableCell sx={{ fontSize: "0.75rem", paddingBottom: "0px", paddingTop: "0px" }}>
                   {commit.decoration ? (() => {
                     const parts = commit.decoration.split(", ");
                     return parts.map((part, i) => {

@@ -188,7 +188,7 @@ export default function Repository({ repositoryDirectory }) {
       for (let p = 0; p < c.parentList.length; p++) {
         const parentLane = columns.findIndex(col => col.hashCommit === c.parentList[p].hash);
         if (parentLane !== -1 && parentLane !== colIdx) {
-          c.connections.push({ fromLane: colIdx, toLane: parentLane });
+          c.connections.push({ fromLane: colIdx, toLane: parentLane, fromHash: c.hash, toHash: c.parentList[p].hash });
         }
       }
 
@@ -199,16 +199,14 @@ export default function Repository({ repositoryDirectory }) {
         const commitBefore = commitList[index - 1]
         commitBefore.lane.forEach((lane) => {
           if (lane.type === "line") {
-            if (lane.destCommit.hash === c.hash ) {
-              c.lineConnections.push({ fromLane: colIdx, toLane: lane.lane });
+            if (lane.destCommit.hash === c.hash) {
+              c.lineConnections.push({ fromLane: colIdx, toLane: lane.lane, fromHash: c.hash, toHash: lane.sourceCommit?.hash });
               lane.finalLane = true;
             }
           }
         })
 
       }
-      c.lineConnections.length > 0 ?? console.log('ac', c.lineConnections)
-      // console.log(c.index, columns, c.lane, c.connections)
     }
 
     for (let i = 1; i < commitList.length; i++) {
@@ -222,7 +220,7 @@ export default function Repository({ repositoryDirectory }) {
           );
           if (prevEntry && prevEntry.lane !== entry.lane) {
             prevEntry.finalLane = true
-            curr.diagonalConnections.push({ fromLane: prevEntry.lane, toLane: entry.lane });
+            curr.diagonalConnections.push({ fromLane: prevEntry.lane, toLane: entry.lane, prevIsFinalLane: true, fromHash: entry.sourceCommit?.hash, toHash: entry.destCommit?.hash });
           }
         }
       }
