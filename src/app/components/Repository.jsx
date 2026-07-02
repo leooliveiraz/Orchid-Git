@@ -214,9 +214,9 @@ export default function Repository({ repositoryDirectory }) {
       const prev = commitList[i - 1];
       curr.diagonalConnections = [];
       for (const entry of curr.lane) {
-        if (entry.type === "line" && entry.sourceCommit) {
+        if (entry.type === "line" && entry.sourceCommit && entry.destCommit) {
           const prevEntry = prev.lane.find(
-            e => e.type === "line" && e.sourceCommit?.hash === entry.sourceCommit?.hash
+            e => e.type === "line" && e.sourceCommit?.hash === entry.sourceCommit?.hash && e.destCommit?.hash === entry.destCommit?.hash
           );
           if (prevEntry && prevEntry.lane !== entry.lane) {
             prevEntry.finalLane = true
@@ -225,9 +225,6 @@ export default function Repository({ repositoryDirectory }) {
         }
       }
     }
-    commitList.forEach(commit => {
-      console.log(commit.index, commit);
-    })
 
     return commitList;
   }
