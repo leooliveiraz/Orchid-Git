@@ -155,6 +155,37 @@ export default function LeftMenu({ open }) {
     }
   });
 
+  const [menuWidth, setMenuWidth] = useState(() => {
+    const saved = localStorage.getItem("orchid-menu-width");
+    return saved ? Math.max(180, Math.min(500, parseInt(saved, 10))) : 240;
+  });
+  const [resizing, setResizing] = useState(false);
+
+  useEffect(() => {
+    localStorage.setItem("orchid-menu-width", menuWidth);
+  }, [menuWidth]);
+
+  const handleResizeStart = useCallback((e) => {
+    e.preventDefault();
+    setResizing(true);
+  }, []);
+
+  useEffect(() => {
+    if (!resizing) return;
+    const handleMouseMove = (e) => {
+      setMenuWidth(Math.max(180, Math.min(500, e.clientX)));
+    };
+    const handleMouseUp = () => {
+      setResizing(false);
+    };
+    document.addEventListener("mousemove", handleMouseMove);
+    document.addEventListener("mouseup", handleMouseUp);
+    return () => {
+      document.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, [resizing]);
+
   const handleToggle = useCallback((section) => (_event, isExpanded) => {
     setExpandedSections(prev => {
       const next = { ...prev, [section]: isExpanded };
@@ -451,22 +482,40 @@ export default function LeftMenu({ open }) {
       <Drawer
         variant="permanent"
         sx={{
-          width: open ? 240 : 0,
+          width: open ? menuWidth : 0,
           flexShrink: 0,
-          transition: "width 0.2s",
+          transition: resizing ? "none" : "width 0.2s",
           "& .MuiDrawer-paper": {
-            width: 240,
+            width: menuWidth,
             boxSizing: "border-box",
             position: "relative",
             overflow: "auto",
-            transform: open ? "translateX(0)" : "translateX(-240px)",
-            transition: "transform 0.2s",
+            transform: open ? "translateX(0)" : `translateX(-${menuWidth}px)`,
+            transition: resizing ? "none" : "transform 0.2s",
             bgcolor: "var(--bg-primary)",
             color: "var(--text-primary)",
             borderRight: "1px solid var(--border-color)",
           },
         }}
       >
+        {open && (
+          <Box
+            onMouseDown={handleResizeStart}
+            sx={{
+              position: "absolute",
+              right: 0,
+              top: 0,
+              bottom: 0,
+              width: 5,
+              cursor: "col-resize",
+              zIndex: 10,
+              bgcolor: resizing ? "primary.main" : "transparent",
+              opacity: resizing ? 1 : 0,
+              "&:hover": { opacity: 1, bgcolor: "primary.main" },
+              transition: "opacity 0.15s",
+            }}
+          />
+        )}
         {recentDirs?.length > 0 && (
           <Section title="Recent" count={recentDirs.length} expanded={expandedSections.recent !== false} onToggle={handleToggle("recent")}
             onSort={() => {
