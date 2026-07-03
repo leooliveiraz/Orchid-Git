@@ -29,6 +29,8 @@ export const OrchidContext = createContext({
   setRebaseEditRequest: () => {},
   scrollToCommitHash: null,
   setScrollToCommitHash: () => {},
+  viewCommit: null,
+  setViewCommit: () => {},
   dateFormat: "",
   setDateFormat: () => {},
 });

@@ -81,6 +81,7 @@ export default function Orchid() {
   const [isReverting, setIsReverting] = useState(false);
   const [rebaseEditRequest, setRebaseEditRequest] = useState(null);
   const [scrollToCommitHash, setScrollToCommitHash] = useState(null);
+  const [viewCommit, setViewCommit] = useState(null);
   const [dateFormat, setDateFormat] = useState(() => localStorage.getItem("orchid-date-format") || "");
 
   useEffect(() => {
@@ -290,7 +291,7 @@ export default function Orchid() {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <OrchidContext.Provider value={{ directory, setDirectory, themeMode, toggleTheme, repoData, setRepoData, menuOpen, setMenuOpen, refresh, refreshKey, recentDirs, notRepo, setNotRepo, removeRecentDir, recentSort, setRecentSort: handleSetRecentSort, tabSignal, setTabSignal, syncWarning, setSyncWarning, isMerging, setIsMerging, isReverting, setIsReverting, rebaseEditRequest, setRebaseEditRequest, scrollToCommitHash, setScrollToCommitHash, dateFormat, setDateFormat }}>
+      <OrchidContext.Provider value={{ directory, setDirectory, themeMode, toggleTheme, repoData, setRepoData, menuOpen, setMenuOpen, refresh, refreshKey, recentDirs, notRepo, setNotRepo, removeRecentDir, recentSort, setRecentSort: handleSetRecentSort, tabSignal, setTabSignal, syncWarning, setSyncWarning, isMerging, setIsMerging, isReverting, setIsReverting, rebaseEditRequest, setRebaseEditRequest, scrollToCommitHash, setScrollToCommitHash, viewCommit, setViewCommit, dateFormat, setDateFormat }}>
         <Box sx={{ height: "100vh", display: "flex", flexDirection: "column" }}>
           <AppMenu onToggleMenu={() => setMenuOpen(prev => !prev)} />
           <Box sx={{ display: "flex", flex: 1, overflow: "hidden" }}>

@@ -15,7 +15,7 @@ import {
 import { OrchidContext } from "../OrchidContext.jsx";
 
 export default function Repository({ repositoryDirectory }) {
-  const { refreshKey, setNotRepo, tabSignal, setTabSignal, refresh, isMerging, isReverting, scrollToCommitHash, setScrollToCommitHash, dateFormat } = useContext(OrchidContext);
+  const { refreshKey, setNotRepo, tabSignal, setTabSignal, refresh, isMerging, isReverting, scrollToCommitHash, setScrollToCommitHash, viewCommit, setViewCommit, dateFormat } = useContext(OrchidContext);
   const [commitList, setCommitList] = useState([]);
   const [filteredCommitList, setFilteredCommitList] = useState([]);
   const [tab, setTab] = useState("graph");
@@ -49,6 +49,22 @@ export default function Repository({ repositoryDirectory }) {
     }
     setScrollToCommitHash(null);
   }, [scrollToCommitHash, commitList, setScrollToCommitHash]);
+
+  useEffect(() => {
+    if (!viewCommit || commitList.length === 0 || !window.api) return;
+    const commit = commitList.find(c => viewCommit.hash.startsWith(c.hash));
+    if (commit) {
+      (async () => {
+        try {
+          const files = await window.api.getCommitFiles(repositoryDirectory, commit.hash);
+          setSelectedCommit(commit);
+          setCommitFiles(files || []);
+          setMenuAnchor({ left: viewCommit.left, top: viewCommit.top });
+        } catch (e) { }
+      })();
+    }
+    setViewCommit(null);
+  }, [viewCommit, commitList]);
 
   useEffect(() => {
     function keyDown(e) {

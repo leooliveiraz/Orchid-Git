@@ -140,7 +140,7 @@ function Item({ label, active, badge, onDoubleClick, onClick, onDelete, onContex
 }
 
 export default function LeftMenu({ open }) {
-  const { directory, repoData, refresh, recentDirs, setDirectory, removeRecentDir, recentSort, setRecentSort, isMerging, isReverting, setScrollToCommitHash } = useContext(OrchidContext);
+  const { directory, repoData, refresh, recentDirs, setDirectory, removeRecentDir, recentSort, setRecentSort, isMerging, isReverting, setScrollToCommitHash, setViewCommit } = useContext(OrchidContext);
   const branchStatusMap = useMemo(() => {
     if (!repoData?.branchesStatus) return {};
     const map = {};
@@ -162,6 +162,7 @@ export default function LeftMenu({ open }) {
   const [showMerge, setShowMerge] = useState(false);
   const [mergeBranch, setMergeBranch] = useState(null);
   const [branchContext, setBranchContext] = useState(null);
+  const [stashContext, setStashContext] = useState(null);
   const [pendingRecentDir, setPendingRecentDir] = useState(null);
   const [skipRecentConfirm, setSkipRecentConfirm] = useState(() => localStorage.getItem("orchid-skip-repo-switch") === "true");
   const [expandedSections, setExpandedSections] = useState(() => {
@@ -318,6 +319,23 @@ export default function LeftMenu({ open }) {
     e.preventDefault();
     setBranchContext({ left: e.clientX, top: e.clientY, branch });
   }, []);
+
+  const handleStashContext = useCallback((e, stashId) => {
+    e.preventDefault();
+    setStashContext({ left: e.clientX, top: e.clientY, stashId });
+  }, []);
+
+  const handleStashShowChanges = useCallback(async () => {
+    const stashId = stashContext?.stashId;
+    const pos = { left: stashContext?.left || 200, top: stashContext?.top || 200 };
+    setStashContext(null);
+    if (!stashId || !directory || !window.api?.getRefCommit) return;
+    try {
+      const hash = await window.api.getRefCommit(directory, stashId);
+      setScrollToCommitHash(hash);
+      setViewCommit({ hash, ...pos });
+    } catch (e) { }
+  }, [stashContext, directory, setScrollToCommitHash, setViewCommit]);
 
   const handleContextCheckout = useCallback(() => {
     const branch = branchContext?.branch;
@@ -622,7 +640,7 @@ export default function LeftMenu({ open }) {
 
             <Section title="Stash" count={repoData.stashList?.length ?? 0} expanded={expandedSections.stash === true} onToggle={handleToggle("stash")} onAdd={openNewStashDialog} filter={filters.stash} onFilterChange={setFilter("stash")}>
               {filteredStash.map(s => (
-                <Item key={s.id} label={`${s.id}: ${s.message}`} onClick={() => handleStashClick(s.id)} onDoubleClick={() => handleStashDblClick(s.id)} onDelete={() => confirmDropStash(s.id)} />
+                <Item key={s.id} label={`${s.id}: ${s.message}`} onClick={() => handleStashClick(s.id)} onDoubleClick={() => handleStashDblClick(s.id)} onContextMenu={(e) => handleStashContext(e, s.id)} onDelete={() => confirmDropStash(s.id)} />
               ))}
             </Section>
           </>
@@ -713,6 +731,17 @@ export default function LeftMenu({ open }) {
         </MenuItem>
         <MenuItem onClick={handleContextMerge} dense>
           <ListItemText primary="Merge into current branch" primaryTypographyProps={{ variant: "body2" }} />
+        </MenuItem>
+      </Menu>
+
+      <Menu
+        open={!!stashContext}
+        onClose={() => setStashContext(null)}
+        anchorReference="anchorPosition"
+        anchorPosition={stashContext ? { left: stashContext.left, top: stashContext.top } : undefined}
+      >
+        <MenuItem onClick={handleStashShowChanges} dense>
+          <ListItemText primary="Show changes" primaryTypographyProps={{ variant: "body2" }} />
         </MenuItem>
       </Menu>
 

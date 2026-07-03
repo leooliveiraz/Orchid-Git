@@ -145,9 +145,17 @@ ipcMain.handle("select-directory", function (event, arg) {
 ipcMain.handle("get-repository-commits", async (event, directory, topoOrder, allCommits, limit) => {
   if (!topoOrder) topoOrder = false;
   if (!allCommits) allCommits = false;
+  let extraRefs = [];
+  if (allCommits) {
+    try {
+      const stashList = runGit(["stash", "list", "--format=%gd"], directory);
+      extraRefs = stashList.trim().split("\n").filter(Boolean);
+    } catch (e) { }
+  }
   const args = [
     "log",
     ...(allCommits ? ["--all"] : []),
+    ...extraRefs,
     ...(topoOrder ? ["--topo-order"] : []),
     ...(limit ? ["-n", String(limit)] : []),
     `--pretty=format:%h%n%p%n%an%n%ad%n%s%n%D%x00`,
@@ -716,9 +724,17 @@ ipcMain.handle("get-merge-diff", (event, directory, filePath) => {
   return runGit(["diff", "HEAD...MERGE_HEAD", "--", filePath], directory);
 });
 
-ipcMain.handle("get-commit-files", (event, directory, commitHash) => {
-  const statusOutput = runGit(["diff-tree", "--no-commit-id", "-r", "--name-status", commitHash], directory);
-  const numstatOutput = runGit(["diff-tree", "--no-commit-id", "-r", "--numstat", commitHash], directory);
+ipcMain.handle("get-stash-files-from-commit", (event, directory, commitHash) => {
+  const stashList = runGit(["stash", "list", "--format=%gd||%gs"], directory).trim().split("\n").filter(Boolean);
+  let stashId = null;
+  for (const entry of stashList) {
+    const [id] = entry.split("||");
+    const hash = runGit(["rev-parse", id], directory).trim();
+    if (hash.startsWith(commitHash)) { stashId = id; break; }
+  }
+  if (!stashId) return [];
+  const statusOutput = runGit(["stash", "show", "--name-status", stashId], directory);
+  const numstatOutput = runGit(["stash", "show", "--numstat", stashId], directory);
   const statusLines = statusOutput.trim().split("\n").filter(Boolean);
   const numstatLines = numstatOutput.trim().split("\n").filter(Boolean);
   const numstatMap = {};
@@ -735,8 +751,83 @@ ipcMain.handle("get-commit-files", (event, directory, commitHash) => {
   });
 });
 
+function stashFilesFromCommit(directory, commitHash) {
+  try {
+    const stashList = runGit(["stash", "list", "--format=%gd||%gs"], directory).trim().split("\n").filter(Boolean);
+    for (const entry of stashList) {
+      const [id] = entry.split("||");
+      const hash = runGit(["rev-parse", id], directory).trim();
+      if (hash.startsWith(commitHash)) {
+        const ss = runGit(["stash", "show", "--name-status", id], directory);
+        const ns = runGit(["stash", "show", "--numstat", id], directory);
+        const statusLines = ss.trim().split("\n").filter(Boolean);
+        const numstatLines = ns.trim().split("\n").filter(Boolean);
+        const numstatMap = {};
+        numstatLines.forEach(line => {
+          const [added, deleted, ...pathParts] = line.split("\t");
+          const path = pathParts.join("\t");
+          numstatMap[path] = { added: parseInt(added) || 0, deleted: parseInt(deleted) || 0 };
+        });
+        return statusLines.map(line => {
+          const [status, ...pathParts] = line.split("\t");
+          const path = pathParts.join("\t");
+          const counts = numstatMap[path] || { added: 0, deleted: 0 };
+          return { status, path, added: counts.added, deleted: counts.deleted };
+        });
+      }
+    }
+  } catch (e) { }
+  return [];
+}
+
+ipcMain.handle("get-commit-files", (event, directory, commitHash) => {
+  const statusOutput = runGit(["diff-tree", "--no-commit-id", "-r", "--name-status", commitHash], directory);
+  const numstatOutput = runGit(["diff-tree", "--no-commit-id", "-r", "--numstat", commitHash], directory);
+  let statusLines = statusOutput.trim().split("\n").filter(Boolean);
+  const numstatLines = numstatOutput.trim().split("\n").filter(Boolean);
+  if (statusLines.length === 0 && numstatLines.length === 0) {
+    return stashFilesFromCommit(directory, commitHash);
+  }
+  const numstatMap = {};
+  numstatLines.forEach(line => {
+    const [added, deleted, ...pathParts] = line.split("\t");
+    const path = pathParts.join("\t");
+    numstatMap[path] = { added: parseInt(added) || 0, deleted: parseInt(deleted) || 0 };
+  });
+  return statusLines.map(line => {
+    const [status, ...pathParts] = line.split("\t");
+    const path = pathParts.join("\t");
+    const counts = numstatMap[path] || { added: 0, deleted: 0 };
+    return { status, path, added: counts.added, deleted: counts.deleted };
+  });
+});
+
+ipcMain.handle("get-stash-file-diff", (event, directory, commitHash, filePath) => {
+  const stashList = runGit(["stash", "list", "--format=%gd||%gs"], directory).trim().split("\n").filter(Boolean);
+  let stashId = null;
+  for (const entry of stashList) {
+    const [id] = entry.split("||");
+    const hash = runGit(["rev-parse", id], directory).trim();
+    if (hash.startsWith(commitHash)) { stashId = id; break; }
+  }
+  if (!stashId) return "";
+  return runGit(["diff", `${stashId}^`, stashId, "--", filePath], directory);
+});
+
 ipcMain.handle("get-commit-file-diff", (event, directory, commitHash, filePath) => {
-  return runGit(["diff-tree", "--no-commit-id", "-r", "-p", commitHash, "--", filePath], directory);
+  const output = runGit(["diff-tree", "--no-commit-id", "-r", "-p", commitHash, "--", filePath], directory);
+  if (output.trim()) return output;
+  try {
+    const stashList = runGit(["stash", "list", "--format=%gd||%gs"], directory).trim().split("\n").filter(Boolean);
+    for (const entry of stashList) {
+      const [id] = entry.split("||");
+      const hash = runGit(["rev-parse", id], directory).trim();
+      if (hash.startsWith(commitHash)) {
+        return runGit(["diff", `${id}^`, id, "--", filePath], directory);
+      }
+    }
+  } catch (e) { }
+  return "";
 });
 
 ipcMain.handle("get-blame", async (event, directory, filePath) => {
