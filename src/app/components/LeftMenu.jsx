@@ -4,7 +4,7 @@ import {
   List, ListItem, ListItemIcon, ListItemText,
   Typography, Box, Button, TextField,
   Dialog, DialogTitle, DialogContent, DialogActions,
-  FormControlLabel, Checkbox, Menu, MenuItem, Chip,
+  FormControlLabel, Checkbox, Menu, MenuItem, Chip, InputAdornment,
 } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import AddIcon from "@mui/icons-material/Add";
@@ -13,11 +13,12 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import SwapVertIcon from "@mui/icons-material/SwapVert";
 import FiberManualRecordIcon from "@mui/icons-material/FiberManualRecord";
 import RadioButtonUncheckedIcon from "@mui/icons-material/RadioButtonUnchecked";
+import SearchIcon from "@mui/icons-material/Search";
 import Tooltip from "@mui/material/Tooltip";
 import { OrchidContext } from "../OrchidContext.jsx";
 import MergeDialog from "./MergeDialog.jsx";
 
-function Section({ title, count, children, expanded, onToggle, onAdd, onMerge, onSort }) {
+function Section({ title, count, children, expanded, onToggle, onAdd, onMerge, onSort, filter, onFilterChange }) {
   return (
     <Accordion expanded={expanded} onChange={onToggle} disableGutters>
       <AccordionSummary expandIcon={<ExpandMoreIcon sx={{ fontSize: 16, color: "text.secondary" }} />}>
@@ -59,6 +60,22 @@ function Section({ title, count, children, expanded, onToggle, onAdd, onMerge, o
         </Box>
       </AccordionSummary>
       <AccordionDetails sx={{ p: 0 }}>
+        {onFilterChange && (
+          <TextField
+            size="small"
+            placeholder={`Filter ${title.toLowerCase()}...`}
+            value={filter || ""}
+            onChange={e => onFilterChange(e.target.value)}
+            variant="standard"
+            onClick={e => e.stopPropagation()}
+            sx={{ px: 1, pt: 0.5, pb: 0.5, display: "flex" }}
+            InputProps={{
+              startAdornment: <InputAdornment position="start"><SearchIcon sx={{ fontSize: 14, color: "text.secondary" }} /></InputAdornment>,
+              sx: { fontSize: "0.75rem" },
+              disableUnderline: true,
+            }}
+          />
+        )}
         <List dense>
           {children}
         </List>
@@ -154,6 +171,35 @@ export default function LeftMenu({ open }) {
       return {};
     }
   });
+
+  const [filters, setFilters] = useState({ branches: "", remote: "", tags: "", stash: "" });
+  const setFilter = useCallback((section) => (value) => {
+    setFilters(prev => ({ ...prev, [section]: value }));
+  }, []);
+
+  const filteredBranches = useMemo(() => {
+    if (!repoData?.branches) return [];
+    const f = filters.branches.toLowerCase();
+    return f ? repoData.branches.filter(b => b.toLowerCase().includes(f)) : repoData.branches;
+  }, [repoData?.branches, filters.branches]);
+
+  const filteredRemote = useMemo(() => {
+    if (!repoData?.remoteBranches) return [];
+    const f = filters.remote.toLowerCase();
+    return f ? repoData.remoteBranches.filter(b => b.toLowerCase().includes(f)) : repoData.remoteBranches;
+  }, [repoData?.remoteBranches, filters.remote]);
+
+  const filteredTags = useMemo(() => {
+    if (!repoData?.tags) return [];
+    const f = filters.tags.toLowerCase();
+    return f ? repoData.tags.filter(t => t.toLowerCase().includes(f)) : repoData.tags;
+  }, [repoData?.tags, filters.tags]);
+
+  const filteredStash = useMemo(() => {
+    if (!repoData?.stashList) return [];
+    const f = filters.stash.toLowerCase();
+    return f ? repoData.stashList.filter(s => s.id.toLowerCase().includes(f) || s.message.toLowerCase().includes(f)) : repoData.stashList;
+  }, [repoData?.stashList, filters.stash]);
 
   const [menuWidth, setMenuWidth] = useState(() => {
     const saved = localStorage.getItem("orchid-menu-width");
@@ -543,8 +589,8 @@ export default function LeftMenu({ open }) {
         )}
         {repoData ? (
           <>
-            <Section title="Branches" count={repoData.branches?.length ?? 0} expanded={expandedSections.branches !== false} onToggle={handleToggle("branches")} onAdd={openNewBranchDialog} onMerge={() => { if (isMerging) { setMessageType("error"); setMessage("Resolva o merge antes de continuar"); return; } if (isReverting) { setMessageType("error"); setMessage("Resolva o revert antes de continuar"); return; } setShowMerge(true); }}>
-              {repoData.branches?.map(b => {
+            <Section title="Branches" count={repoData.branches?.length ?? 0} expanded={expandedSections.branches !== false} onToggle={handleToggle("branches")} onAdd={openNewBranchDialog} onMerge={() => { if (isMerging) { setMessageType("error"); setMessage("Resolva o merge antes de continuar"); return; } if (isReverting) { setMessageType("error"); setMessage("Resolva o revert antes de continuar"); return; } setShowMerge(true); }} filter={filters.branches} onFilterChange={setFilter("branches")}>
+              {filteredBranches.map(b => {
                 const st = branchStatusMap[b];
                 const badge = st && (st.ahead > 0 || st.behind > 0) ? st : null;
                 return (
@@ -562,20 +608,20 @@ export default function LeftMenu({ open }) {
               })}
             </Section>
 
-            <Section title="Remote" count={repoData.remoteBranches?.length ?? 0} expanded={expandedSections.remote === true} onToggle={handleToggle("remote")}>
-              {repoData.remoteBranches?.map(b => (
+            <Section title="Remote" count={repoData.remoteBranches?.length ?? 0} expanded={expandedSections.remote === true} onToggle={handleToggle("remote")} filter={filters.remote} onFilterChange={setFilter("remote")}>
+              {filteredRemote.map(b => (
                 <Item key={b} label={b} onClick={() => handleRemoteBranchClick(b)} onDoubleClick={() => handleRemoteBranchDblClick(b)} onDelete={() => confirmDeleteRemoteBranch(b)} />
               ))}
             </Section>
 
-            <Section title="Tags" count={repoData.tags?.length ?? 0} expanded={expandedSections.tags === true} onToggle={handleToggle("tags")} onAdd={openNewTagDialog}>
-              {repoData.tags?.map(t => (
+            <Section title="Tags" count={repoData.tags?.length ?? 0} expanded={expandedSections.tags === true} onToggle={handleToggle("tags")} onAdd={openNewTagDialog} filter={filters.tags} onFilterChange={setFilter("tags")}>
+              {filteredTags.map(t => (
                 <Item key={t} label={t} onClick={() => handleTagClick(t)} onDelete={() => confirmDeleteTag(t)} />
               ))}
             </Section>
 
-            <Section title="Stash" count={repoData.stashList?.length ?? 0} expanded={expandedSections.stash === true} onToggle={handleToggle("stash")} onAdd={openNewStashDialog}>
-              {repoData.stashList?.map(s => (
+            <Section title="Stash" count={repoData.stashList?.length ?? 0} expanded={expandedSections.stash === true} onToggle={handleToggle("stash")} onAdd={openNewStashDialog} filter={filters.stash} onFilterChange={setFilter("stash")}>
+              {filteredStash.map(s => (
                 <Item key={s.id} label={`${s.id}: ${s.message}`} onClick={() => handleStashClick(s.id)} onDoubleClick={() => handleStashDblClick(s.id)} onDelete={() => confirmDropStash(s.id)} />
               ))}
             </Section>
