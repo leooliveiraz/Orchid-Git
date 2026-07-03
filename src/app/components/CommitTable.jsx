@@ -1,6 +1,6 @@
-import React, { useRef, useEffect, useState, useCallback } from "react";
+import React, { useRef, useEffect, useState, useCallback, useMemo } from "react";
 import {
-  TableContainer, Table, TableHead, TableBody, TableRow, TableCell, Paper,
+  Paper, TableContainer,
   Menu, MenuItem, ListItemIcon, ListItemText, Dialog, DialogTitle, DialogContent, DialogActions, Button, Typography,
   Box, Radio, RadioGroup, FormControlLabel, TextField, Chip,
 } from "@mui/material";
@@ -8,12 +8,8 @@ import ContentPasteIcon from "@mui/icons-material/ContentPaste";
 import CheckIcon from "@mui/icons-material/Check";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import ReplayIcon from "@mui/icons-material/Replay";
-import CommitCircle from "./graph/CommitCircle.jsx";
-import LaneLine from "./graph/LaneLine.jsx";
-import ConnectionPath from "./graph/ConnectionPath.jsx";
-import { LANE_COLORS, LANE_WIDTH, ROW_HEIGHT } from "./graph/constants.js";
-import ConnectionPathToLine from "./graph/ConnectionPathToLine.jsx";
-import DiagonalPath from "./graph/DiagonalPath.jsx";
+import CommitGraph from "./graph/CommitGraph.jsx";
+import { LANE_COLORS } from "./graph/constants.js";
 
 export function getRelativeTime(date) {
   const now = new Date();
@@ -52,6 +48,16 @@ export default function CommitTable({ commitList, onCommitClick, highlightIndex,
   const containerRef = useRef(null);
   const [contextMenu, setContextMenu] = useState(null);
   const [contextCommit, setContextCommit] = useState(null);
+  const ROW_HEIGHT = 32;
+  const BUFFER = 15;
+  const [scrollTop, setScrollTop] = useState(0);
+  const [containerHeight, setContainerHeight] = useState(600);
+
+  const totalHeight = commitList.length * ROW_HEIGHT;
+  const visibleStart = Math.max(0, Math.floor(scrollTop / ROW_HEIGHT) - BUFFER);
+  const visibleEnd = Math.min(commitList.length, Math.ceil((scrollTop + containerHeight) / ROW_HEIGHT) + BUFFER);
+  const visibleCommits = useMemo(() => commitList.slice(visibleStart, visibleEnd), [commitList, visibleStart, visibleEnd]);
+
   const [confirmCherry, setConfirmCherry] = useState(false);
   const [confirmRevert, setConfirmRevert] = useState(false);
   const [confirmReset, setConfirmReset] = useState(false);
@@ -63,10 +69,29 @@ export default function CommitTable({ commitList, onCommitClick, highlightIndex,
     setSelectedCommits(new Set());
   }, [commitList]);
 
+  const handleScroll = useCallback(() => {
+    if (containerRef.current) {
+      setScrollTop(containerRef.current.scrollTop);
+    }
+  }, []);
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(entries => {
+      for (const entry of entries) {
+        setContainerHeight(entry.contentRect.height);
+      }
+    });
+    ro.observe(el);
+    el.addEventListener("scroll", handleScroll);
+    handleScroll();
+    return () => { ro.disconnect(); el.removeEventListener("scroll", handleScroll); };
+  }, [handleScroll]);
+
   useEffect(() => {
     if (highlightIndex == null || !containerRef.current) return;
-    const rowHeight = 24;
-    containerRef.current.scrollTo({ top: highlightIndex * rowHeight, behavior: "smooth" });
+    containerRef.current.scrollTo({ top: highlightIndex * ROW_HEIGHT, behavior: "smooth" });
   }, [highlightIndex]);
 
   useEffect(() => {
@@ -170,167 +195,97 @@ export default function CommitTable({ commitList, onCommitClick, highlightIndex,
   return (
     <>
       <TableContainer ref={containerRef} component={Paper} variant="outlined" sx={{ height: "100%", overflow: "auto" }}>
-        <Table size="small" stickyHeader sx={{ minWidth: 650 }}>
-          <TableHead>
-            <TableRow>
-              <TableCell sx={{ width: 40, textAlign: "center", fontWeight: 600, color: "text.secondary", fontSize: "0.75rem" }}>
-                #
-              </TableCell>
-              <TableCell sx={{ fontWeight: 600, fontSize: "0.75rem", color: "text.secondary", width: 100 }}>
-                Graph
-              </TableCell>
-              <TableCell sx={{ fontWeight: 600, fontSize: "0.75rem", color: "text.secondary" }}>
-                Hash
-              </TableCell>
-              <TableCell sx={{ display: "none" }} />
-              <TableCell sx={{ fontWeight: 600, fontSize: "0.75rem", color: "text.secondary" }}>
-                Decoration
-              </TableCell>
-              <TableCell sx={{ fontWeight: 600, fontSize: "0.75rem", color: "text.secondary" }}>
-                Message
-              </TableCell>
-              <TableCell sx={{ fontWeight: 600, fontSize: "0.75rem", color: "text.secondary" }}>
-                Author
-              </TableCell>
-              <TableCell sx={{ fontWeight: 600, fontSize: "0.75rem", color: "text.secondary" }}>
-                Date
-              </TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {commitList.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={7} align="center" sx={{ py: 6 }}>
-                  <Typography variant="body2" sx={{ color: "text.secondary" }}>
-                    No matching commits
-                  </Typography>
-                </TableCell>
-              </TableRow>
-            ) : commitList.map((commit, index) => (
-              <TableRow
-                key={commit.hash}
-                hover
-                style={{ height: "32px" }}
-                onClick={(e) => handleRowClick(e, commit)}
-                onContextMenu={(e) => handleContextMenu(e, commit)}
-                sx={{
-                  cursor: "pointer",
-                  "&:last-child td": { borderBottom: 0 },
-                  ...(selectedCommits.has(commit.hash) ? {
-                    bgcolor: "rgba(25, 118, 210, 0.12)",
-                    "&:hover": { bgcolor: "rgba(25, 118, 210, 0.18)" },
-                  } : {}),
-                  ...(index === highlightIndex ? {
-                    animation: "highlight-pulse 3s ease-out",
-                    "@keyframes highlight-pulse": {
-                      "0%": { backgroundColor: "var(--bg-table-alt)" },
-                      "70%": { backgroundColor: "var(--bg-table-alt)" },
-                      "100%": { backgroundColor: "transparent" },
-                    },
-                  } : {}),
-                  ...(index === headIdx ? { outline: "2px solid", outlineColor: "primary.main", outlineOffset: -1 } : {}),
-                }}
-              >
-                <TableCell sx={{ textAlign: "center", fontWeight: 400, fontSize: "0.75rem", color: "text.secondary" }}>
-                  {commit.index}
-                </TableCell>
-                <TableCell sx={{ p: 0, verticalAlign: "middle" }}>
-                  <svg width={Math.max((commit.lane?.length || 1) * LANE_WIDTH + 10, 24)} height={ROW_HEIGHT} style={{ overflow: "visible", display: "block" }}>
-                    {commit.diagonalConnections?.map((conn, i) => (
-                      <DiagonalPath
-                        key={`d-${i}`}
-                        fromLane={conn.fromLane}
-                        toLane={conn.toLane}
-                        color={commitColorHashMap[conn.toHash]}
-                        fromHash={conn.fromHash}
-                        toHash={conn.toHash}
-                      />
-                    ))}
-                    {(commit.lane || []).map(lane =>
-                      lane.type === "line" &&
-                      <React.Fragment key={lane.lane}>
-                        {commit.diagonalConnections.find(conn => conn.toLane === lane.lane && !lane.finalLane) ?
-                          <LaneLine lane={lane.lane} color={commitColorHashMap[lane.destCommit?.hash]} sourceCommit={lane.sourceCommit} destCommit={lane.destCommit} modeA={true} /> :
-                          lane.finalLane ?
-                            null
-                            : <LaneLine lane={lane.lane} color={commitColorHashMap[lane.destCommit?.hash]} sourceCommit={lane.sourceCommit} destCommit={lane.destCommit} modeB={true} />}
-                      </React.Fragment>
-                    )}
-                    {commit.hasParentInLane && commit.lane?.map(lane =>
-                      lane.type === "commit" &&
-                      <LaneLine
-                        key={`bg-${lane.lane}`}
-                        lane={lane.lane}
-                        color={commitColorHashMap[lane.destCommit?.hash]}
-                        modeC={true}
-                        sourceCommit={lane.sourceCommit} 
-                        destCommit={lane.destCommit} />
-                    )}
-                    {commit.connections?.map(conn => (
-                      <ConnectionPath
-                        key={`c-${conn.toLane}`}
-                        fromLane={conn.fromLane}
-                        toLane={conn.toLane}
-                        color={commitColorHashMap[conn.toLane > conn.fromLane ? conn.toHash : conn.fromHash]}
-                        fromHash={conn.fromHash}
-                        toHash={conn.toHash}
-                      />
-                    ))}
+        <Box sx={{ minWidth: 650 }}>
+          <Box sx={{ display: "flex", position: "sticky", top: 0, zIndex: 100, bgcolor: "var(--bg-table-alt)", borderBottom: "1px solid var(--border-color)" }}>
+            <Box sx={{ width: 40, flexShrink: 0, textAlign: "center", fontWeight: 600, color: "text.secondary", fontSize: "0.75rem", py: 1 }}>#</Box>
+            <Box sx={{ width: 100, flexShrink: 0, fontWeight: 600, fontSize: "0.75rem", color: "text.secondary", py: 1 }}>Graph</Box>
+            <Box sx={{ flex: 1, minWidth: 80, fontWeight: 600, fontSize: "0.75rem", color: "text.secondary", py: 1 }}>Hash</Box>
+            <Box sx={{ flex: 2, minWidth: 120, fontWeight: 600, fontSize: "0.75rem", color: "text.secondary", py: 1 }}>Decoration</Box>
+            <Box sx={{ flex: 3, minWidth: 150, fontWeight: 600, fontSize: "0.75rem", color: "text.secondary", py: 1 }}>Message</Box>
+            <Box sx={{ flex: 1, minWidth: 80, fontWeight: 600, fontSize: "0.75rem", color: "text.secondary", py: 1 }}>Author</Box>
+            <Box sx={{ flex: 1, minWidth: 80, fontWeight: 600, fontSize: "0.75rem", color: "text.secondary", py: 1 }}>Date</Box>
+          </Box>
 
-                    {commit.lineConnections?.map(conn => (
-                      <ConnectionPathToLine
-                        key={`c-${conn.toLane}`}
-                        fromLane={conn.fromLane}
-                        toLane={conn.toLane}
-                        color={commitColorHashMap[conn.toLane < conn.fromLane ? conn.toHash : conn.fromHash]}
-                        fromHash={conn.fromHash}
-                        toHash={conn.toHash}
-                      />
-                    ))}
-                    {(commit.lane || []).map(entry =>
-                      entry.type === "commit" && <CommitCircle key={entry.lane} lane={entry.lane} color={commitColorHashMap[commit.hash]} />
-                    )}
-                  </svg>
-                </TableCell>
-                <TableCell sx={{ fontFamily: "monospace", fontSize: "0.75rem", color: "text.secondary" }}>
-                  {commit.hash}
-                </TableCell>
-                <TableCell sx={{ display: "none" }} />
-                <TableCell sx={{ fontSize: "0.75rem", paddingBottom: "0px", paddingTop: "0px" }}>
-                  {commit.decoration ? (() => {
-                    const parts = commit.decoration.split(", ");
-                    return parts.map((part, i) => {
-                      const t = part.trim();
-                      if (!t || t === "HEAD") return null;
-                      const isHead = t.startsWith("HEAD -> ");
-                      const isTag = t.startsWith("tag: ");
-                      const isRemote = t.startsWith("origin/");
-                      const name = isHead ? t.slice(8) : isTag ? t.slice(5) : t;
-                      const chipColor = isHead ? "#e6a817" : isTag ? "#28a745" : isRemote ? "#6a737d" : "#1976d2";
-                      return (
-                        <Chip
-                          key={i}
-                          label={name}
-                          size="small"
-                          sx={{ fontSize: "0.65rem", height: 20, m: 0.25, color: "#fff", fontWeight: isHead ? 700 : 400, backgroundColor: chipColor }}
-                        />
-                      );
-                    });
-                  })() : ""}
-                </TableCell>
-                <TableCell sx={{ fontSize: "0.8125rem", maxWidth: 400, overflow: "hidden", textOverflow: "ellipsis" }}>
-                  {commit.message}
-                </TableCell>
-                <TableCell sx={{ fontSize: "0.75rem" }}>
-                  {commit.author}
-                </TableCell>
-                <TableCell sx={{ fontSize: "0.75rem", whiteSpace: "nowrap" }}>
-                  {formatDate(commit.date, dateFormat)}
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+          {commitList.length === 0 ? (
+            <Typography variant="body2" sx={{ color: "text.secondary", textAlign: "center", py: 6 }}>
+              No matching commits
+            </Typography>
+          ) : (
+            <Box sx={{ height: totalHeight, position: "relative" }}>
+              {visibleCommits.map((commit, i) => {
+                const index = visibleStart + i;
+                const isSelected = selectedCommits.has(commit.hash);
+                const isHighlighted = index === highlightIndex;
+                const isHead = index === headIdx;
+                return (
+                  <Box
+                    key={commit.hash}
+                    onClick={(e) => handleRowClick(e, commit)}
+                    onContextMenu={(e) => handleContextMenu(e, commit)}
+                    sx={{
+                      position: "absolute", top: index * ROW_HEIGHT, left: 0, right: 0, height: ROW_HEIGHT,
+                      display: "flex", alignItems: "center", cursor: "pointer",
+                      borderBottom: "1px solid var(--border-color)",
+                      zIndex: commitList.length - index,
+                      "&:hover": { bgcolor: "var(--bg-table-alt)" },
+                      ...(isSelected ? { bgcolor: "rgba(25, 118, 210, 0.12)", "&:hover": { bgcolor: "rgba(25, 118, 210, 0.18)" } } : {}),
+                      ...(isHighlighted ? {
+                        animation: "highlight-pulse 3s ease-out",
+                        "@keyframes highlight-pulse": {
+                          "0%": { backgroundColor: "var(--bg-table-alt)" },
+                          "70%": { backgroundColor: "var(--bg-table-alt)" },
+                          "100%": { backgroundColor: "transparent" },
+                        },
+                      } : {}),
+                      ...(isHead ? { outline: "2px solid", outlineColor: "primary.main", outlineOffset: -1 } : {}),
+                    }}
+                  >
+                    <Box sx={{ width: 40, flexShrink: 0, textAlign: "center", fontWeight: 400, fontSize: "0.75rem", color: "text.secondary" }}>
+                      {commit.index}
+                    </Box>
+                    <Box sx={{ width: 100, flexShrink: 0, p: 0, display: "flex", alignItems: "center", pointerEvents: "none" }}>
+                      <CommitGraph commit={commit} commitColorHashMap={commitColorHashMap} />
+                    </Box>
+                    <Box sx={{ flex: 1, minWidth: 80, fontFamily: "monospace", fontSize: "0.75rem", color: "text.secondary" }}>
+                      {commit.hash}
+                    </Box>
+                    <Box sx={{ flex: 2, minWidth: 120, fontSize: "0.75rem" }}>
+                      {commit.decoration ? (() => {
+                        const parts = commit.decoration.split(", ");
+                        return parts.map((part, i) => {
+                          const t = part.trim();
+                          if (!t || t === "HEAD") return null;
+                          const isHead = t.startsWith("HEAD -> ");
+                          const isTag = t.startsWith("tag: ");
+                          const isRemote = t.startsWith("origin/");
+                          const name = isHead ? t.slice(8) : isTag ? t.slice(5) : t;
+                          const chipColor = isHead ? "#e6a817" : isTag ? "#28a745" : isRemote ? "#6a737d" : "#1976d2";
+                          return (
+                            <Chip
+                              key={i}
+                              label={name}
+                              size="small"
+                              sx={{ fontSize: "0.65rem", height: 20, m: 0.25, color: "#fff", fontWeight: isHead ? 700 : 400, backgroundColor: chipColor }}
+                            />
+                          );
+                        });
+                      })() : ""}
+                    </Box>
+                    <Box sx={{ flex: 3, minWidth: 150, fontSize: "0.8125rem", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      {commit.message}
+                    </Box>
+                    <Box sx={{ flex: 1, minWidth: 80, fontSize: "0.75rem" }}>
+                      {commit.author}
+                    </Box>
+                    <Box sx={{ flex: 1, minWidth: 80, fontSize: "0.75rem", whiteSpace: "nowrap" }}>
+                      {formatDate(commit.date, dateFormat)}
+                    </Box>
+                  </Box>
+                );
+              })}
+            </Box>
+          )}
+        </Box>
       </TableContainer>
 
       <Dialog open={confirmCherry} onClose={() => setConfirmCherry(false)} maxWidth="sm" fullWidth>
