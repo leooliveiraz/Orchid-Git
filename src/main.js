@@ -323,11 +323,23 @@ ipcMain.handle("merge", async (event, directory, branch, strategy) => {
 });
 
 ipcMain.handle("discard-file", (event, directory, filePath) => {
-  return runGit(["checkout", "--", filePath], directory);
+  try {
+    return runGit(["checkout", "--", filePath], directory);
+  } catch (e) {
+    if (e.message && e.message.includes("did not match any file(s) known to git")) {
+      const fullPath = path.join(directory, filePath);
+      if (fs.existsSync(fullPath)) {
+        fs.unlinkSync(fullPath);
+        return "";
+      }
+    }
+    throw e;
+  }
 });
 
 ipcMain.handle("discard-all", (event, directory) => {
-  return runGit(["checkout", "--", "."], directory);
+  runGit(["checkout", "--", "."], directory);
+  return runGit(["clean", "-fd"], directory);
 });
 
 ipcMain.handle("get-discard-hunks", (event, directory, filePath) => {
