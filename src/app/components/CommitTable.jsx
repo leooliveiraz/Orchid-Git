@@ -64,6 +64,40 @@ export default function CommitTable({ commitList, onCommitClick, highlightIndex,
   const [resetMode, setResetMode] = useState("mixed");
   const [selectedCommits, setSelectedCommits] = useState(new Set());
   const [cherryPickHashes, setCherryPickHashes] = useState("");
+  const [graphWidth, setGraphWidth] = useState(() => {
+    const saved = localStorage.getItem("orchid-graph-width");
+    return saved ? Math.max(60, Math.min(400, parseInt(saved, 10))) : 100;
+  });
+  const [graphResizing, setGraphResizing] = useState(false);
+  const graphResizeRef = useRef(null);
+
+  useEffect(() => {
+    localStorage.setItem("orchid-graph-width", graphWidth);
+  }, [graphWidth]);
+
+  const handleGraphResizeStart = useCallback((e) => {
+    e.preventDefault();
+    graphResizeRef.current = { startX: e.clientX, startWidth: graphWidth };
+    setGraphResizing(true);
+  }, [graphWidth]);
+
+  useEffect(() => {
+    if (!graphResizing) return;
+    const handleMouseMove = (e) => {
+      const { startX, startWidth } = graphResizeRef.current;
+      const delta = e.clientX - startX;
+      setGraphWidth(Math.max(60, Math.min(400, startWidth + delta)));
+    };
+    const handleMouseUp = () => {
+      setGraphResizing(false);
+    };
+    document.addEventListener("mousemove", handleMouseMove);
+    document.addEventListener("mouseup", handleMouseUp);
+    return () => {
+      document.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, [graphResizing]);
 
   useEffect(() => {
     setSelectedCommits(new Set());
@@ -198,7 +232,20 @@ export default function CommitTable({ commitList, onCommitClick, highlightIndex,
         <Box sx={{ minWidth: 650 }}>
           <Box sx={{ display: "flex", position: "sticky", top: 0, zIndex: 100, bgcolor: "var(--bg-table-alt)", borderBottom: "1px solid var(--border-color)" }}>
             <Box sx={{ width: 40, flexShrink: 0, textAlign: "center", fontWeight: 600, color: "text.secondary", fontSize: "0.75rem", py: 1 }}>#</Box>
-            <Box sx={{ width: 100, flexShrink: 0, fontWeight: 600, fontSize: "0.75rem", color: "text.secondary", py: 1 }}>Graph</Box>
+            <Box sx={{ width: graphWidth, flexShrink: 0, fontWeight: 600, fontSize: "0.75rem", color: "text.secondary", py: 1, position: "relative", userSelect: "none" }}>
+              Graph
+              <Box
+                onMouseDown={handleGraphResizeStart}
+                sx={{
+                  position: "absolute", right: 0, top: 0, bottom: 0, width: 5,
+                  cursor: "col-resize", zIndex: 10,
+                  bgcolor: graphResizing ? "primary.main" : "transparent",
+                  opacity: graphResizing ? 1 : 0,
+                  "&:hover": { opacity: 1, bgcolor: "primary.main" },
+                  transition: "opacity 0.15s",
+                }}
+              />
+            </Box>
             <Box sx={{ flex: 1, minWidth: 80, fontWeight: 600, fontSize: "0.75rem", color: "text.secondary", py: 1 }}>Hash</Box>
             <Box sx={{ flex: 2, minWidth: 120, fontWeight: 600, fontSize: "0.75rem", color: "text.secondary", py: 1 }}>Decoration</Box>
             <Box sx={{ flex: 3, minWidth: 150, fontWeight: 600, fontSize: "0.75rem", color: "text.secondary", py: 1 }}>Message</Box>
@@ -243,7 +290,7 @@ export default function CommitTable({ commitList, onCommitClick, highlightIndex,
                     <Box sx={{ width: 40, flexShrink: 0, textAlign: "center", fontWeight: 400, fontSize: "0.75rem", color: "text.secondary" }}>
                       {commit.index}
                     </Box>
-                    <Box sx={{ width: 100, flexShrink: 0, p: 0, display: "flex", alignItems: "center", pointerEvents: "none" }}>
+                    <Box sx={{ width: graphWidth, flexShrink: 0, p: 0, display: "flex", alignItems: "center", pointerEvents: "none" }}>
                       <CommitGraph commit={commit} commitColorHashMap={commitColorHashMap} />
                     </Box>
                     <Box sx={{ flex: 1, minWidth: 80, fontFamily: "monospace", fontSize: "0.75rem", color: "text.secondary" }}>
