@@ -274,7 +274,7 @@ export default function CommitTable({ commitList, onCommitClick, highlightIndex,
                       display: "flex", alignItems: "center", cursor: "pointer",
                       borderBottom: "1px solid var(--border-color)",
                       zIndex: commitList.length - index,
-                      "&:hover": { bgcolor: "var(--bg-table-alt)" },
+                      "&:hover": { bgcolor: "color-mix(in srgb, var(--bg-table-alt) 25%, transparent)" },
                       ...(isSelected ? { bgcolor: "rgba(25, 118, 210, 0.12)", "&:hover": { bgcolor: "rgba(25, 118, 210, 0.18)" } } : {}),
                       ...(isHighlighted ? {
                         animation: "highlight-pulse 3s ease-out",
