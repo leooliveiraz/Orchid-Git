@@ -9,7 +9,7 @@ import SuccessSnackbar from "./SuccessSnackbar.jsx";
 import CommitSearch from "./CommitSearch.jsx";
 import {
   Typography, Box, Tabs, Tab, FormControlLabel, Checkbox,
-  TextField, ToggleButtonGroup, ToggleButton, Paper,
+  TextField, Paper,
   Menu, MenuItem, ListItemIcon, ListItemText, Chip, Divider, Alert, Badge,
 } from "@mui/material";
 import { OrchidContext } from "../OrchidContext.jsx";
@@ -27,7 +27,6 @@ export default function Repository({ repositoryDirectory }) {
   const [useTopoOrder, setUseTopoOrder] = useState(() => JSON.parse(localStorage.getItem("orchid-topo-order") ?? "true"));
   const [commitLimit, setCommitLimit] = useState(() => JSON.parse(localStorage.getItem("orchid-commit-limit") ?? "10000"));
   const [showSearch, setShowSearch] = useState(false);
-  const [connectionStyle, setConnectionStyle] = useState(() => localStorage.getItem("orchid-connection-style") || "bezier");
   const [highlightIndex, setHighlightIndex] = useState(null);
   const [success, setSuccess] = useState(null);
   const [error, setError] = useState(null);
@@ -41,12 +40,8 @@ export default function Repository({ repositoryDirectory }) {
   }, [tabSignal]);
 
   useEffect(() => {
-    localStorage.setItem("orchid-connection-style", connectionStyle);
-  }, [connectionStyle]);
-
-  useEffect(() => {
     if (!scrollToCommitHash || commitList.length === 0) return;
-    const idx = commitList.findIndex(c => scrollToCommitHash.startsWith(c.commit));
+    const idx = commitList.findIndex(c => scrollToCommitHash.startsWith(c.hash));
     if (idx >= 0) {
       setTab("graph");
       setHighlightIndex(idx);
@@ -86,106 +81,7 @@ export default function Repository({ repositoryDirectory }) {
         .then((result) => {
           const commits = configureCommitList(result);
 
-          window.api?.saveRepoLog?.(result).catch(() => {});
-
-          commits.forEach((commit, index) => {
-            commit.index = index;
-            commit.sons = [];
-            commit.sonsNumber = 0;
-          });
-
-          const map = {};
-          commits.forEach(c => map[c.commit] = c);
-
-          commits.forEach(commit => {
-            const parents = commit.parent.split(" ");
-            parents.forEach((p, idx) => {
-              const parent = map[p];
-              if (!parent) return;
-              if (idx === 0) {
-                parent.sons.push(commit);
-                parent.sonsNumber = parent.sons.length;
-              } else {
-                if (!parent.sonsMerge) parent.sonsMerge = [];
-                parent.sonsMerge.push(commit);
-                parent.sonsMergeNumber = parent.sonsMerge.length;
-              }
-            });
-          });
-
-          commits.forEach((commit, index) => {
-            const parents = commit.parent.split(" ");
-            const firstParent = map[parents[0]];
-            if (firstParent) {
-              commit.dad = {
-                dad: firstParent,
-                parentIndex: firstParent.index,
-                parentDistance: firstParent.index - index,
-              };
-            }
-            if (parents.length > 1) {
-              const secondParent = map[parents[1]];
-              if (secondParent) {
-                commit.merge = {
-                  hash: parents[1],
-                  parent: secondParent,
-                  parentIndex: secondParent.index,
-                  parentDistance: secondParent.index - index,
-                };
-              }
-            }
-          });
-
-          const oc = {};
-          function occupy(row, depth) {
-            if (!oc[row]) oc[row] = new Set();
-            oc[row].add(depth);
-          }
-          function isFree(row, depth) {
-            return !oc[row] || !oc[row].has(depth);
-          }
-          function firstFree(row, prefer) {
-            for (let offset = 0; offset <= 50; offset++) {
-              for (const d of [prefer + offset, prefer - offset]) {
-                if (d >= 0 && isFree(row, d)) return d;
-              }
-            }
-            return prefer;
-          }
-
-          commits.forEach((commit, index) => {
-            if (index === 0) {
-              commit.depth = 0;
-              occupy(0, 0);
-            } else {
-              const prev = commits[index - 1];
-              if (prev.dad?.parentIndex === index) {
-                let d = prev.depth;
-                if (commit.sons?.length) {
-                  const vals = commit.sons.filter(s => Number.isFinite(s.depth)).map(s => s.depth);
-                  d = vals.length ? Math.min(...vals) : 0;
-                }
-                commit.depth = d;
-                occupy(index, d);
-              } else if (commit.sons?.length) {
-                const vals = commit.sons.filter(s => Number.isFinite(s.depth)).map(s => s.depth);
-                const minDepth = vals.length ? Math.min(...vals) : 0;
-                commit.depth = minDepth;
-                occupy(index, minDepth);
-              } else {
-                const d = firstFree(index, 0);
-                commit.depth = d;
-                occupy(index, d);
-              }
-            }
-
-            if (commit.dad) {
-              for (let r = index + 1; r <= commit.dad.parentIndex; r++) {
-                if (!isFree(r, commit.depth)) break;
-                occupy(r, commit.depth);
-              }
-            }
-          });
+          window.api?.saveRepoLog?.(result).catch(() => { });
 
           setCommitList(commits);
           setFilteredCommitList(commits);
@@ -200,16 +96,16 @@ export default function Repository({ repositoryDirectory }) {
           if (window.api) {
             const target = fallbackHeadIdx >= 0 ? commits[fallbackHeadIdx] : null;
             if (target) {
-              window.api.getCommitFiles(repositoryDirectory, target.commit)
+              window.api.getCommitFiles(repositoryDirectory, target.hash)
                 .then(files => {
                   setSelectedCommit(target);
                   setCommitFiles(files || []);
                 })
-                .catch(() => {});
+                .catch(() => { });
             }
           }
         }).catch(er => {
-          er.message.includes("not a git repository") && setNoteRepo(true)
+          er.message.includes("not a git repository") && setNotRepo(true)
         });
     }
   }, [repositoryDirectory, useTopoOrder, allBranches, commitLimit, refreshKey]);
@@ -231,24 +127,138 @@ export default function Repository({ repositoryDirectory }) {
   function configureCommitList(result) {
     const commitList = [];
     const blocks = result.split("\0").filter(Boolean);
-    blocks.forEach((block) => {
+    blocks.forEach((block, index) => {
       const lines = block.trimStart().split("\n");
       commitList.push({
-        commit: lines[0] || "",
+        index: index,
+        hash: lines[0] || "",
         parent: lines[1] || "",
+        parentList: [],
         author: lines[2] || "",
         date: lines[3] || "",
         message: lines[4] || "",
         decoration: (lines[5] || "").trim(),
       });
     });
+    return configureGraphData(commitList);
+  }
+
+  function configureGraphData(commitList) {
+    const commitHashMap = {};
+    for (const commit of commitList) {
+      commitHashMap[commit.hash] = commit;
+    }
+    for (const commit of commitList) {
+      commit.parentList = extractParentList(commit, commitHashMap);
+    }
+
+    const columns = [];
+    const columnsList = []
+    for (let index = 0; index < commitList.length; index++) {
+      const c = commitList[index];
+      let colIdx = columns.findIndex(col => col.hashCommit === c.hash);
+      if (colIdx === -1) {
+        columns.push({ hashCommit: c.hash, hashOriginCommit: c.hash });
+        colIdx = columns.length - 1;
+      }
+      c.lane = columns.map((col, i) => {
+        const sameIndex = (i === colIdx)
+        if (sameIndex) {
+          c.laneIndex = i;
+          return { type: "commit", lane: i, commit: c, sourceCommit: commitHashMap[col.hashOriginCommit] || null, destCommit: commitHashMap[col.hashCommit] }
+        } else {
+          return { type: "line", lane: i, sourceCommit: commitHashMap[col.hashOriginCommit] || null, destCommit: commitHashMap[col.hashCommit] }
+        }
+      }
+
+      );
+
+      columns.splice(colIdx, 1);
+
+      for (let p = c.parentList.length - 1; p >= 0; p--) {
+        const parentHash = c.parentList[p].hash;
+        if (!columns.some(col => col.hashCommit === parentHash)) {
+          columns.splice(colIdx, 0, { hashCommit: parentHash, hashOriginCommit: c.hash });
+        }
+      }
+
+      columnsList.push([...columns])
+      c.connections = [];
+
+      for (let p = 0; p < c.parentList.length; p++) {
+        const parentLane = columns.findIndex(col => col.hashCommit === c.parentList[p].hash);
+        if (parentLane !== -1 && parentLane !== colIdx) {
+          c.connections.push({ fromLane: colIdx, toLane: parentLane, fromHash: c.hash, toHash: c.parentList[p].hash });
+        }
+      }
+
+      c.hasParentInLane = !!columns[colIdx] && c.parentList.some(p => p.hash === columns[colIdx]?.hashCommit);
+      if (c.hasParentInLane) {
+        const parentInLane = c.parentList.find(p => p.hash === columns[colIdx]?.hashCommit);
+        c.lane.forEach(entry => {
+          if (entry.type === "commit" && entry.lane === colIdx) {
+            entry.sourceCommit = c;
+            entry.destCommit = parentInLane;
+          }
+        });
+      }
+ 
+      c.lineConnections = []
+      if (index > 0) {
+        const commitBefore = commitList[index - 1]
+        commitBefore.lane.forEach((lane) => {
+          if (lane.type === "line") {
+            if (lane.destCommit.hash === c.hash) {
+              c.lineConnections.push({ fromLane: colIdx, toLane: lane.lane, fromHash: c.hash, toHash: lane.sourceCommit?.hash });
+              lane.finalLane = true;
+            }
+          }
+        })
+
+      }
+    }
+
+    for (let i = 1; i < commitList.length; i++) {
+      const curr = commitList[i];
+      const prev = commitList[i - 1];
+      curr.diagonalConnections = [];
+      for (const entry of curr.lane) {
+        if (entry.type === "line" && entry.sourceCommit && entry.destCommit) {
+          const prevEntry = prev.lane.find(
+            e => e.type === "line" && e.sourceCommit?.hash === entry.sourceCommit?.hash && e.destCommit?.hash === entry.destCommit?.hash
+          );
+          if (prevEntry && prevEntry.lane !== entry.lane) {
+            prevEntry.finalLane = true
+            curr.diagonalConnections.push({ fromLane: prevEntry.lane, toLane: entry.lane, fromHash: entry.sourceCommit?.hash, toHash: entry.destCommit?.hash });
+          }
+        }
+      }
+    }
     return commitList;
+  }
+
+  function getCommitIndex(hash, commitHashMap) {
+    if (!hash || !commitHashMap) return -1;
+    const commit = commitHashMap[hash];
+    return commit ? commit.index : -1;
+  }
+
+  function extractParentList(commit, commitHashMap) {
+    if (!commit.parent) return [];
+    return commit.parent.split(" ").filter(Boolean).map(h => commitHashMap[h]).filter(Boolean);
+  }
+
+  function getCommitDistance(hashA, hashB, commitList) {
+    const a = commitList.find(c => c.hash.startsWith(hashA));
+    const b = commitList.find(c => c.hash.startsWith(hashB));
+    if (!a || !b) return -1;
+    return Math.abs(b.index - a.index);
   }
 
   const handleCommitClick = async (commit, event) => {
     if (!window.api) return;
     try {
-      const files = await window.api.getCommitFiles(repositoryDirectory, commit.commit);
+      const files = await window.api.getCommitFiles(repositoryDirectory, commit.hash);
       setSelectedCommit(commit);
       setCommitFiles(files || []);
       setMenuAnchor({ left: event.clientX, top: event.clientY });
@@ -261,25 +271,13 @@ export default function Repository({ repositoryDirectory }) {
     setMenuAnchor(null);
     if (!window.api) return;
     try {
-      const diff = await window.api.getCommitFileDiff(repositoryDirectory, selectedCommit.commit, file.path);
+      const diff = await window.api.getCommitFileDiff(repositoryDirectory, selectedCommit.hash, file.path);
       if (diff && diff.trim()) {
-        setCommitFileDiff({ fileName: `${file.path} (${selectedCommit.commit})`, diffText: diff });
+        setCommitFileDiff({ fileName: `${file.path} (${selectedCommit.hash})`, diffText: diff });
       }
     } catch (e) {
       // silently ignore
     }
-  };
-
-  const handleChildClick = (childIndex) => {
-    setMenuAnchor(null);
-    setHighlightIndex(childIndex);
-    setTimeout(() => setHighlightIndex(null), 3000);
-  };
-
-  const handleParentClick = (parentIndex) => {
-    setMenuAnchor(null);
-    setHighlightIndex(parentIndex);
-    setTimeout(() => setHighlightIndex(null), 3000);
   };
 
   const handleCheckout = async (commitHash) => {
@@ -337,42 +335,12 @@ export default function Repository({ repositoryDirectory }) {
     }
   };
 
-  const getChildCommits = () => {
-    if (!selectedCommit) return [];
-    const children = [];
-    if (selectedCommit.sons?.length) {
-      selectedCommit.sons.forEach(s => children.push({ ...s, childIndex: s.index }));
-    }
-    if (selectedCommit.sonsMerge?.length) {
-      selectedCommit.sonsMerge.forEach(s => {
-        if (!children.some(c => c.commit === s.commit)) {
-          children.push({ ...s, childIndex: s.index });
-        }
-      });
-    }
-    return children;
-  };
-
-  const getParentCommits = () => {
-    if (!selectedCommit || !commitList.length) return [];
-    const result = [];
-    if (selectedCommit.dad?.parentIndex != null) {
-      const parent = commitList[selectedCommit.dad.parentIndex];
-      if (parent) result.push({ ...parent, parentIndex: selectedCommit.dad.parentIndex });
-    }
-    if (selectedCommit.merge?.parentIndex != null) {
-      const parent = commitList[selectedCommit.merge.parentIndex];
-      if (parent && parent.commit !== result[0]?.commit) result.push({ ...parent, parentIndex: selectedCommit.merge.parentIndex });
-    }
-    return result;
-  };
-
   const STATUS_COLORS = {
     M: "#e6a817", A: "#28a745", D: "#d73a49", R: "#6f42c1",
   };
 
   return (
-    <Box sx={{ p: 2, height: "100%", display: "flex", flexDirection: "column", overflow: "hidden" }}>
+    <Box sx={{ p: 2, height: "100%", display: "flex", flexDirection: "column", overflow: "hidden" }} id="repository">
       <Box sx={{ mb: 2, borderBottom: "1px solid", borderColor: "divider", pb: 1.5 }}>
         <Typography variant="h6" sx={{ fontWeight: 400, letterSpacing: "-0.02em", color: "text.primary", lineHeight: 1.3 }}>
           {repositoryDirectory.split(/[/\\]/).pop()}
@@ -408,16 +376,6 @@ export default function Repository({ repositoryDirectory }) {
               onChange={e => setCommitLimit(Number(e.target.value))}
               sx={{ width: 100 }}
             />
-            <ToggleButtonGroup
-              size="small"
-              value={connectionStyle}
-              exclusive
-              onChange={(e, v) => v && setConnectionStyle(v)}
-            >
-              {["bezier", "angular", "straight", "step", "teardrop", "rounded", "elbow"].map(mode => (
-                <ToggleButton key={mode} value={mode}>{mode}</ToggleButton>
-              ))}
-            </ToggleButtonGroup>
           </Box>
 
           {showSearch && (
@@ -427,7 +385,7 @@ export default function Repository({ repositoryDirectory }) {
           )}
 
           <Box sx={{ flex: 1, minHeight: 0 }}>
-            <CommitTable commitList={filteredCommitList} connectionStyle={connectionStyle} onCommitClick={handleCommitClick} highlightIndex={highlightIndex} onCherryPick={handleCherryPick} onCheckout={handleCheckout} onRevert={handleRevert} onReset={handleReset} dateFormat={dateFormat} />
+            <CommitTable commitList={filteredCommitList} onCommitClick={handleCommitClick} highlightIndex={highlightIndex} onCherryPick={handleCherryPick} onCheckout={handleCheckout} onRevert={handleRevert} onReset={handleReset} dateFormat={dateFormat} />
           </Box>
         </>
       )}
@@ -468,7 +426,7 @@ export default function Repository({ repositoryDirectory }) {
         {selectedCommit && (
           <Box sx={{ px: 2, py: 1.5, borderBottom: 1, borderColor: "divider" }}>
             <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5, fontFamily: "monospace", fontSize: "0.75rem" }}>
-              {selectedCommit.commit}
+              {selectedCommit.hash}
             </Typography>
             <Typography variant="body2" sx={{ mb: 0.5, fontSize: "0.8125rem", wordBreak: "break-word" }}>
               {selectedCommit.message}
@@ -501,48 +459,6 @@ export default function Repository({ repositoryDirectory }) {
                 );
               });
             })()}
-          </Box>
-        )}
-        {getParentCommits().length > 0 && (
-          <Box sx={{ px: 2, py: 1, borderBottom: 1, borderColor: "divider", bgcolor: "action.hover" }}>
-            <Typography variant="caption" sx={{ fontWeight: 600, color: "text.secondary", mb: 0.5, display: "block" }}>
-              Parents
-            </Typography>
-            {getParentCommits().map(p => (
-              <Box
-                key={p.commit}
-                onClick={() => handleParentClick(p.parentIndex)}
-                sx={{ display: "flex", gap: 1, alignItems: "center", cursor: "pointer", py: 0.5, px: 1, borderRadius: 1, "&:hover": { bgcolor: "action.selected" } }}
-              >
-                <Typography variant="caption" sx={{ fontFamily: "monospace", color: "primary.main", fontSize: "0.7rem" }}>
-                  {p.commit}
-                </Typography>
-                <Typography variant="caption" sx={{ color: "text.secondary", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: "0.7rem" }}>
-                  {p.message}
-                </Typography>
-              </Box>
-            ))}
-          </Box>
-        )}
-        {getChildCommits().length > 0 && (
-          <Box sx={{ px: 2, py: 1, borderBottom: 1, borderColor: "divider", bgcolor: "action.hover" }}>
-            <Typography variant="caption" sx={{ fontWeight: 600, color: "text.secondary", mb: 0.5, display: "block" }}>
-              Children
-            </Typography>
-            {getChildCommits().map(c => (
-              <Box
-                key={c.commit}
-                onClick={() => handleChildClick(c.childIndex)}
-                sx={{ display: "flex", gap: 1, alignItems: "center", cursor: "pointer", py: 0.5, px: 1, borderRadius: 1, "&:hover": { bgcolor: "action.selected" } }}
-              >
-                <Typography variant="caption" sx={{ fontFamily: "monospace", color: "primary.main", fontSize: "0.7rem" }}>
-                  {c.commit}
-                </Typography>
-                <Typography variant="caption" sx={{ color: "text.secondary", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: "0.7rem" }}>
-                  {c.message}
-                </Typography>
-              </Box>
-            ))}
           </Box>
         )}
         <Divider />

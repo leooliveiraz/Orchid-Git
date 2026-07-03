@@ -1,15 +1,12 @@
 import React, { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { TextField, InputAdornment, Select, MenuItem, Typography, Box } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
-import { parseLabels } from "./GitGraph.jsx";
 
 const SEARCH_FIELDS = [
   { value: "all", label: "All fields" },
   { value: "hash", label: "Hash" },
   { value: "author", label: "Author" },
   { value: "message", label: "Message" },
-  { value: "branch", label: "Branch" },
-  { value: "tag", label: "Tag" },
   { value: "date", label: "Date" },
 ];
 
@@ -17,28 +14,19 @@ function matchesField(commit, field, query) {
   const q = query.toLowerCase();
   switch (field) {
     case "hash":
-      return commit.commit.toLowerCase().includes(q);
+      return commit.hash.toLowerCase().includes(q);
     case "author":
       return commit.author.toLowerCase().includes(q);
     case "message":
       return commit.message.toLowerCase().includes(q);
-    case "branch": {
-      const labels = parseLabels(commit.decoration);
-      return labels.some(l => (l.type === "branch" || l.type === "head" || l.type === "remote") && l.name.toLowerCase().includes(q));
-    }
-    case "tag": {
-      const labels = parseLabels(commit.decoration);
-      return labels.some(l => l.type === "tag" && l.name.toLowerCase().includes(q));
-    }
     case "date":
       return commit.date.toLowerCase().includes(q);
     default: {
-      if (commit.commit.toLowerCase().includes(q)) return true;
+      if (commit.hash.toLowerCase().includes(q)) return true;
       if (commit.author.toLowerCase().includes(q)) return true;
       if (commit.message.toLowerCase().includes(q)) return true;
       if (commit.date.toLowerCase().includes(q)) return true;
-      const labels = parseLabels(commit.decoration);
-      return labels.some(l => l.name.toLowerCase().includes(q));
+      return false;
     }
   }
 }

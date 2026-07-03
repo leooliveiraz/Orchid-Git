@@ -39,7 +39,6 @@ src/
 │   ├── OrchidContext.jsx # React context (directory, theme, repo data)
 │   └── components/       # UI components
 │       ├── Repository.jsx        # Tab container (Graph/Changes/Metrics/Files)
-│       ├── GitGraph.jsx          # SVG commit graph
 │       ├── CommitTable.jsx       # Commit table
 │       ├── ChangesPanel.jsx      # Stage/unstage, Diff, Blame, Discard
 │       ├── LeftMenu.jsx          # Side menu (branches, tags, stash, recent)

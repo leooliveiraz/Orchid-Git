@@ -1,0 +1,22 @@
+import React from "react";
+import { LANE_WIDTH, ROW_HEIGHT, STROKE_W } from "./constants.js";
+import { LANE_LINE_X } from "./utils.js";
+
+const half = (ROW_HEIGHT / 1.5);
+const height = (ROW_HEIGHT / 1.5);
+
+export default function LaneLineUp({ lane, color, sourceCommit, destCommit }) {
+  const x = LANE_LINE_X(lane);
+
+  return (
+    <rect
+      className="LaneLineUp"
+      x={x}
+      y={half}
+      width={STROKE_W}
+      height={height}
+      fill={color}
+      opacity={1}
+    />
+  );
+}

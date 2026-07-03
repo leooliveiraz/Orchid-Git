@@ -1,29 +1,3 @@
-:root {
-  --commit-line-color: var(--graph-line);
-  --commit-line-height: 24px;
-  --commit-line-half-height: calc(var(--commit-line-height) / 2);
-  --commit-circle-height: 10px;
-  --commit-circle-half-height: calc(var(--commit-circle-height) / 2);
-  --commit-lines: 1;
-  --commit-depth: 0;
-  --commit-depth-width: 14px;
-  --commit-line-depth-width: 14px;
-  --max-commit-depth: 5;
-  --adjustment: 0px;
-  --adjustment-vertical: 0px;
-}
-
-.table-collumn-graph {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  justify-content: flex-start;
-  height: var(--commit-line-height);
-  min-width: 80px;
-  background-color: var(--graph-bg);
-  position: relative;
-}
-
 .dv-diff {
   font-size: 0.8125rem;
   font-family: "Cascadia Code", "Fira Code", "Consolas", monospace;
