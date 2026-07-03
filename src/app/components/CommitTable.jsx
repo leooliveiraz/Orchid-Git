@@ -230,7 +230,7 @@ export default function CommitTable({ commitList, onCommitClick, highlightIndex,
     <>
       <TableContainer ref={containerRef} component={Paper} variant="outlined" sx={{ height: "100%", overflow: "auto" }}>
         <Box sx={{ minWidth: 650 }}>
-          <Box sx={{ display: "flex", position: "sticky", top: 0, zIndex: 100, bgcolor: "var(--bg-table-alt)", borderBottom: "1px solid var(--border-color)" }}>
+          <Box sx={{ display: "flex", position: "sticky", top: 0, zIndex: 9999, bgcolor: "var(--bg-table-alt)", borderBottom: "1px solid var(--border-color)" }}>
             <Box sx={{ width: 40, flexShrink: 0, textAlign: "center", fontWeight: 600, color: "text.secondary", fontSize: "0.75rem", py: 1 }}>#</Box>
             <Box sx={{ width: graphWidth, flexShrink: 0, fontWeight: 600, fontSize: "0.75rem", color: "text.secondary", py: 1, position: "relative", userSelect: "none" }}>
               Graph
