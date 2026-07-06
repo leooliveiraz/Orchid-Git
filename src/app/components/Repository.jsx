@@ -7,6 +7,8 @@ import MetricsPanel from "./MetricsPanel.jsx";
 import FileExplorer from "./FileExplorer.jsx";
 import SuccessSnackbar from "./SuccessSnackbar.jsx";
 import CommitSearch from "./CommitSearch.jsx";
+import CloudIcon from "@mui/icons-material/Cloud";
+import { LANE_COLORS } from "./graph/constants.js";
 import {
   Typography, Box, Tabs, Tab, FormControlLabel, Checkbox,
   TextField, Paper,
@@ -456,24 +458,42 @@ export default function Repository({ repositoryDirectory }) {
         {selectedCommit?.decoration && (
           <Box sx={{ px: 2, py: 1, borderBottom: 1, borderColor: "divider", display: "flex", gap: 0.5, flexWrap: "wrap" }}>
             {(() => {
-              const parts = selectedCommit.decoration.split(", ");
-              return parts.map((part, i) => {
-                const t = part.trim();
-                if (!t || t === "HEAD") return null;
-                const isHead = t.startsWith("HEAD -> ");
-                const isTag = t.startsWith("tag: ");
-                const isRemote = t.startsWith("origin/");
-                const name = isHead ? t.slice(8) : isTag ? t.slice(5) : t;
-                const chipColor = isHead ? "#e6a817" : isTag ? "#28a745" : isRemote ? "#6a737d" : "#1976d2";
-                return (
-                  <Chip
-                    key={i}
-                    label={name}
-                    size="small"
-                    sx={{ fontSize: "0.65rem", height: 20, color: "#fff", fontWeight: isHead ? 700 : 400, backgroundColor: chipColor }}
-                  />
-                );
+              const parts = selectedCommit.decoration.split(", ").map(p => p.trim()).filter(Boolean);
+              const locals = new Set();
+              const originals = [];
+              const tags = [];
+              let headName = null;
+              parts.forEach(p => {
+                if (p === "HEAD") return;
+                if (p.startsWith("HEAD -> ")) { headName = p.slice(8); return; }
+                if (p.startsWith("tag: ")) { tags.push(p.slice(5)); return; }
+                if (p.startsWith("origin/")) { originals.push(p.slice(7)); return; }
+                locals.add(p);
               });
+              const commitColor = LANE_COLORS[selectedCommit.laneIndex % LANE_COLORS.length];
+              const chips = [];
+              if (headName) {
+                chips.push({ key: "head", label: headName, color: "#e6a817", weight: 700, icon: null });
+              }
+              locals.forEach(name => {
+                if (originals.includes(name)) return;
+                chips.push({ key: `loc-${name}`, label: name, color: commitColor, weight: 400, icon: null });
+              });
+              originals.forEach(name => {
+                chips.push({ key: `org-${name}`, label: name, color: commitColor, weight: 400, icon: <CloudIcon sx={{ fontSize: 14 }} htmlColor="#fff" /> });
+              });
+              tags.forEach(name => {
+                chips.push({ key: `tag-${name}`, label: name, color: "#28a745", weight: 400, icon: null });
+              });
+              return chips.map(chip => (
+                <Chip
+                  key={chip.key}
+                  label={chip.label}
+                  icon={chip.icon}
+                  size="small"
+                  sx={{ fontSize: "0.65rem", height: 20, color: "#fff", fontWeight: chip.weight, backgroundColor: chip.color }}
+                />
+              ));
             })()}
           </Box>
         )}

@@ -8,6 +8,7 @@ import ContentPasteIcon from "@mui/icons-material/ContentPaste";
 import CheckIcon from "@mui/icons-material/Check";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import ReplayIcon from "@mui/icons-material/Replay";
+import CloudIcon from "@mui/icons-material/Cloud";
 import CommitGraph from "./graph/CommitGraph.jsx";
 import { LANE_COLORS } from "./graph/constants.js";
 
@@ -299,24 +300,42 @@ export default function CommitTable({ commitList, onCommitClick, highlightIndex,
                     </Box>
                     <Box sx={{ flex: 2, minWidth: 120, fontSize: "0.75rem", overflow: "hidden", textWrap: "nowrap" }}>
                       {commit.decoration ? (() => {
-                        const parts = commit.decoration.split(", ");
-                        return parts.map((part, i) => {
-                          const t = part.trim();
-                          if (!t || t === "HEAD") return null;
-                          const isHead = t.startsWith("HEAD -> ");
-                          const isTag = t.startsWith("tag: ");
-                          const isRemote = t.startsWith("origin/");
-                          const name = isHead ? t.slice(8) : isTag ? t.slice(5) : t;
-                          const chipColor = isHead ? "#e6a817" : isTag ? "#28a745" : isRemote ? "#6a737d" : "#1976d2";
-                          return (
-                            <Chip
-                              key={i}
-                              label={name}
-                              size="small"
-                              sx={{ fontSize: "0.65rem", height: 20, m: 0.25, color: "#fff", fontWeight: isHead ? 700 : 400, backgroundColor: chipColor }}
-                            />
-                          );
+                        const parts = commit.decoration.split(", ").map(p => p.trim()).filter(Boolean);
+                        const locals = new Set();
+                        const originals = [];
+                        const tags = [];
+                        let headName = null;
+                        parts.forEach(p => {
+                          if (p === "HEAD") return;
+                          if (p.startsWith("HEAD -> ")) { headName = p.slice(8); return; }
+                          if (p.startsWith("tag: ")) { tags.push(p.slice(5)); return; }
+                          if (p.startsWith("origin/")) { originals.push(p.slice(7)); return; }
+                          locals.add(p);
                         });
+                        const chips = [];
+                        if (headName) {
+                          chips.push({ key: "head", label: headName, color: "#e6a817", weight: 700, icon: null });
+                        }
+                        const commitColor = commitColorHashMap[commit.hash];
+                        locals.forEach(name => {
+                          if (originals.includes(name)) return;
+                          chips.push({ key: `loc-${name}`, label: name, color: commitColor, weight: 400, icon: null });
+                        });
+                        originals.forEach(name => {
+                          chips.push({ key: `org-${name}`, label: name, color: commitColor, weight: 400, icon: <CloudIcon sx={{ fontSize: 14 }} style={{color:"#fff"}}/> });
+                        });
+                        tags.forEach(name => {
+                          chips.push({ key: `tag-${name}`, label: name, color: "#28a745", weight: 400, icon: null });
+                        });
+                        return chips.map(chip => (
+                          <Chip
+                            key={chip.key}
+                            label={chip.label}
+                            icon={chip.icon}
+                            size="small"
+                            sx={{ fontSize: "0.65rem", height: 20, m: 0.25, color: "#fff", fontWeight: chip.weight, backgroundColor: chip.color }}
+                          />
+                        ));
                       })() : ""}
                     </Box>
                     <Box sx={{ flex: 3, minWidth: 150, fontSize: "0.8125rem", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
