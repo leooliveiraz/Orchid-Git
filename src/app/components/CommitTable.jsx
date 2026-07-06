@@ -230,7 +230,7 @@ export default function CommitTable({ commitList, onCommitClick, highlightIndex,
     <>
       <TableContainer ref={containerRef} component={Paper} variant="outlined" sx={{ height: "100%", overflow: "auto" }}>
         <Box sx={{ minWidth: 650 }}>
-          <Box sx={{ display: "flex", position: "sticky", top: 0, zIndex: 9999, bgcolor: "var(--bg-table-alt)", borderBottom: "1px solid var(--border-color)", columnGap: 1 }}>
+          <Box sx={{ display: "flex", position: "sticky", top: 0, zIndex: 1250, bgcolor: "var(--bg-table-alt)", borderBottom: "1px solid var(--border-color)", columnGap: 1 }}>
             <Box sx={{ width: 40, flexShrink: 0, textAlign: "center", fontWeight: 600, color: "text.secondary", fontSize: "0.75rem", py: 1 }}>#</Box>
             <Box sx={{ width: graphWidth, flexShrink: 0, fontWeight: 600, fontSize: "0.75rem", color: "text.secondary", py: 1, position: "relative", userSelect: "none", clipPath: "inset(-100vh 0)" }}>
               Graph
@@ -246,7 +246,7 @@ export default function CommitTable({ commitList, onCommitClick, highlightIndex,
                 }}
               />
             </Box>
-            <Box sx={{ flex: 1, minWidth: 80, fontWeight: 600, fontSize: "0.75rem", color: "text.secondary", py: 1, whiteSpace: "nowrap" }}>Hash</Box>
+            <Box sx={{ flex: 1, minWidth: 80, maxWidth: 90, fontWeight: 600, fontSize: "0.75rem", color: "text.secondary", py: 1, whiteSpace: "nowrap" }}>Hash</Box>
             <Box sx={{ flex: 2, minWidth: 120, fontWeight: 600, fontSize: "0.75rem", color: "text.secondary", py: 1 }}>Decoration</Box>
             <Box sx={{ flex: 3, minWidth: 150, fontWeight: 600, fontSize: "0.75rem", color: "text.secondary", py: 1 }}>Message</Box>
             <Box sx={{ flex: 1, minWidth: 80, fontWeight: 600, fontSize: "0.75rem", color: "text.secondary", py: 1, whiteSpace: "nowrap" }}>Author</Box>
@@ -269,12 +269,12 @@ export default function CommitTable({ commitList, onCommitClick, highlightIndex,
                     key={commit.hash}
                     onClick={(e) => handleRowClick(e, commit)}
                     onContextMenu={(e) => handleContextMenu(e, commit)}
-                      sx={{
-                        position: "absolute", top: index * ROW_HEIGHT, left: 0, right: 0, height: ROW_HEIGHT,
-                        display: "flex", alignItems: "center", cursor: "pointer",
-                        borderBottom: "1px solid var(--border-color)",
-                        zIndex: commitList.length - index,
-                        columnGap: 1,
+                    sx={{
+                      position: "absolute", top: index * ROW_HEIGHT, left: 0, right: 0, height: ROW_HEIGHT,
+                      display: "flex", alignItems: "center", cursor: "pointer",
+                      borderBottom: "1px solid var(--border-color)",
+                        zIndex: Math.min(1200, commitList.length - index),
+                      columnGap: 1,
                       "&:hover": { bgcolor: "color-mix(in srgb, var(--bg-table-alt) 25%, transparent)" },
                       ...(isSelected ? { bgcolor: "rgba(25, 118, 210, 0.12)", "&:hover": { bgcolor: "rgba(25, 118, 210, 0.18)" } } : {}),
                       ...(isHighlighted ? {
@@ -294,7 +294,7 @@ export default function CommitTable({ commitList, onCommitClick, highlightIndex,
                     <Box sx={{ width: graphWidth, flexShrink: 0, p: 0, display: "flex", alignItems: "center", pointerEvents: "none", clipPath: "inset(-100vh 0)" }}>
                       <CommitGraph commit={commit} commitColorHashMap={commitColorHashMap} />
                     </Box>
-                    <Box sx={{ flex: 1, minWidth: 80, fontFamily: "monospace", fontSize: "0.75rem", color: "text.secondary", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                    <Box sx={{ flex: 1, minWidth: 80, maxWidth: 90, fontFamily: "monospace", fontSize: "0.75rem", color: "text.secondary", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                       {commit.hash}
                     </Box>
                     <Box sx={{ flex: 2, minWidth: 120, fontSize: "0.75rem", overflow: "hidden", textWrap: "nowrap" }}>
