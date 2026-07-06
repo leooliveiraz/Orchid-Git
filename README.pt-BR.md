@@ -4,17 +4,23 @@ Uma interface gráfica para Git construída com Electron, React, MUI 6 e Node.js
 
 ## Funcionalidades
 
-- **Grafo de commits** — Visualização SVG com 7 estilos de conexão, ramos coloridos, labels de branch/tag
-- **Gerenciamento de branches** — Criar, deletar, renomear, trocar, merge, rebase interativo, cherry-pick
-- **Stage/Unstage/Commit** — Interface completa para gerenciar mudanças, incluindo stage/unstage por arquivo e por hunk
-- **Push/Pull/Fetch** — Sincronização com repositórios remotos com configuração automática de upstream
-- **Stash** — Push, pop, drop com suporte a mensagem
-- **Tags** — Criar e deletar tags anotadas e leves
-- **Diff e Blame** — Visualização de diff unified/split, blame com coloração por commit
-- **File Explorer** — Navegação em árvore/plana/compacta com busca/filtro
-- **Conflict Resolver** — Resolução de conflitos bloco a bloco (manter nosso/deles/ambos)
-- **Métricas** — Gráficos de commits por dia/autor, top committers, agrupamento por dia/semana/mês/ano
+- **Grafo de commits** — Visualização SVG com 7 estilos de conexão, 12 ramos coloridos, chips de branch/tag
+- **Gerenciamento de branches** — Criar, deletar, trocar, merge (com seleção de estratégia), rebase interativo (pick/reword/squash/fixup/drop com reordenação por arrasto), cherry-pick
+- **Stage/Unstage/Commit** — Interface completa para gerenciar mudanças, stage/unstage por arquivo e por hunk, amend
+- **Push/Pull/Fetch** — Sincronização remota com configuração automática de upstream, force-with-lease, auto-fetch a cada 5 min
+- **Stash** — Push, pop, drop, visualizar alterações, com suporte a mensagem personalizada
+- **Tags** — Criar e deletar tags leves e anotadas
+- **Diff e Blame** — Diff unified/split com rolagem sincronizada, blame com coloração por autor do commit
+- **File Explorer** — Navegação em árvore/plana/compacta com busca/filtro, visualizar/editar com diff ao vivo
+- **Conflict Resolver** — Resolvedor interativo de 3 painéis (nosso/deles/ambos por bloco), resolução com um clique, continuar/abortar
+- **Métricas** — Gráficos de commits ao longo do tempo, distribuição por autor, top committers, top arquivos, histograma por hora, linhas adicionadas/removidas
+- **Pull Request** — Detecção automática de GitHub, GitLab, Bitbucket, Azure DevOps, Gitea e abertura de PR no navegador
+- **File History** — Diálogo de histórico de arquivo por commit
+- **Discard** — Descartar alterações por arquivo, hunks ou tudo
+- **Reset** — Reset soft, mixed ou hard para qualquer commit
+- **Gerenciamento .gitignore** — Adicionar/remover entradas via clique direito
 - **Tema escuro/claro** — Alternância com persistência em localStorage
+- **Atalhos de teclado** — F5 (atualizar), F12 (dev tools), Ctrl+F (buscar commits)
 - **Múltiplas abas** — Graph, Changes, Metrics, Files
 
 ## Tecnologias

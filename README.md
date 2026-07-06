@@ -4,17 +4,23 @@ A desktop Git GUI built with Electron, React, MUI 6, and Node.js.
 
 ## Features
 
-- **Commit graph** — SVG visualization with 7 connection styles, colored lanes, branch/tag labels
-- **Branch management** — Create, delete, rename, switch, merge, interactive rebase, cherry-pick
-- **Stage/Unstage/Commit** — Full UI for managing changes, including per-file and per-hunk staging
-- **Push/Pull/Fetch** — Remote sync with automatic upstream configuration
-- **Stash** — Push, pop, drop with message support
-- **Tags** — Create and delete annotated and lightweight tags
-- **Diff & Blame** — Unified/split diff view, blame with per-commit coloring
-- **File Explorer** — Tree/flat/compact navigation with search/filter
-- **Conflict Resolver** — Block-level conflict resolution (keep ours/theirs/both)
-- **Metrics** — Charts for commits per day/author, top committers, grouped by day/week/month/year
+- **Commit graph** — SVG visualization with 7 connection styles, 12 colored lanes, branch/tag chips
+- **Branch management** — Create, delete, switch, merge (with strategy selection), interactive rebase (pick/reword/squash/fixup/drop with drag reorder), cherry-pick
+- **Stage/Unstage/Commit** — Full UI for managing changes, per-file and per-hunk staging, amend
+- **Push/Pull/Fetch** — Remote sync with auto-upstream config, force-with-lease, auto-fetch every 5 min
+- **Stash** — Push, pop, drop, view changes, with custom message support
+- **Tags** — Create and delete lightweight and annotated tags
+- **Diff & Blame** — Unified/split diff with synchronized scrolling, blame with per-commit author coloring
+- **File Explorer** — Tree/flat/compact navigation with search/filter, view/edit with live diff
+- **Conflict Resolver** — Interactive 3-pane resolver (ours/theirs/both per block), one-click file resolution, continue/abort
+- **Metrics** — Charts for commits over time, author distribution, top committers, top files, hourly histogram, lines added/deleted
+- **Pull Request** — Auto-detect GitHub, GitLab, Bitbucket, Azure DevOps, Gitea and open PR in browser
+- **File History** — Per-commit file history dialog
+- **Discard** — Per-file, hunks-only, or discard all changes
+- **Reset** — Soft, mixed, or hard reset to any commit
+- **.gitignore management** — Add/remove entries via right-click
 - **Dark/Light theme** — Toggle persisted in localStorage
+- **Keyboard shortcuts** — F5 (refresh), F12 (dev tools), Ctrl+F (search commits)
 - **Multiple tabs** — Graph, Changes, Metrics, Files
 
 ## Built with
