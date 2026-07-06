@@ -100,6 +100,39 @@ export default function CommitTable({ commitList, onCommitClick, highlightIndex,
     };
   }, [graphResizing]);
 
+  const COL_DEFAULTS = { decoration: 160, message: 200, author: 100, date: 120 };
+  const [colWidths, setColWidths] = useState(() => {
+    const saved = localStorage.getItem("orchid-col-widths");
+    return saved ? { ...COL_DEFAULTS, ...JSON.parse(saved) } : COL_DEFAULTS;
+  });
+  const [colResizing, setColResizing] = useState(null);
+  const colResizeRef = useRef(null);
+
+  useEffect(() => {
+    localStorage.setItem("orchid-col-widths", JSON.stringify(colWidths));
+  }, [colWidths]);
+
+  const handleColResizeStart = useCallback((e, col) => {
+    e.preventDefault();
+    colResizeRef.current = { col, startX: e.clientX, startWidth: colWidths[col] };
+    setColResizing(col);
+  }, [colWidths]);
+
+  useEffect(() => {
+    if (!colResizing) return;
+    const handleMouseMove = (e) => {
+      const { col, startX, startWidth } = colResizeRef.current;
+      setColWidths(prev => ({ ...prev, [col]: Math.max(60, Math.min(600, startWidth + e.clientX - startX)) }));
+    };
+    const handleMouseUp = () => setColResizing(null);
+    document.addEventListener("mousemove", handleMouseMove);
+    document.addEventListener("mouseup", handleMouseUp);
+    return () => {
+      document.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, [colResizing]);
+
   useEffect(() => {
     setSelectedCommits(new Set());
   }, [commitList]);
@@ -248,10 +281,22 @@ export default function CommitTable({ commitList, onCommitClick, highlightIndex,
               />
             </Box>
             <Box sx={{ flex: 1, minWidth: 80, maxWidth: 90, fontWeight: 600, fontSize: "0.75rem", color: "text.secondary", py: 1, whiteSpace: "nowrap" }}>Hash</Box>
-            <Box sx={{ flex: 2, minWidth: 120, fontWeight: 600, fontSize: "0.75rem", color: "text.secondary", py: 1 }}>Decoration</Box>
-            <Box sx={{ flex: 3, minWidth: 150, fontWeight: 600, fontSize: "0.75rem", color: "text.secondary", py: 1 }}>Message</Box>
-            <Box sx={{ flex: 1, minWidth: 80, fontWeight: 600, fontSize: "0.75rem", color: "text.secondary", py: 1, whiteSpace: "nowrap" }}>Author</Box>
-            <Box sx={{ flex: 1, minWidth: 80, fontWeight: 600, fontSize: "0.75rem", color: "text.secondary", py: 1 }}>Date</Box>
+            <Box sx={{ width: colWidths.decoration, flexShrink: 0, fontWeight: 600, fontSize: "0.75rem", color: "text.secondary", py: 1, position: "relative", userSelect: "none" }}>
+              Decoration
+              <Box onMouseDown={(e) => handleColResizeStart(e, "decoration")} sx={{ position: "absolute", right: 0, top: 0, bottom: 0, width: 5, cursor: "col-resize", zIndex: 10, bgcolor: colResizing === "decoration" ? "primary.main" : "transparent", opacity: colResizing === "decoration" ? 1 : 0, "&:hover": { opacity: 1, bgcolor: "primary.main" }, transition: "opacity 0.15s" }} />
+            </Box>
+            <Box sx={{ width: colWidths.message, flexShrink: 0, fontWeight: 600, fontSize: "0.75rem", color: "text.secondary", py: 1, position: "relative", userSelect: "none" }}>
+              Message
+              <Box onMouseDown={(e) => handleColResizeStart(e, "message")} sx={{ position: "absolute", right: 0, top: 0, bottom: 0, width: 5, cursor: "col-resize", zIndex: 10, bgcolor: colResizing === "message" ? "primary.main" : "transparent", opacity: colResizing === "message" ? 1 : 0, "&:hover": { opacity: 1, bgcolor: "primary.main" }, transition: "opacity 0.15s" }} />
+            </Box>
+            <Box sx={{ width: colWidths.author, flexShrink: 0, fontWeight: 600, fontSize: "0.75rem", color: "text.secondary", py: 1, position: "relative", userSelect: "none", whiteSpace: "nowrap" }}>
+              Author
+              <Box onMouseDown={(e) => handleColResizeStart(e, "author")} sx={{ position: "absolute", right: 0, top: 0, bottom: 0, width: 5, cursor: "col-resize", zIndex: 10, bgcolor: colResizing === "author" ? "primary.main" : "transparent", opacity: colResizing === "author" ? 1 : 0, "&:hover": { opacity: 1, bgcolor: "primary.main" }, transition: "opacity 0.15s" }} />
+            </Box>
+            <Box sx={{ width: colWidths.date, flexShrink: 0, fontWeight: 600, fontSize: "0.75rem", color: "text.secondary", py: 1, position: "relative", userSelect: "none" }}>
+              Date
+              <Box onMouseDown={(e) => handleColResizeStart(e, "date")} sx={{ position: "absolute", right: 0, top: 0, bottom: 0, width: 5, cursor: "col-resize", zIndex: 10, bgcolor: colResizing === "date" ? "primary.main" : "transparent", opacity: colResizing === "date" ? 1 : 0, "&:hover": { opacity: 1, bgcolor: "primary.main" }, transition: "opacity 0.15s" }} />
+            </Box>
           </Box>
 
           {commitList.length === 0 ? (
@@ -298,7 +343,7 @@ export default function CommitTable({ commitList, onCommitClick, highlightIndex,
                     <Box sx={{ flex: 1, minWidth: 80, maxWidth: 90, fontFamily: "monospace", fontSize: "0.75rem", color: "text.secondary", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                       {commit.hash}
                     </Box>
-                    <Box sx={{ flex: 2, minWidth: 120, fontSize: "0.75rem", overflow: "hidden", textWrap: "nowrap" }}>
+                    <Box sx={{ width: colWidths.decoration, flexShrink: 0, fontSize: "0.75rem", overflow: "hidden", textWrap: "nowrap" }}>
                       {commit.decoration ? (() => {
                         const parts = commit.decoration.split(", ").map(p => p.trim()).filter(Boolean);
                         const locals = new Set();
@@ -338,13 +383,13 @@ export default function CommitTable({ commitList, onCommitClick, highlightIndex,
                         ));
                       })() : ""}
                     </Box>
-                    <Box sx={{ flex: 3, minWidth: 150, fontSize: "0.8125rem", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    <Box sx={{ width: colWidths.message, flexShrink: 0, fontSize: "0.8125rem", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                       {commit.message}
                     </Box>
-                    <Box sx={{ flex: 1, minWidth: 80, fontSize: "0.75rem", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                    <Box sx={{ width: colWidths.author, flexShrink: 0, fontSize: "0.75rem", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                       {commit.author}
                     </Box>
-                    <Box sx={{ flex: 1, minWidth: 80, fontSize: "0.75rem", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                    <Box sx={{ width: colWidths.date, flexShrink: 0, fontSize: "0.75rem", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                       {formatDate(commit.date, dateFormat)}
                     </Box>
                   </Box>
