@@ -232,7 +232,7 @@ export default function CommitTable({ commitList, onCommitClick, highlightIndex,
         <Box sx={{ minWidth: 650 }}>
           <Box sx={{ display: "flex", position: "sticky", top: 0, zIndex: 9999, bgcolor: "var(--bg-table-alt)", borderBottom: "1px solid var(--border-color)" }}>
             <Box sx={{ width: 40, flexShrink: 0, textAlign: "center", fontWeight: 600, color: "text.secondary", fontSize: "0.75rem", py: 1 }}>#</Box>
-            <Box sx={{ width: graphWidth, flexShrink: 0, fontWeight: 600, fontSize: "0.75rem", color: "text.secondary", py: 1, position: "relative", userSelect: "none" }}>
+            <Box sx={{ width: graphWidth, flexShrink: 0, fontWeight: 600, fontSize: "0.75rem", color: "text.secondary", py: 1, position: "relative", userSelect: "none", clipPath: "inset(-100vh 0)" }}>
               Graph
               <Box
                 onMouseDown={handleGraphResizeStart}
@@ -290,13 +290,13 @@ export default function CommitTable({ commitList, onCommitClick, highlightIndex,
                     <Box sx={{ width: 40, flexShrink: 0, textAlign: "center", fontWeight: 400, fontSize: "0.75rem", color: "text.secondary" }}>
                       {commit.index}
                     </Box>
-                    <Box sx={{ width: graphWidth, flexShrink: 0, p: 0, display: "flex", alignItems: "center", pointerEvents: "none" }}>
+                    <Box sx={{ width: graphWidth, flexShrink: 0, p: 0, display: "flex", alignItems: "center", pointerEvents: "none", clipPath: "inset(-100vh 0)" }}>
                       <CommitGraph commit={commit} commitColorHashMap={commitColorHashMap} />
                     </Box>
                     <Box sx={{ flex: 1, minWidth: 80, fontFamily: "monospace", fontSize: "0.75rem", color: "text.secondary" }}>
                       {commit.hash}
                     </Box>
-                    <Box sx={{ flex: 2, minWidth: 120, fontSize: "0.75rem" }}>
+                    <Box sx={{ flex: 2, minWidth: 120, fontSize: "0.75rem", overflow: "hidden", textWrap: "nowrap" }}>
                       {commit.decoration ? (() => {
                         const parts = commit.decoration.split(", ");
                         return parts.map((part, i) => {
