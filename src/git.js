@@ -5,7 +5,7 @@ function parseStatusOutput(output) {
     const status = line.substring(0, 2);
     const x = line[0];
     const y = line[1];
-    let path = line.substring(3).trim();
+    let path = line.substring(3).trim().replace(/\/$/, "");
     const conflicted = x === "U" || y === "U" || (x === "A" && y === "A") || (x === "D" && y === "D");
 
     if (conflicted) {

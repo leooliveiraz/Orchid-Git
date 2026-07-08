@@ -183,7 +183,11 @@ ipcMain.handle("get-stash-list", (event, directory) => {
 });
 
 ipcMain.handle("get-current-branch", (event, directory) => {
-  return runGit(["rev-parse", "--abbrev-ref", "HEAD"], directory).trim();
+  try {
+    return runGit(["rev-parse", "--abbrev-ref", "HEAD"], directory).trim();
+  } catch {
+    return "";
+  }
 });
 
 ipcMain.handle("get-ahead-behind", (event, directory) => {
@@ -559,7 +563,7 @@ ipcMain.handle("set-origin-url", (event, directory, url) => {
 
 ipcMain.handle("get-status", (event, directory) => {
   const { parseStatusOutput } = require("./git");
-  const output = runGit(["status", "--porcelain"], directory);
+  const output = runGit(["status", "--porcelain", "-u"], directory);
   return parseStatusOutput(output);
 });
 
@@ -878,7 +882,11 @@ ipcMain.handle("stage-file", (event, directory, filePath) => {
 });
 
 ipcMain.handle("unstage-file", (event, directory, filePath) => {
-  return runGit(["reset", "HEAD", "--", filePath], directory);
+  try {
+    return runGit(["reset", "HEAD", "--", filePath], directory);
+  } catch {
+    return runGit(["rm", "--cached", "--", filePath], directory);
+  }
 });
 
 ipcMain.handle("stage-all", (event, directory) => {
