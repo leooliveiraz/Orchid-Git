@@ -71,7 +71,7 @@ export default function FileHistoryDialog({ directory, fileName, onClose }) {
                 <TableRow>
                   <TableCell sx={{ fontWeight: 600, fontSize: "0.7rem", color: "text.secondary", width: 80, fontFamily: "monospace" }}>Hash</TableCell>
                   <TableCell sx={{ fontWeight: 600, fontSize: "0.7rem", color: "text.secondary" }}>Message</TableCell>
-                  <TableCell sx={{ fontWeight: 600, fontSize: "0.7rem", color: "text.secondary", width: 120 }}>Date</TableCell>
+                  <TableCell sx={{ fontWeight: 600, fontSize: "0.7rem", color: "text.secondary", width: 180 }}>Date</TableCell>
                   <TableCell sx={{ fontWeight: 600, fontSize: "0.7rem", color: "text.secondary", width: 140 }}>Author</TableCell>
                   <TableCell sx={{ fontWeight: 600, fontSize: "0.7rem", color: "text.secondary", width: 80 }}>Compare</TableCell>
                 </TableRow>
