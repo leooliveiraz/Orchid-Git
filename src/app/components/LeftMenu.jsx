@@ -63,7 +63,7 @@ function Section({ title, count, children, expanded, onToggle, onAdd, onMerge, o
         {viewMode && onViewModeChange && (
           <Box component="span" onClick={e => e.stopPropagation()} sx={{ ml: 0.5, display: "inline-flex", alignItems: "center" }}>
             <ToggleButtonGroup size="small" value={viewMode} exclusive onChange={(e, v) => v && onViewModeChange(v)}
-              sx={{ "& .MuiToggleButton-root": { border: 0, p: 0.25, lineHeight: 1, fontSize: "0.6rem", minWidth: 28, minHeight: 20, borderRadius: 0.5 } }}
+              sx={{ "& .MuiToggleButton-root": { border: 0, p: 0.25, lineHeight: 1, fontSize: "0.7rem", minWidth: 32, minHeight: 22, borderRadius: 0.5 } }}
             >
               <ToggleButton value="flat">Flat</ToggleButton>
               <ToggleButton value="tree">Tree</ToggleButton>
@@ -96,7 +96,7 @@ function Section({ title, count, children, expanded, onToggle, onAdd, onMerge, o
   );
 }
 
-function Item({ label, active, badge, onDoubleClick, onClick, onDelete, onContextMenu }) {
+function Item({ label, active, badge, onDoubleClick, onClick, onDelete, onContextMenu, sx: sxProp }) {
   return (
     <ListItem
       dense
@@ -114,6 +114,7 @@ function Item({ label, active, badge, onDoubleClick, onClick, onDelete, onContex
         cursor: "pointer", py: 0.25, pr: onDelete ? 6 : 2,
         "&:hover": { bgcolor: "action.hover", borderRadius: 1 },
         ...(active ? { fontWeight: 700 } : {}),
+        ...(sxProp || {}),
       }}
       title={label}
     >
@@ -236,16 +237,22 @@ export default function LeftMenu({ open }) {
 
   const renderTreeItems = useCallback((nodes, depth, leafRenderer, expandedFolders, onToggleFolder) => {
     return Object.entries(nodes)
-      .sort(([a], [b]) => a.localeCompare(b))
+      .sort(([a, valA], [b, valB]) => {
+        const aIsDir = typeof valA !== 'string';
+        const bIsDir = typeof valB !== 'string';
+        if (aIsDir && !bIsDir) return -1;
+        if (!aIsDir && bIsDir) return 1;
+        return a.localeCompare(b);
+      })
       .map(([key, value]) => {
         if (typeof value === 'string') {
-          return leafRenderer(value);
+          return leafRenderer(value, depth);
         }
         const isOpen = expandedFolders.has(key);
         const hasChildren = Object.keys(value).length > 0;
         return (
           <React.Fragment key={key}>
-            <ListItem dense sx={{ pl: 0.5 + depth * 2, cursor: 'pointer', py: 0.25, '&:hover': { bgcolor: 'action.hover', borderRadius: 1 } }} onClick={() => onToggleFolder(key)}>
+            <ListItem dense sx={{ pl: depth > 0 ? 2 + depth * 2 : 1, cursor: 'pointer', py: 0.25, '&:hover': { bgcolor: 'action.hover', borderRadius: 1 } }} onClick={() => onToggleFolder(key)}>
               <ListItemIcon sx={{ minWidth: 18 }}>
                 {hasChildren ? (
                   <ArrowRightIcon sx={{ fontSize: 16, color: 'text.secondary', transform: isOpen ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 0.15s' }} />
@@ -253,7 +260,7 @@ export default function LeftMenu({ open }) {
                   <Box sx={{ width: 16 }} />
                 )}
               </ListItemIcon>
-              <ListItemText primary={key} primaryTypographyProps={{ variant: 'body2', sx: { fontSize: '0.7rem', fontWeight: 600, color: 'text.secondary' } }} />
+              <ListItemText primary={key} primaryTypographyProps={{ variant: 'body2', sx: { fontSize: '0.8rem', fontWeight: 600, color: 'text.secondary' } }} />
             </ListItem>
             {isOpen && <List dense disablePadding>{renderTreeItems(value, depth + 1, leafRenderer, expandedFolders, onToggleFolder)}</List>}
           </React.Fragment>
@@ -725,7 +732,7 @@ export default function LeftMenu({ open }) {
           <>
             <Section title="Branches" count={repoData.branches?.length ?? 0} expanded={expandedSections.branches !== false} onToggle={handleToggle("branches")} onAdd={openNewBranchDialog} onMerge={() => { if (isMerging) { setMessageType("error"); setMessage("Resolva o merge antes de continuar"); return; } if (isReverting) { setMessageType("error"); setMessage("Resolva o revert antes de continuar"); return; } setShowMerge(true); }} filter={filters.branches} onFilterChange={setFilter("branches")} viewMode={branchView} onViewModeChange={setBranchView}>
               {branchView === "tree" ? (
-                renderTreeItems(buildTree(filteredBranches), 0, (b) => {
+                renderTreeItems(buildTree(filteredBranches), 0, (b, d) => {
                   const st = branchStatusMap[b];
                   const badge = st && (st.ahead > 0 || st.behind > 0) ? st : null;
                   return (
@@ -738,6 +745,7 @@ export default function LeftMenu({ open }) {
                       onDoubleClick={() => handleBranchDblClick(b)}
                       onContextMenu={(e) => handleBranchContext(e, b)}
                       onDelete={b !== repoData.currentBranch ? () => confirmDeleteBranch(b) : undefined}
+                      sx={d > 0 ? { pl: 2 + d * 2 } : undefined}
                     />
                   );
                 }, branchExpandedFolders, toggleBranchFolder)
@@ -763,8 +771,8 @@ export default function LeftMenu({ open }) {
 
             <Section title="Remote" count={repoData.remoteBranches?.length ?? 0} expanded={expandedSections.remote === true} onToggle={handleToggle("remote")} filter={filters.remote} onFilterChange={setFilter("remote")} viewMode={remoteView} onViewModeChange={setRemoteView}>
               {remoteView === "tree" ? (
-                renderTreeItems(buildTree(filteredRemote), 0, (b) => (
-                  <Item key={b} label={b.split('/').pop()} onClick={() => handleRemoteBranchClick(b)} onDoubleClick={() => handleRemoteBranchDblClick(b)} onDelete={() => confirmDeleteRemoteBranch(b)} />
+                renderTreeItems(buildTree(filteredRemote), 0, (b, d) => (
+                  <Item key={b} label={b.split('/').pop()} onClick={() => handleRemoteBranchClick(b)} onDoubleClick={() => handleRemoteBranchDblClick(b)} onDelete={() => confirmDeleteRemoteBranch(b)} sx={d > 0 ? { pl: 2 + d * 2 } : undefined} />
                 ), remoteExpandedFolders, toggleRemoteFolder)
               ) : (
                 filteredRemote.map(b => (
