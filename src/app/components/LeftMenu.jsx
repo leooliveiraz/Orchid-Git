@@ -1,16 +1,18 @@
-import React, { useContext, useState, useCallback, useEffect, useMemo } from "react";
+import React, { useContext, useState, useCallback, useEffect, useMemo, useRef } from "react";
 import {
   Drawer, Snackbar, Alert, Accordion, AccordionSummary, AccordionDetails,
   List, ListItem, ListItemIcon, ListItemText,
   Typography, Box, Button, TextField,
   Dialog, DialogTitle, DialogContent, DialogActions,
   FormControlLabel, Checkbox, Menu, MenuItem, Chip, InputAdornment,
+  ToggleButtonGroup, ToggleButton,
 } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import AddIcon from "@mui/icons-material/Add";
 import MergeIcon from "@mui/icons-material/Merge";
 import DeleteIcon from "@mui/icons-material/Delete";
 import SwapVertIcon from "@mui/icons-material/SwapVert";
+import ArrowRightIcon from "@mui/icons-material/ArrowRight";
 import FiberManualRecordIcon from "@mui/icons-material/FiberManualRecord";
 import RadioButtonUncheckedIcon from "@mui/icons-material/RadioButtonUnchecked";
 import SearchIcon from "@mui/icons-material/Search";
@@ -18,7 +20,7 @@ import Tooltip from "@mui/material/Tooltip";
 import { OrchidContext } from "../OrchidContext.jsx";
 import MergeDialog from "./MergeDialog.jsx";
 
-function Section({ title, count, children, expanded, onToggle, onAdd, onMerge, onSort, filter, onFilterChange }) {
+function Section({ title, count, children, expanded, onToggle, onAdd, onMerge, onSort, filter, onFilterChange, viewMode, onViewModeChange }) {
   return (
     <Accordion expanded={expanded} onChange={onToggle} disableGutters>
       <AccordionSummary expandIcon={<ExpandMoreIcon sx={{ fontSize: 16, color: "text.secondary" }} />}>
@@ -58,6 +60,16 @@ function Section({ title, count, children, expanded, onToggle, onAdd, onMerge, o
         }}>
           {count}
         </Box>
+        {viewMode && onViewModeChange && (
+          <Box component="span" onClick={e => e.stopPropagation()} sx={{ ml: 0.5, display: "inline-flex", alignItems: "center" }}>
+            <ToggleButtonGroup size="small" value={viewMode} exclusive onChange={(e, v) => v && onViewModeChange(v)}
+              sx={{ "& .MuiToggleButton-root": { border: 0, p: 0.25, lineHeight: 1, fontSize: "0.6rem", minWidth: 28, minHeight: 20, borderRadius: 0.5 } }}
+            >
+              <ToggleButton value="flat">Flat</ToggleButton>
+              <ToggleButton value="tree">Tree</ToggleButton>
+            </ToggleButtonGroup>
+          </Box>
+        )}
       </AccordionSummary>
       <AccordionDetails sx={{ p: 0 }}>
         {onFilterChange && (
@@ -139,6 +151,26 @@ function Item({ label, active, badge, onDoubleClick, onClick, onDelete, onContex
   );
 }
 
+function buildTree(items) {
+  const tree = {};
+  for (const item of items) {
+    const parts = item.split('/');
+    let current = tree;
+    for (let i = 0; i < parts.length; i++) {
+      const part = parts[i];
+      if (i === parts.length - 1) {
+        current[part] = item;
+      } else {
+        if (!current[part] || typeof current[part] === 'string') {
+          current[part] = {};
+        }
+        current = current[part];
+      }
+    }
+  }
+  return tree;
+}
+
 export default function LeftMenu({ open }) {
   const { directory, repoData, refresh, recentDirs, setDirectory, removeRecentDir, recentSort, setRecentSort, isMerging, isReverting, setScrollToCommitHash, setViewCommit } = useContext(OrchidContext);
   const branchStatusMap = useMemo(() => {
@@ -172,6 +204,90 @@ export default function LeftMenu({ open }) {
       return {};
     }
   });
+
+  const [branchView, setBranchView] = useState(() => localStorage.getItem("orchid-branch-view") || "flat");
+  const [remoteView, setRemoteView] = useState(() => localStorage.getItem("orchid-remote-view") || "flat");
+  const [branchExpandedFolders, setBranchExpandedFolders] = useState(() => {
+    try { return new Set(JSON.parse(localStorage.getItem("orchid-branch-folders-expanded")) || []); }
+    catch { return new Set(); }
+  });
+  const [remoteExpandedFolders, setRemoteExpandedFolders] = useState(() => {
+    try { return new Set(JSON.parse(localStorage.getItem("orchid-remote-folders-expanded")) || []); }
+    catch { return new Set(); }
+  });
+
+  const toggleBranchFolder = useCallback((path) => {
+    setBranchExpandedFolders(prev => {
+      const next = new Set(prev);
+      if (next.has(path)) next.delete(path); else next.add(path);
+      localStorage.setItem("orchid-branch-folders-expanded", JSON.stringify([...next]));
+      return next;
+    });
+  }, []);
+
+  const toggleRemoteFolder = useCallback((path) => {
+    setRemoteExpandedFolders(prev => {
+      const next = new Set(prev);
+      if (next.has(path)) next.delete(path); else next.add(path);
+      localStorage.setItem("orchid-remote-folders-expanded", JSON.stringify([...next]));
+      return next;
+    });
+  }, []);
+
+  const renderTreeItems = useCallback((nodes, depth, leafRenderer, expandedFolders, onToggleFolder) => {
+    return Object.entries(nodes)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([key, value]) => {
+        if (typeof value === 'string') {
+          return leafRenderer(value);
+        }
+        const isOpen = expandedFolders.has(key);
+        const hasChildren = Object.keys(value).length > 0;
+        return (
+          <React.Fragment key={key}>
+            <ListItem dense sx={{ pl: 0.5 + depth * 2, cursor: 'pointer', py: 0.25, '&:hover': { bgcolor: 'action.hover', borderRadius: 1 } }} onClick={() => onToggleFolder(key)}>
+              <ListItemIcon sx={{ minWidth: 18 }}>
+                {hasChildren ? (
+                  <ArrowRightIcon sx={{ fontSize: 16, color: 'text.secondary', transform: isOpen ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 0.15s' }} />
+                ) : (
+                  <Box sx={{ width: 16 }} />
+                )}
+              </ListItemIcon>
+              <ListItemText primary={key} primaryTypographyProps={{ variant: 'body2', sx: { fontSize: '0.7rem', fontWeight: 600, color: 'text.secondary' } }} />
+            </ListItem>
+            {isOpen && <List dense disablePadding>{renderTreeItems(value, depth + 1, leafRenderer, expandedFolders, onToggleFolder)}</List>}
+          </React.Fragment>
+        );
+      });
+  }, []);
+
+  useEffect(() => { localStorage.setItem("orchid-branch-view", branchView); }, [branchView]);
+  useEffect(() => { localStorage.setItem("orchid-remote-view", remoteView); }, [remoteView]);
+
+  const initialExpandDone = useRef(false);
+
+  useEffect(() => {
+    if (!initialExpandDone.current && repoData?.currentBranch) {
+      const parts = repoData.currentBranch.split('/');
+      if (parts.length > 1) {
+        setBranchExpandedFolders(prev => {
+          const next = new Set(prev);
+          let changed = false;
+          for (let i = 0; i < parts.length - 1; i++) {
+            if (!next.has(parts[i])) {
+              next.add(parts[i]);
+              changed = true;
+            }
+          }
+          if (changed) {
+            localStorage.setItem("orchid-branch-folders-expanded", JSON.stringify([...next]));
+          }
+          return next;
+        });
+      }
+      initialExpandDone.current = true;
+    }
+  }, [repoData?.currentBranch]);
 
   const [filters, setFilters] = useState({ branches: "", remote: "", tags: "", stash: "" });
   const setFilter = useCallback((section) => (value) => {
@@ -607,29 +723,54 @@ export default function LeftMenu({ open }) {
         )}
         {repoData ? (
           <>
-            <Section title="Branches" count={repoData.branches?.length ?? 0} expanded={expandedSections.branches !== false} onToggle={handleToggle("branches")} onAdd={openNewBranchDialog} onMerge={() => { if (isMerging) { setMessageType("error"); setMessage("Resolva o merge antes de continuar"); return; } if (isReverting) { setMessageType("error"); setMessage("Resolva o revert antes de continuar"); return; } setShowMerge(true); }} filter={filters.branches} onFilterChange={setFilter("branches")}>
-              {filteredBranches.map(b => {
-                const st = branchStatusMap[b];
-                const badge = st && (st.ahead > 0 || st.behind > 0) ? st : null;
-                return (
-                  <Item
-                    key={b}
-                    label={b}
-                    badge={badge}
+            <Section title="Branches" count={repoData.branches?.length ?? 0} expanded={expandedSections.branches !== false} onToggle={handleToggle("branches")} onAdd={openNewBranchDialog} onMerge={() => { if (isMerging) { setMessageType("error"); setMessage("Resolva o merge antes de continuar"); return; } if (isReverting) { setMessageType("error"); setMessage("Resolva o revert antes de continuar"); return; } setShowMerge(true); }} filter={filters.branches} onFilterChange={setFilter("branches")} viewMode={branchView} onViewModeChange={setBranchView}>
+              {branchView === "tree" ? (
+                renderTreeItems(buildTree(filteredBranches), 0, (b) => {
+                  const st = branchStatusMap[b];
+                  const badge = st && (st.ahead > 0 || st.behind > 0) ? st : null;
+                  return (
+                    <Item
+                      key={b}
+                      label={b.split('/').pop()}
+                      badge={badge}
                       active={b === repoData.currentBranch}
-                    onClick={() => handleBranchClick(b)}
-                    onDoubleClick={() => handleBranchDblClick(b)}
-                    onContextMenu={(e) => handleBranchContext(e, b)}
-                    onDelete={b !== repoData.currentBranch ? () => confirmDeleteBranch(b) : undefined}
-                  />
-                );
-              })}
+                      onClick={() => handleBranchClick(b)}
+                      onDoubleClick={() => handleBranchDblClick(b)}
+                      onContextMenu={(e) => handleBranchContext(e, b)}
+                      onDelete={b !== repoData.currentBranch ? () => confirmDeleteBranch(b) : undefined}
+                    />
+                  );
+                }, branchExpandedFolders, toggleBranchFolder)
+              ) : (
+                filteredBranches.map(b => {
+                  const st = branchStatusMap[b];
+                  const badge = st && (st.ahead > 0 || st.behind > 0) ? st : null;
+                  return (
+                    <Item
+                      key={b}
+                      label={b}
+                      badge={badge}
+                      active={b === repoData.currentBranch}
+                      onClick={() => handleBranchClick(b)}
+                      onDoubleClick={() => handleBranchDblClick(b)}
+                      onContextMenu={(e) => handleBranchContext(e, b)}
+                      onDelete={b !== repoData.currentBranch ? () => confirmDeleteBranch(b) : undefined}
+                    />
+                  );
+                })
+              )}
             </Section>
 
-            <Section title="Remote" count={repoData.remoteBranches?.length ?? 0} expanded={expandedSections.remote === true} onToggle={handleToggle("remote")} filter={filters.remote} onFilterChange={setFilter("remote")}>
-              {filteredRemote.map(b => (
-                <Item key={b} label={b} onClick={() => handleRemoteBranchClick(b)} onDoubleClick={() => handleRemoteBranchDblClick(b)} onDelete={() => confirmDeleteRemoteBranch(b)} />
-              ))}
+            <Section title="Remote" count={repoData.remoteBranches?.length ?? 0} expanded={expandedSections.remote === true} onToggle={handleToggle("remote")} filter={filters.remote} onFilterChange={setFilter("remote")} viewMode={remoteView} onViewModeChange={setRemoteView}>
+              {remoteView === "tree" ? (
+                renderTreeItems(buildTree(filteredRemote), 0, (b) => (
+                  <Item key={b} label={b.split('/').pop()} onClick={() => handleRemoteBranchClick(b)} onDoubleClick={() => handleRemoteBranchDblClick(b)} onDelete={() => confirmDeleteRemoteBranch(b)} />
+                ), remoteExpandedFolders, toggleRemoteFolder)
+              ) : (
+                filteredRemote.map(b => (
+                  <Item key={b} label={b} onClick={() => handleRemoteBranchClick(b)} onDoubleClick={() => handleRemoteBranchDblClick(b)} onDelete={() => confirmDeleteRemoteBranch(b)} />
+                ))
+              )}
             </Section>
 
             <Section title="Tags" count={repoData.tags?.length ?? 0} expanded={expandedSections.tags === true} onToggle={handleToggle("tags")} onAdd={openNewTagDialog} filter={filters.tags} onFilterChange={setFilter("tags")}>
