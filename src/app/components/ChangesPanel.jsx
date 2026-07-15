@@ -176,7 +176,7 @@ function StatusFile({ file, onStage, onUnstage, onViewDiff, onViewBlame, onViewH
         />
       </ListItemIcon>
       <ListItemText
-        primary={file.path}
+        primary={depth > 0 ? file.path.split('/').pop() : file.path}
         primaryTypographyProps={{
           variant: "body2", noWrap: true,
           sx: { fontSize: "0.8125rem", cursor: "pointer", "&:hover": { textDecoration: "underline" } },
