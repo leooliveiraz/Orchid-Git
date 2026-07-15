@@ -33,4 +33,6 @@ export const OrchidContext = createContext({
   setViewCommit: () => {},
   dateFormat: "",
   setDateFormat: () => {},
+  isLoading: false,
+  setIsLoading: () => {},
 });

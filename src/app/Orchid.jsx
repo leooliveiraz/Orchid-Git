@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useMemo, useCallback, useContext } from "react";
 import { OrchidContext } from "./OrchidContext.jsx";
 import LeftMenu from "./components/LeftMenu.jsx";
-import { Box, CssBaseline, Dialog, DialogTitle, DialogContent, DialogActions, Button, Typography, TextField } from "@mui/material";
+import { Box, CssBaseline, Dialog, DialogTitle, DialogContent, DialogActions, Button, Typography, TextField, LinearProgress } from "@mui/material";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import MainArea from "./components/MainArea.jsx";
 import AppMenu from "./components/AppMenu.jsx";
@@ -83,6 +83,7 @@ export default function Orchid() {
   const [scrollToCommitHash, setScrollToCommitHash] = useState(null);
   const [viewCommit, setViewCommit] = useState(null);
   const [dateFormat, setDateFormat] = useState(() => localStorage.getItem("orchid-date-format") || "");
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     localStorage.setItem("orchid-date-format", dateFormat);
@@ -135,14 +136,15 @@ export default function Orchid() {
 
   useEffect(() => {
     if (directory) {
-      setRepoData(null);
+      setIsLoading(true);
       setNotRepo(null);
       (async () => {
         const isRepo = window.api ? await window.api.isGitRepo(directory).catch(() => false) : false;
-        if (!isRepo) { setNotRepo(true); return; }
+        if (!isRepo) { setNotRepo(true); setIsLoading(false); return; }
         setNotRepo(false);
         const data = await fetchRepoData(directory);
         if (data) setRepoData(data);
+        setIsLoading(false);
       })();
     }
   }, [directory, refreshKey]);
@@ -291,9 +293,10 @@ export default function Orchid() {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <OrchidContext.Provider value={{ directory, setDirectory, themeMode, toggleTheme, repoData, setRepoData, menuOpen, setMenuOpen, refresh, refreshKey, recentDirs, notRepo, setNotRepo, removeRecentDir, recentSort, setRecentSort: handleSetRecentSort, tabSignal, setTabSignal, syncWarning, setSyncWarning, isMerging, setIsMerging, isReverting, setIsReverting, rebaseEditRequest, setRebaseEditRequest, scrollToCommitHash, setScrollToCommitHash, viewCommit, setViewCommit, dateFormat, setDateFormat }}>
-        <Box sx={{ height: "100vh", display: "flex", flexDirection: "column" }}>
+      <OrchidContext.Provider value={{ directory, setDirectory, themeMode, toggleTheme, repoData, setRepoData, menuOpen, setMenuOpen, refresh, refreshKey, recentDirs, notRepo, setNotRepo, removeRecentDir, recentSort, setRecentSort: handleSetRecentSort, tabSignal, setTabSignal, syncWarning, setSyncWarning, isMerging, setIsMerging, isReverting, setIsReverting, rebaseEditRequest, setRebaseEditRequest, scrollToCommitHash, setScrollToCommitHash, viewCommit, setViewCommit, dateFormat, setDateFormat, isLoading, setIsLoading }}>
+        <Box sx={{ height: "100vh", display: "flex", flexDirection: "column", position: "relative" }}>
           <AppMenu onToggleMenu={() => setMenuOpen(prev => !prev)} />
+          {isLoading && <LinearProgress sx={{ position: "absolute", top: 0, left: 0, right: 0, zIndex: 2000 }} />}
           <Box sx={{ display: "flex", flex: 1, overflow: "hidden" }}>
             <LeftMenu open={menuOpen} />
             <MainArea />
