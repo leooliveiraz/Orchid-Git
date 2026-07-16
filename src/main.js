@@ -220,8 +220,8 @@ ipcMain.handle("get-branches-ahead-behind", (event, directory) => {
   }
 });
 
-ipcMain.handle("checkout-branch", (event, directory, branch) => {
-  return runGit(["checkout", branch, "--"], directory);
+ipcMain.handle("checkout-branch", async (event, directory, branch) => {
+  return await runGitAsync(["checkout", branch, "--"], directory);
 });
 
 ipcMain.handle("checkout-remote-branch", (event, directory, branch) => {

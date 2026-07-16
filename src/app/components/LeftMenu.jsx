@@ -173,7 +173,7 @@ function buildTree(items) {
 }
 
 export default function LeftMenu({ open }) {
-  const { directory, repoData, refresh, recentDirs, setDirectory, removeRecentDir, recentSort, setRecentSort, isMerging, isReverting, setScrollToCommitHash, setViewCommit } = useContext(OrchidContext);
+  const { directory, repoData, refresh, recentDirs, setDirectory, removeRecentDir, recentSort, setRecentSort, isMerging, isReverting, setScrollToCommitHash, setViewCommit, setIsLoading } = useContext(OrchidContext);
   const branchStatusMap = useMemo(() => {
     if (!repoData?.branchesStatus) return {};
     const map = {};
@@ -381,6 +381,7 @@ export default function LeftMenu({ open }) {
       return;
     }
     setMessage(null);
+    setIsLoading(true);
     try {
       await window.api.checkoutBranch(directory, branch);
       setMessageType("success");
@@ -389,8 +390,9 @@ export default function LeftMenu({ open }) {
     } catch (e) {
       setMessageType("error");
       setMessage(e.message || String(e));
+      setIsLoading(false);
     }
-  }, [directory, repoData, refresh, isMerging, isReverting]);
+  }, [directory, repoData, refresh, isMerging, isReverting, setIsLoading]);
 
   const handleRemoteBranchDblClick = useCallback(async (branch) => {
     if (isMerging) { setMessageType("error"); setMessage("Resolva o merge antes de continuar"); return; }
@@ -403,6 +405,7 @@ export default function LeftMenu({ open }) {
       return;
     }
     setMessage(null);
+    setIsLoading(true);
     try {
       await window.api.checkoutRemoteBranch(directory, branch);
       setMessageType("success");
@@ -411,8 +414,9 @@ export default function LeftMenu({ open }) {
     } catch (e) {
       setMessageType("error");
       setMessage(e.message || String(e));
+      setIsLoading(false);
     }
-  }, [directory, repoData, refresh, isMerging, isReverting]);
+  }, [directory, repoData, refresh, isMerging, isReverting, setIsLoading]);
 
   const scrollToRef = useCallback(async (ref) => {
     if (!directory || !window.api?.getRefCommit) return;
