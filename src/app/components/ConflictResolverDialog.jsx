@@ -18,6 +18,8 @@ export default function ConflictResolverDialog({ directory, conflictedFiles, onC
   const [confirmAbort, setConfirmAbort] = useState(false);
   const [viewMode, setViewMode] = useState("unified");
   const [activeConflictId, setActiveConflictId] = useState(null);
+  const [oursBranch, setOursBranch] = useState("");
+  const [theirsBranch, setTheirsBranch] = useState("");
   const cardRefs = useRef({});
   const paneRefs = useRef([null, null, null]);
   const syncingScroll = useRef(false);
@@ -132,6 +134,23 @@ export default function ConflictResolverDialog({ directory, conflictedFiles, onC
       setBlockIndex(conflictIndices.length - 1);
     }
   }, [conflictIndices.length, blockIndex]);
+
+  useEffect(() => {
+    if (!directory || !window.api) return;
+    (async () => {
+      try {
+        const current = await window.api.getCurrentBranch(directory);
+        setOursBranch(current || "");
+      } catch {}
+      try {
+        const msg = await window.api.getMergeMessage(directory);
+        if (msg) {
+          const m = msg.match(/Merge (?:remote-tracking )?branch\s+['"]([^'"]+)['"]/);
+          if (m) setTheirsBranch(m[1]);
+        }
+      } catch {}
+    })();
+  }, [directory]);
 
   const buildMergedContent = useCallback(() => {
     return segments.map(s => {
@@ -461,7 +480,7 @@ export default function ConflictResolverDialog({ directory, conflictedFiles, onC
           </Typography>
         </Box>
         <Box sx={{ bgcolor: isOurs ? "rgba(33,150,243,0.08)" : "rgba(33,150,243,0.04)", px: 1.5, py: 0.5 }}>
-          <Typography variant="caption" sx={{ color: "primary.main", fontWeight: 600, display: "block", mb: 0.25 }}>OURS</Typography>
+          <Typography variant="caption" sx={{ color: "primary.main", fontWeight: 600, display: "block", mb: 0.25 }}>OURS{oursBranch ? ` (${oursBranch})` : ""}</Typography>
           <Box sx={{ fontFamily: "monospace", fontSize: "13px", lineHeight: 1.5, whiteSpace: "nowrap" }}>
             {isOurs
               ? ourLines.map((line, i) => (<div key={i} style={{ whiteSpace: "nowrap" }}>{line || "\u00A0"}</div>))
@@ -470,7 +489,7 @@ export default function ConflictResolverDialog({ directory, conflictedFiles, onC
         </Box>
         <Divider />
         <Box sx={{ bgcolor: !isOurs ? "rgba(76,175,80,0.08)" : "rgba(76,175,80,0.04)", px: 1.5, py: 0.5 }}>
-          <Typography variant="caption" sx={{ color: "success.main", fontWeight: 600, display: "block", mb: 0.25 }}>THEIRS</Typography>
+          <Typography variant="caption" sx={{ color: "success.main", fontWeight: 600, display: "block", mb: 0.25 }}>THEIRS{theirsBranch ? ` (${theirsBranch})` : ""}</Typography>
           <Box sx={{ fontFamily: "monospace", fontSize: "13px", lineHeight: 1.5, whiteSpace: "nowrap" }}>
             {!isOurs
               ? theirLines.map((line, i) => (<div key={i} style={{ whiteSpace: "nowrap" }}>{line || "\u00A0"}</div>))
@@ -485,7 +504,7 @@ export default function ConflictResolverDialog({ directory, conflictedFiles, onC
     <Box sx={{ display: "flex", gap: 0.5, flex: 1, minHeight: 400 }}>
       <Box sx={{ flex: 1, display: "flex", flexDirection: "column", border: "1px solid", borderColor: "divider", borderRadius: 1, overflow: "hidden" }}>
         <Box sx={{ px: 1, py: 0.25, bgcolor: "rgba(33,150,243,0.08)", borderBottom: "1px solid", borderColor: "divider" }}>
-          <Typography variant="caption" sx={{ fontWeight: 600, color: "primary.main" }}>OURS</Typography>
+          <Typography variant="caption" sx={{ fontWeight: 600, color: "primary.main" }}>OURS{oursBranch ? ` (${oursBranch})` : ""}</Typography>
         </Box>
         <Box ref={el => paneRefs.current[0] = el} onScroll={e => handlePaneScroll(0, e.target.scrollTop)}
           sx={{ overflow: "auto", flex: 1, fontFamily: "monospace", fontSize: "13px", lineHeight: 1.5, py: 0.5 }}
@@ -511,7 +530,7 @@ export default function ConflictResolverDialog({ directory, conflictedFiles, onC
       </Box>
       <Box sx={{ flex: 1, display: "flex", flexDirection: "column", border: "1px solid", borderColor: "divider", borderRadius: 1, overflow: "hidden" }}>
         <Box sx={{ px: 1, py: 0.25, bgcolor: "rgba(76,175,80,0.08)", borderBottom: "1px solid", borderColor: "divider" }}>
-          <Typography variant="caption" sx={{ fontWeight: 600, color: "success.main" }}>THEIRS</Typography>
+          <Typography variant="caption" sx={{ fontWeight: 600, color: "success.main" }}>THEIRS{theirsBranch ? ` (${theirsBranch})` : ""}</Typography>
         </Box>
         <Box ref={el => paneRefs.current[2] = el} onScroll={e => handlePaneScroll(2, e.target.scrollTop)}
           sx={{ overflow: "auto", flex: 1, fontFamily: "monospace", fontSize: "13px", lineHeight: 1.5, py: 0.5 }}
@@ -560,7 +579,7 @@ export default function ConflictResolverDialog({ directory, conflictedFiles, onC
       </Box>
       <Box sx={{ bgcolor: "rgba(33,150,243,0.08)", px: 1.5, py: 0.5 }}>
         <Typography variant="caption" sx={{ color: "primary.main", fontWeight: 600, display: "block", mb: 0.25 }}>
-          OURS
+          OURS{oursBranch ? ` (${oursBranch})` : ""}
         </Typography>
         <div
           contentEditable
@@ -581,7 +600,7 @@ export default function ConflictResolverDialog({ directory, conflictedFiles, onC
       <Divider />
       <Box sx={{ bgcolor: "rgba(76,175,80,0.08)", px: 1.5, py: 0.5 }}>
         <Typography variant="caption" sx={{ color: "success.main", fontWeight: 600, display: "block", mb: 0.25 }}>
-          THEIRS
+          THEIRS{theirsBranch ? ` (${theirsBranch})` : ""}
         </Typography>
         <div
           contentEditable
