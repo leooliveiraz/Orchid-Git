@@ -21,7 +21,7 @@ Specifically:
 The Software stores the following data exclusively on your local machine using the browser's `localStorage` API:
 
 - **Last opened directory** — Used to reopen your last project on startup.
-- **Recent directories list** — Used to show recently accessed repositories (max 8 entries).
+- **Recent directories list** — Used to show recently accessed repositories (recently accessed, shows up to 8 initially).
 - **Theme preference** — Dark or light theme selection.
 - **Author merge list** — Configuration for Metrics author grouping.
 - **Sort preferences** — Sort mode for recent directories and file change views.

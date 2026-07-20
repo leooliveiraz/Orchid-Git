@@ -102,7 +102,7 @@ export default function Orchid() {
   const addRecentDir = useCallback((dir) => {
     if (!dir) return;
     setRecentDirs(prev => {
-      const next = [dir, ...prev.filter(d => d !== dir)].slice(0, 8);
+      const next = [dir, ...prev.filter(d => d !== dir)];
       localStorage.setItem("orchid-recent-dirs", JSON.stringify(next));
       return next;
     });

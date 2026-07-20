@@ -16,6 +16,7 @@ export default function NoDirectory() {
   const [showClone, setShowClone] = useState(false);
   const [showInit, setShowInit] = useState(false);
   const [confirmRemove, setConfirmRemove] = useState(null);
+  const [showAllRecent, setShowAllRecent] = useState(false);
 
   function selectDirectory() {
     window.api.selectDirectory("").then((data) => {
@@ -72,30 +73,52 @@ export default function NoDirectory() {
                 {recentSort === "recent" ? "last opened" : recentSort === "name-asc" ? "A-Z" : "Z-A"}
               </Typography>
             </Box>
-            {[...recentDirs].sort((a, b) => {
-              if (recentSort === "name-asc") return a.localeCompare(b);
-              if (recentSort === "name-desc") return b.localeCompare(a);
-              return 0;
-            }).map(dir => (
-              <Box
-                key={dir}
-                onClick={() => setDirectory(dir)}
-                sx={{
-                  display: "flex", alignItems: "center", gap: 1, p: 1, borderRadius: 1,
-                  cursor: "pointer", "&:hover": { bgcolor: "action.hover" },
-                }}
-              >
-                <FolderIcon sx={{ fontSize: 16, color: "text.secondary" }} />
-                <Typography variant="body2" sx={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                  {dir}
-                </Typography>
-                <IconButton size="small" onClick={(e) => { e.stopPropagation(); setConfirmRemove(dir); }}
-                  sx={{ color: "text.disabled", "&:hover": { color: "error.main" } }}
-                >
-                  <CloseIcon sx={{ fontSize: 14 }} />
-                </IconButton>
-              </Box>
-            ))}
+            {(() => {
+              const sorted = [...recentDirs].sort((a, b) => {
+                if (recentSort === "name-asc") return a.localeCompare(b);
+                if (recentSort === "name-desc") return b.localeCompare(a);
+                return 0;
+              });
+              const items = showAllRecent ? sorted : sorted.slice(0, 6);
+              return (
+                <>
+                  {items.map(dir => (
+                    <Box
+                      key={dir}
+                      onClick={() => setDirectory(dir)}
+                      sx={{
+                        display: "flex", alignItems: "center", gap: 1, p: 1, borderRadius: 1,
+                        cursor: "pointer", "&:hover": { bgcolor: "action.hover" },
+                      }}
+                    >
+                      <FolderIcon sx={{ fontSize: 16, color: "text.secondary" }} />
+                      <Typography variant="body2" sx={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {dir}
+                      </Typography>
+                      <IconButton size="small" onClick={(e) => { e.stopPropagation(); setConfirmRemove(dir); }}
+                        sx={{ color: "text.disabled", "&:hover": { color: "error.main" } }}
+                      >
+                        <CloseIcon sx={{ fontSize: 14 }} />
+                      </IconButton>
+                    </Box>
+                  ))}
+                  {sorted.length > 6 && (
+                    <Box
+                      onClick={() => setShowAllRecent(!showAllRecent)}
+                      sx={{
+                        display: "flex", alignItems: "center", gap: 1, p: 1, borderRadius: 1,
+                        cursor: "pointer", "&:hover": { bgcolor: "action.hover" },
+                        fontStyle: "italic", opacity: 0.7,
+                      }}
+                    >
+                      <Typography variant="body2">
+                        {showAllRecent ? "Show less" : `Show more (${sorted.length - 6})`}
+                      </Typography>
+                    </Box>
+                  )}
+                </>
+              );
+            })()}
           </Box>
         )}
       </Box>

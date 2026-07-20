@@ -21,7 +21,7 @@ Especificamente:
 O Software armazena exclusivamente em sua máquina local, através da API `localStorage` do navegador:
 
 - **Último diretório aberto** — Usado para reabrir seu último projeto na inicialização.
-- **Lista de diretórios recentes** — Usado para mostrar repositórios acessados recentemente (máximo 8 entradas).
+- **Lista de diretórios recentes** — Usado para mostrar repositórios acessados recentemente (mostra até 8 inicialmente).
 - **Preferência de tema** — Seleção de tema escuro ou claro.
 - **Lista de autores mesclados** — Configuração para agrupamento de autores nas Métricas.
 - **Preferências de ordenação** — Modo de ordenação para diretórios recentes e visualização de mudanças.

@@ -63,7 +63,7 @@ li{margin:8px 0}strong{color:#000}
 <li><strong>No third-party services</strong> — No analytics, advertising, or data collection services.</li>
 </ul>
 <h2>Local Storage</h2>
-<p>The Software stores preferences exclusively on your local machine using <code>localStorage</code>: last opened directory, recent directories (max 8), theme preference, author merge list, sort preferences, and repo switch confirmation. This data never leaves your machine.</p>
+<p>The Software stores preferences exclusively on your local machine using <code>localStorage</code>: last opened directory, recent directories, theme preference, author merge list, sort preferences, and repo switch confirmation. This data never leaves your machine.</p>
 <h2>Git Operations</h2>
 <p>When you perform Git operations (push, pull, fetch, clone), the Software executes commands via the system <code>git</code> CLI. These connect directly to the remotes you configure. The Software does not intercept, log, or transmit these communications.</p>
 <h2>Source Code</h2>
@@ -97,7 +97,7 @@ li{margin:8px 0}strong{color:#000}
 <li><strong>Sem terceiros</strong> — Sem analytics, publicidade ou coleta.</li>
 </ul>
 <h2>Armazenamento Local</h2>
-<p>Prefer\u00eancias armazenadas exclusivamente via <code>localStorage</code>: \u00faltimo diret\u00f3rio, recentes (max 8), tema, lista de autores, ordena\u00e7\u00e3o e confirma\u00e7\u00e3o de troca. Nunca saem da sua m\u00e1quina.</p>
+<p>Prefer\u00eancias armazenadas exclusivamente via <code>localStorage</code>: \u00faltimo diret\u00f3rio, recentes, tema, lista de autores, ordena\u00e7\u00e3o e confirma\u00e7\u00e3o de troca. Nunca saem da sua m\u00e1quina.</p>
 <h2>Opera\u00e7\u00f5es Git</h2>
 <p>Ao fazer push/pull/fetch/clone, o Software executa comandos git via CLI. Conecta-se diretamente aos remotos configurados. N\u00e3o intercepta, registra ou transmite estas comunica\u00e7\u00f5es.</p>
 <h2>C\u00f3digo Fonte</h2>

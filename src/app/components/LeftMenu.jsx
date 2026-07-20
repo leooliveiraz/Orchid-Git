@@ -198,6 +198,7 @@ export default function LeftMenu({ open }) {
   const [stashContext, setStashContext] = useState(null);
   const [pendingRecentDir, setPendingRecentDir] = useState(null);
   const [skipRecentConfirm, setSkipRecentConfirm] = useState(() => localStorage.getItem("orchid-skip-repo-switch") === "true");
+  const [showAllRecent, setShowAllRecent] = useState(false);
   const [expandedSections, setExpandedSections] = useState(() => {
     try {
       return JSON.parse(localStorage.getItem("orchid-left-menu-sections")) || {};
@@ -715,21 +716,36 @@ export default function LeftMenu({ open }) {
               setRecentSort(modes[(idx + 1) % modes.length]);
             }}
           >
-            {[...recentDirs].sort((a, b) => {
-              if (recentSort === "name-asc") return a.localeCompare(b);
-              if (recentSort === "name-desc") return b.localeCompare(a);
-              return 0;
-            }).map(dir => (
-              <Item key={dir} label={dir.split(/[/\\]/).pop()}
-                title={dir}
-                active={dir === directory}
-                onClick={() => {
-                  if (skipRecentConfirm) { setDirectory(dir); }
-                  else { setPendingRecentDir(dir); }
-                }}
-                onDelete={() => confirmRemoveRecent(dir)}
-              />
-            ))}
+            {(() => {
+              const sorted = [...recentDirs].sort((a, b) => {
+                if (recentSort === "name-asc") return a.localeCompare(b);
+                if (recentSort === "name-desc") return b.localeCompare(a);
+                return 0;
+              });
+              const showAll = showAllRecent;
+              const items = showAll ? sorted : sorted.slice(0, 6);
+              return (
+                <>
+                  {items.map(dir => (
+                    <Item key={dir} label={dir.split(/[/\\]/).pop()}
+                      title={dir}
+                      active={dir === directory}
+                      onClick={() => {
+                        if (skipRecentConfirm) { setDirectory(dir); }
+                        else { setPendingRecentDir(dir); }
+                      }}
+                      onDelete={() => confirmRemoveRecent(dir)}
+                    />
+                  ))}
+                  {sorted.length > 6 && (
+                    <Item label={showAll ? "Show less" : `Show more (${sorted.length - 6})`}
+                      onClick={() => setShowAllRecent(!showAll)}
+                      sx={{ fontStyle: "italic", opacity: 0.7 }}
+                    />
+                  )}
+                </>
+              );
+            })()}
           </Section>
         )}
         {repoData ? (
