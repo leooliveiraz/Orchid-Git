@@ -95,3 +95,6 @@ out/
 test/e2e/screenshots
 lastDirectory.txt
 repo-log.txt
+
+# Generated installer assets
+src/assets/installer-loading.gif

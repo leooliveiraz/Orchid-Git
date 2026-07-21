@@ -52,11 +52,29 @@ function writeTempScript(name, content) {
 }
 
 let win = null;
+let splash = null;
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (started) {
   app.quit();
 }
+
+const createSplash = () => {
+  splash = new BrowserWindow({
+    width: 400,
+    height: 300,
+    frame: false,
+    resizable: false,
+    show: false,
+    center: true,
+    backgroundColor: '#0d1117',
+    webPreferences: {
+      preload: SPLASH_WINDOW_PRELOAD_WEBPACK_ENTRY,
+    },
+  });
+  splash.loadURL(SPLASH_WINDOW_WEBPACK_ENTRY);
+  splash.once('ready-to-show', () => splash.show());
+};
 
 const createWindow = () => {
   const iconPath = app.isPackaged
@@ -67,6 +85,7 @@ const createWindow = () => {
     width: 1280,
     height: 800,
     icon: iconPath,
+    show: false,
     webPreferences: {
       preload: MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY,
     },
@@ -75,6 +94,14 @@ const createWindow = () => {
 
   // and load the index.html of the app.
   mainWindow.loadURL(MAIN_WINDOW_WEBPACK_ENTRY);
+
+  mainWindow.once('ready-to-show', () => {
+    if (splash) {
+      splash.close();
+      splash = null;
+    }
+    mainWindow.show();
+  });
 
   // Open the DevTools only in development mode.
   if (!app.isPackaged) {
@@ -97,6 +124,7 @@ const createWindow = () => {
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
 app.whenReady().then(() => {
+  createSplash();
   createWindow();
 
   // On OS X it's common to re-create a window in the app when the

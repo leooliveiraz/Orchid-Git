@@ -11,7 +11,14 @@ module.exports = {
   makers: [
     {
       name: '@electron-forge/maker-squirrel',
-      config: {},
+      config: {
+        name: "Orchid-git",
+        title: "Orchid-git",
+        authors: "Léo Rocha",
+        setupIcon: "./src/assets/icon.ico",
+        loadingGif: "./src/assets/installer-loading.gif",
+        noMsi: true,
+      },
     },
     {
       name: '@electron-forge/maker-zip',
@@ -42,6 +49,14 @@ module.exports = {
               html: './src/index.html',
               js: './src/renderer.js',
               name: 'main_window',
+              preload: {
+                js: './src/preload.js',
+              },
+            },
+            {
+              html: './src/loading.html',
+              js: './src/loading.js',
+              name: 'splash_window',
               preload: {
                 js: './src/preload.js',
               },

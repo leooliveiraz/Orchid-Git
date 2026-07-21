@@ -1,0 +1,88 @@
+/* Reset básico para remover margens e definir a fonte */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    /* Fundo escuro igual ao seu print */
+    background-color: #0d1117; 
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    height: 100vh;
+    width: 100vw;
+    overflow: hidden; /* Evita barras de rolagem */
+    
+    /* Flexbox para centralizar tudo */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.loading-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 20px; /* Espaço entre o ícone, o texto e a barra */
+}
+
+/* Estilo do Ícone */
+.app-icon {
+    width: 96px; /* Ajuste o tamanho conforme achar melhor */
+    height: 96px;
+    object-fit: contain;
+    /* Caso seu ícone seja SVG, pode adicionar um filtro de sombra aqui se quiser */
+}
+
+/* Estilo do Nome */
+.app-title {
+    color: #ffffff;
+    font-size: 28px;
+    font-weight: 400; /* Peso da fonte normal, já que seu print é fino */
+    letter-spacing: 0.5px;
+}
+
+/* --- Estilo da Barra de Loading Infinita --- */
+
+/* O invólucro externo da barra */
+.loader-wrapper {
+    width: 240px; /* Largura da barra */
+    height: 4px;  /* Altura fina */
+    background-color: #2d333b; /* Cinza escuro do fundo da barra (rastro) */
+    border-radius: 2px;
+    overflow: hidden; /* Garante que a animação não saia das bordas arredondadas */
+    position: relative;
+}
+
+/* A parte colorida que vai se mover */
+.loader-bar {
+    height: 100%;
+    width: 50%; /* Tamanho do "bloco" que corre */
+    background-color: #a475f7; /* Cor roxa combinando com seu ícone */
+    border-radius: 2px;
+    position: absolute;
+    top: 0;
+    left: -50%; /* Começa fora da tela à esquerda */
+    
+    /* Animação infinita */
+    animation: infinite-loading 1.5s cubic-bezier(0.4, 0.0, 0.2, 1) infinite;
+}
+
+/* Definindo os keyframes para o movimento de ir e vir */
+@keyframes infinite-loading {
+    0% {
+        left: -50%;
+        width: 50%;
+    }
+    50% {
+        /* No meio, a barra ocupa quase toda a largura e vai pra direita */
+        width: 80%;
+        left: 10%;
+    }
+    100% {
+        /* No fim, ela diminui e sai pela direita */
+        width: 50%;
+        left: 100%;
+    }
+}

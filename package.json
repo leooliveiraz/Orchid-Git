@@ -7,7 +7,8 @@
   "scripts": {
     "start": "electron-forge start",
     "package": "electron-forge package",
-    "make": "electron-forge make",
+    "generate:assets": "node scripts/generate-installer-gif.js",
+    "make": "node scripts/generate-installer-gif.js && electron-forge make",
     "publish": "electron-forge publish",
     "lint": "echo \"No linting configured\"",
     "test": "jest",
@@ -35,10 +36,12 @@
     "css-loader": "^6.0.0",
     "electron": "33.2.1",
     "express": "^5.2.1",
+    "gif-encoder": "^0.7.2",
     "jest": "^30.4.2",
     "jest-environment-jsdom": "^30.4.1",
     "node-loader": "^2.0.0",
     "playwright": "^1.60.0",
+    "pngjs": "^7.0.0",
     "serve": "^14.2.6",
     "style-loader": "^3.0.0"
   },
