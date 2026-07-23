@@ -17,7 +17,7 @@ import {
 import { OrchidContext } from "../OrchidContext.jsx";
 
 export default function Repository({ repositoryDirectory }) {
-  const { refreshKey, setNotRepo, tabSignal, setTabSignal, refresh, isMerging, isReverting, scrollToCommitHash, setScrollToCommitHash, viewCommit, setViewCommit, dateFormat } = useContext(OrchidContext);
+  const { repoData, refreshKey, setNotRepo, tabSignal, setTabSignal, refresh, isMerging, isReverting, scrollToCommitHash, setScrollToCommitHash, viewCommit, setViewCommit, dateFormat } = useContext(OrchidContext);
   const [commitList, setCommitList] = useState([]);
   const [filteredCommitList, setFilteredCommitList] = useState([]);
   const [tab, setTab] = useState("graph");
@@ -362,6 +362,11 @@ export default function Repository({ repositoryDirectory }) {
       <Box sx={{ mb: 2, borderBottom: "1px solid", borderColor: "divider", pb: 1.5 }}>
         <Typography variant="h6" sx={{ fontWeight: 400, letterSpacing: "-0.02em", color: "text.primary", lineHeight: 1.3 }}>
           {repositoryDirectory.split(/[/\\]/).pop()}
+          {repoData?.currentBranch && (
+            <Box component="span" sx={{ ml: 1, fontSize: "0.75rem", color: "success.main", fontWeight: 600, verticalAlign: "middle" }}>
+              {repoData.currentBranch}
+            </Box>
+          )}
         </Typography>
         <Typography variant="caption" sx={{ color: "text.secondary", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "block", mt: 0.25 }}>
           {repositoryDirectory}
