@@ -311,6 +311,13 @@ ipcMain.handle("get-file-content", (event, directory, filePath) => {
   return fs.readFileSync(fullPath, "utf8").replace(/\r\n/g, "\n").replace(/\r/g, "\n");
 });
 
+ipcMain.handle("get-file-content-base64", (event, directory, filePath) => {
+  const path = require("path");
+  const fs = require("fs");
+  const fullPath = path.join(directory, filePath);
+  return fs.readFileSync(fullPath).toString("base64");
+});
+
 ipcMain.handle("save-file-content", (event, directory, filePath, content) => {
   const path = require("path");
   const fs = require("fs");
@@ -343,6 +350,28 @@ ipcMain.handle("remove-gitignore-entry", (event, directory, entry) => {
 
 ipcMain.handle("get-file-at-commit", (event, directory, commitHash, filePath) => {
   return runGit(["show", `${commitHash}:${gitPath(filePath)}`], directory).replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+});
+
+ipcMain.handle("get-file-at-commit-base64", (event, directory, commitHash, filePath) => {
+  const result = childProcess.spawnSync("git", ["show", `${commitHash}:${gitPath(filePath)}`], { cwd: directory });
+  if (result.error) throw result.error;
+  if (result.status !== 0) throw new Error(result.stderr?.toString() || `git command failed`);
+  return result.stdout.toString("base64");
+});
+
+ipcMain.handle("get-file-at-ref-base64", (event, directory, ref, filePath) => {
+  const result = childProcess.spawnSync("git", ["show", `${ref}:${gitPath(filePath)}`], { cwd: directory });
+  if (result.error) throw result.error;
+  if (result.status !== 0) return null;
+  return result.stdout.toString("base64");
+});
+
+ipcMain.handle("get-parent-commit", (event, directory, commitHash) => {
+  try {
+    return runGit(["rev-parse", `${commitHash}^`], directory).trim();
+  } catch {
+    return null;
+  }
 });
 
 ipcMain.handle("merge", async (event, directory, branch, strategy) => {

@@ -1,8 +1,25 @@
-import React, { useState, useRef, useCallback, useMemo } from "react";
+import React, { useState, useRef, useCallback, useMemo, useEffect } from "react";
 import {
   Dialog, DialogTitle, DialogContent, IconButton, Typography, Box, Chip, ToggleButtonGroup, ToggleButton,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
+
+const IMAGE_EXTENSIONS = new Set([".png", ".jpg", ".jpeg", ".gif", ".bmp", ".webp", ".svg", ".ico"]);
+
+function isImageFile(name) {
+  const ext = name?.substring(name.lastIndexOf(".")).toLowerCase();
+  return IMAGE_EXTENSIONS.has(ext);
+}
+
+function mimeType(name) {
+  const ext = name?.substring(name.lastIndexOf(".")).toLowerCase();
+  const map = {
+    ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg",
+    ".gif": "image/gif", ".bmp": "image/bmp", ".webp": "image/webp",
+    ".svg": "image/svg+xml", ".ico": "image/x-icon",
+  };
+  return map[ext] || "image/png";
+}
 
 function splitDiff(diffText) {
   const lines = diffText.split("\n");
@@ -113,11 +130,43 @@ function UnifiedRow({ oldNum, newNum, content, type }) {
   );
 }
 
-export default function DiffViewer({ fileName, diffText, onClose }) {
+export default function DiffViewer({ fileName, diffText, onClose, directory, staged, commitHash, filePath }) {
   const [viewType, setViewType] = useState("unified");
   const leftRef = useRef(null);
   const rightRef = useRef(null);
   const syncing = useRef(false);
+  const [oldImage, setOldImage] = useState(null);
+  const [newImage, setNewImage] = useState(null);
+
+  const imageFilePath = filePath || fileName;
+  const isImage = isImageFile(imageFilePath);
+
+  useEffect(() => {
+    if (!isImage || !directory || !window.api) return;
+    let cancelled = false;
+
+    async function fetchImages() {
+      let oldB64 = null, newB64 = null;
+      if (commitHash) {
+        oldB64 = await window.api.getFileAtCommitBase64(directory, commitHash, imageFilePath).catch(() => null);
+        newB64 = await window.api.getFileContentBase64(directory, imageFilePath)
+          .catch(() => window.api.getFileAtRefBase64(directory, "HEAD", imageFilePath))
+          .catch(() => null);
+      } else if (staged) {
+        oldB64 = await window.api.getFileAtRefBase64(directory, "HEAD", imageFilePath).catch(() => null);
+        newB64 = await window.api.getFileAtRefBase64(directory, ":", imageFilePath).catch(() => null);
+      } else {
+        oldB64 = await window.api.getFileAtRefBase64(directory, ":", imageFilePath).catch(() => null);
+        newB64 = await window.api.getFileContentBase64(directory, imageFilePath).catch(() => null);
+      }
+      if (!cancelled) {
+        setOldImage(oldB64);
+        setNewImage(newB64);
+      }
+    }
+    fetchImages().catch(() => {});
+    return () => { cancelled = true; };
+  }, [isImage, directory, imageFilePath, staged, commitHash]);
 
   const parsed = splitDiff(diffText || "");
   const unifiedLines = useMemo(() => parseUnifiedLines(diffText || ""), [diffText]);
@@ -140,10 +189,12 @@ export default function DiffViewer({ fileName, diffText, onClose }) {
         <Typography component="div" variant="body2" sx={{ fontFamily: "monospace", flex: 1, fontWeight: 600 }}>
           {fileName}
         </Typography>
-        <ToggleButtonGroup size="small" value={viewType} exclusive onChange={(e, v) => v && setViewType(v)} sx={{ mr: 1 }}>
-          <ToggleButton value="unified" sx={{ fontSize: "0.65rem", py: 0.25 }}>Unified</ToggleButton>
-          <ToggleButton value="split" sx={{ fontSize: "0.65rem", py: 0.25 }}>Split</ToggleButton>
-        </ToggleButtonGroup>
+        {!isImage && (
+          <ToggleButtonGroup size="small" value={viewType} exclusive onChange={(e, v) => v && setViewType(v)} sx={{ mr: 1 }}>
+            <ToggleButton value="unified" sx={{ fontSize: "0.65rem", py: 0.25 }}>Unified</ToggleButton>
+            <ToggleButton value="split" sx={{ fontSize: "0.65rem", py: 0.25 }}>Split</ToggleButton>
+          </ToggleButtonGroup>
+        )}
         {totalAdded > 0 && (
           <Chip label={`+${totalAdded}`} size="small" sx={{ color: "#28a745", fontWeight: 700, fontSize: "0.7rem" }} variant="outlined" />
         )}
@@ -155,37 +206,60 @@ export default function DiffViewer({ fileName, diffText, onClose }) {
         </IconButton>
       </DialogTitle>
       <DialogContent sx={{ overflow: "auto", maxHeight: "70vh", p: 0 }}>
-        {!hasContent && (
-          <Typography variant="body2" sx={{ color: "text.secondary", textAlign: "center", py: 3 }}>
-            No changes
-          </Typography>
-        )}
-
-        {viewType === "unified" && hasContent && (
-          <Box sx={{ fontFamily: "monospace", fontSize: "13px" }}>
-            {unifiedLines.map((line, i) => (
-              <UnifiedRow key={i} oldNum={line.oldNum} newNum={line.newNum} content={line.content} type={line.type} />
-            ))}
-          </Box>
-        )}
-
-        {viewType === "split" && hasContent && (
-          <Box sx={{ display: "flex", fontFamily: "monospace", fontSize: "13px" }}>
-            <Box ref={leftRef} sx={{ flex: 1, overflow: "auto", maxHeight: "65vh", borderRight: "1px solid", borderColor: "divider" }}
-              onScroll={() => handleSyncScroll(leftRef, rightRef)}
-            >
-              {parsed.oldLines.map((line, i) => (
-                <LineRow key={i} num={line.num} content={line.content} type={line.type} isLeft />
-              ))}
+        {isImage ? (
+          <Box sx={{ display: "flex", height: "100%" }}>
+            <Box sx={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", borderRight: "1px solid", borderColor: "divider", p: 2, minHeight: "50vh" }}>
+              <Typography variant="caption" sx={{ color: "text.secondary", mb: 1, fontWeight: 600 }}>Old</Typography>
+              {oldImage ? (
+                <img src={`data:${mimeType(imageFilePath)};base64,${oldImage}`} alt="Old version" style={{ maxWidth: "100%", maxHeight: "55vh", objectFit: "contain", borderRadius: 4 }} />
+              ) : (
+                <Typography variant="body2" sx={{ color: "text.secondary", py: 4 }}>Not available</Typography>
+              )}
             </Box>
-            <Box ref={rightRef} sx={{ flex: 1, overflow: "auto", maxHeight: "65vh" }}
-              onScroll={() => handleSyncScroll(rightRef, leftRef)}
-            >
-              {parsed.newLines.map((line, i) => (
-                <LineRow key={i} num={line.num} content={line.content} type={line.type} isLeft={false} />
-              ))}
+            <Box sx={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", p: 2, minHeight: "50vh" }}>
+              <Typography variant="caption" sx={{ color: "text.secondary", mb: 1, fontWeight: 600 }}>New</Typography>
+              {newImage ? (
+                <img src={`data:${mimeType(imageFilePath)};base64,${newImage}`} alt="New version" style={{ maxWidth: "100%", maxHeight: "55vh", objectFit: "contain", borderRadius: 4 }} />
+              ) : (
+                <Typography variant="body2" sx={{ color: "text.secondary", py: 4 }}>Not available</Typography>
+              )}
             </Box>
           </Box>
+        ) : (
+          <>
+            {!hasContent && (
+              <Typography variant="body2" sx={{ color: "text.secondary", textAlign: "center", py: 3 }}>
+                No changes
+              </Typography>
+            )}
+
+            {viewType === "unified" && hasContent && (
+              <Box sx={{ fontFamily: "monospace", fontSize: "13px" }}>
+                {unifiedLines.map((line, i) => (
+                  <UnifiedRow key={i} oldNum={line.oldNum} newNum={line.newNum} content={line.content} type={line.type} />
+                ))}
+              </Box>
+            )}
+
+            {viewType === "split" && hasContent && (
+              <Box sx={{ display: "flex", fontFamily: "monospace", fontSize: "13px" }}>
+                <Box ref={leftRef} sx={{ flex: 1, overflow: "auto", maxHeight: "65vh", borderRight: "1px solid", borderColor: "divider" }}
+                  onScroll={() => handleSyncScroll(leftRef, rightRef)}
+                >
+                  {parsed.oldLines.map((line, i) => (
+                    <LineRow key={i} num={line.num} content={line.content} type={line.type} isLeft />
+                  ))}
+                </Box>
+                <Box ref={rightRef} sx={{ flex: 1, overflow: "auto", maxHeight: "65vh" }}
+                  onScroll={() => handleSyncScroll(rightRef, leftRef)}
+                >
+                  {parsed.newLines.map((line, i) => (
+                    <LineRow key={i} num={line.num} content={line.content} type={line.type} isLeft={false} />
+                  ))}
+                </Box>
+              </Box>
+            )}
+          </>
         )}
       </DialogContent>
     </Dialog>

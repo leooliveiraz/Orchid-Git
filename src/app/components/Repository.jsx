@@ -291,7 +291,7 @@ export default function Repository({ repositoryDirectory }) {
     try {
       const diff = await window.api.getCommitFileDiff(repositoryDirectory, selectedCommit.hash, file.path);
       if (diff && diff.trim()) {
-        setCommitFileDiff({ fileName: `${file.path} (${selectedCommit.hash})`, diffText: diff });
+        setCommitFileDiff({ fileName: `${file.path} (${selectedCommit.hash})`, diffText: diff, commitHash: selectedCommit.hash, originalPath: file.path });
       }
     } catch (e) {
       // silently ignore
@@ -435,6 +435,9 @@ export default function Repository({ repositoryDirectory }) {
         <DiffViewer
           fileName={commitFileDiff.fileName}
           diffText={commitFileDiff.diffText}
+          directory={repositoryDirectory}
+          commitHash={commitFileDiff.commitHash}
+          filePath={commitFileDiff.originalPath}
           onClose={() => setCommitFileDiff(null)}
         />
       )}

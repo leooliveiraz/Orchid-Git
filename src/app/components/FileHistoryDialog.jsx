@@ -36,7 +36,7 @@ export default function FileHistoryDialog({ directory, fileName, onClose }) {
     setCompareLoading(commit.hash);
     try {
       const diffText = await window.api.getDiffCommit(directory, commit.hash, fileName);
-      setDiffViewer({ fileName: `${commit.hash} - ${commit.message}`, diffText });
+      setDiffViewer({ fileName: `${commit.hash} - ${commit.message}`, diffText, commitHash: commit.hash });
     } catch(e) {
       setDiffViewer({ fileName: `${commit.hash} - ${commit.message}`, diffText: `Error: ${e.message}` });
     }
@@ -120,6 +120,9 @@ export default function FileHistoryDialog({ directory, fileName, onClose }) {
         <DiffViewer
           fileName={diffViewer.fileName}
           diffText={diffViewer.diffText}
+          directory={directory}
+          commitHash={diffViewer.commitHash}
+          filePath={fileName}
           onClose={() => setDiffViewer(null)}
         />
       )}

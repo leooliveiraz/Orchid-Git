@@ -294,7 +294,7 @@ export default function ChangesPanel({ directory }) {
           : await window.api.getDiff(directory, file.path);
       }
       if (diff && diff.trim()) {
-        setDiffViewer({ fileName: file.path, diffText: diff });
+        setDiffViewer({ fileName: file.path, diffText: diff, staged: file.staged, filePath: file.path });
       } else {
         setError("No diff available");
       }
@@ -567,6 +567,9 @@ export default function ChangesPanel({ directory }) {
         <DiffViewer
           fileName={diffViewer.fileName}
           diffText={diffViewer.diffText}
+          directory={directory}
+          staged={diffViewer.staged}
+          filePath={diffViewer.filePath}
           onClose={() => setDiffViewer(null)}
         />
       )}
