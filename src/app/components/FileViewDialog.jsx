@@ -59,10 +59,10 @@ export default function FileViewDialog({ directory, fileName, commitHash, onClos
   const [historyDialog, setHistoryDialog] = useState(false);
   const [gitDiffLines, setGitDiffLines] = useState([]);
   const [fileInfo, setFileInfo] = useState(null);
+  const [isText, setIsText] = useState(null);
 
   const isImage = isImageFile(fileName);
-  const isText = isTextFile(fileName);
-  const isSupported = isImage || isText;
+  const isSupported = isImage || isText === true;
 
   useEffect(() => {
     if (commitHash || !window.api) return;
@@ -72,7 +72,7 @@ export default function FileViewDialog({ directory, fileName, commitHash, onClos
   }, [directory, fileName, commitHash]);
 
   const highlightLines = useMemo(() => {
-    if (isImage) return [];
+    if (isImage || isText !== true) return [];
     const set = new Set(gitDiffLines || []);
     if (originalContent !== content) {
       const orig = originalContent.split("\n");
@@ -83,35 +83,42 @@ export default function FileViewDialog({ directory, fileName, commitHash, onClos
       }
     }
     return [...set].sort((a, b) => a - b);
-  }, [originalContent, content, gitDiffLines, isImage]);
+  }, [originalContent, content, gitDiffLines, isImage, isText]);
 
   useEffect(() => {
     if (!directory || !window.api) return;
     setLoading(true);
-    if (!isSupported) {
-      window.api.getFileHistory(directory, fileName)
-        .then(history => { setFileInfo(history?.[0] || null); })
-        .catch(() => {})
-        .finally(() => setLoading(false));
-    } else if (isImage) {
+    if (isImage) {
       (commitHash
         ? window.api.getFileAtCommitBase64(directory, commitHash, fileName)
         : window.api.getFileContentBase64(directory, fileName)
       ).then(b64 => {
         setImageBase64(b64 || null);
+        setIsText(false);
         setLoading(false);
       }).catch(() => setLoading(false));
     } else {
-      (commitHash
-        ? window.api.getFileAtCommit(directory, commitHash, fileName)
-        : window.api.getFileContent(directory, fileName)
-      ).then(text => {
-        setContent(text || "");
-        setOriginalContent(text || "");
-        setLoading(false);
-      }).catch(() => setLoading(false));
+      window.api.checkIsText(directory, fileName, commitHash).then(textLike => {
+        if (textLike) {
+          setIsText(true);
+          (commitHash
+            ? window.api.getFileAtCommit(directory, commitHash, fileName)
+            : window.api.getFileContent(directory, fileName)
+          ).then(text => {
+            setContent(text || "");
+            setOriginalContent(text || "");
+            setLoading(false);
+          }).catch(() => setLoading(false));
+        } else {
+          setIsText(false);
+          window.api.getFileHistory(directory, fileName)
+            .then(history => { setFileInfo(history?.[0] || null); })
+            .catch(() => {})
+            .finally(() => setLoading(false));
+        }
+      });
     }
-  }, [directory, fileName, commitHash, isImage, isSupported]);
+  }, [directory, fileName, commitHash, isImage]);
 
   useEffect(() => {
     if (tab !== "diff" || commitHash || !window.api) return;
@@ -127,7 +134,7 @@ export default function FileViewDialog({ directory, fileName, commitHash, onClos
         setDiffLoading(false);
         setDiffFetched(true);
       });
-    } else if (!diffContent) {
+    } else if (isText === true && !diffContent) {
       window.api.getDiff(directory, fileName)
         .then(d => setDiffContent(d || "No changes"))
         .catch(() => setDiffContent("No changes"));
@@ -174,9 +181,9 @@ export default function FileViewDialog({ directory, fileName, commitHash, onClos
                 style={{ maxWidth: "100%", maxHeight: "65vh", objectFit: "contain", borderRadius: 4 }}
               />
             </Box>
-          ) : isText ? (
+          ) : isText === true ? (
             <CodeEditor value={content} filename={fileName} readOnly height="65vh" highlightLines={highlightLines} />
-          ) : (
+          ) : isText === false ? (
             <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", py: 6, gap: 1 }}>
               <Typography variant="body1" sx={{ color: "text.secondary", fontWeight: 600 }}>
                 Cannot open this file format
@@ -195,10 +202,10 @@ export default function FileViewDialog({ directory, fileName, commitHash, onClos
                 </Box>
               )}
             </Box>
-          )
+          ) : null
         )}
 
-        {!loading && tab === "edit" && isText && (
+        {!loading && tab === "edit" && isText === true && (
           <>
             <CodeEditor value={content} onChange={v => { setContent(v); setDirty(v !== originalContent); }} filename={fileName} readOnly={false} height="55vh" highlightLines={highlightLines} />
             <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 1, gap: 1 }}>
