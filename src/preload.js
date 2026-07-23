@@ -46,6 +46,7 @@ contextBridge.exposeInMainWorld("api", {
   getFileAtCommitBase64: (directory, commitHash, filePath) => ipcRenderer.invoke("get-file-at-commit-base64", directory, commitHash, filePath),
   getFileAtRefBase64: (directory, ref, filePath) => ipcRenderer.invoke("get-file-at-ref-base64", directory, ref, filePath),
   getParentCommit: (directory, commitHash) => ipcRenderer.invoke("get-parent-commit", directory, commitHash),
+  checkIsText: (directory, filePath, commitHash) => ipcRenderer.invoke("check-is-text", directory, filePath, commitHash),
   executeRebase: (directory, targetBranch, todoList) => ipcRenderer.invoke("execute-rebase", directory, targetBranch, todoList),
   stashApply: (directory, stashId) => ipcRenderer.invoke("stash-apply", directory, stashId),
   stashDrop: (directory, stashId) => ipcRenderer.invoke("stash-drop", directory, stashId),

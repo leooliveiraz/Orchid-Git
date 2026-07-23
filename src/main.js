@@ -374,6 +374,31 @@ ipcMain.handle("get-parent-commit", (event, directory, commitHash) => {
   }
 });
 
+ipcMain.handle("check-is-text", (event, directory, filePath, commitHash) => {
+  const MAX_BYTES = 8000;
+  let buffer;
+  if (commitHash) {
+    const result = childProcess.spawnSync("git", ["show", `${commitHash}:${gitPath(filePath)}`], { cwd: directory, maxBuffer: MAX_BYTES });
+    if (result.error) return true;
+    if (result.status !== 0) return true;
+    buffer = result.stdout;
+  } else {
+    const path = require("path");
+    const fs = require("fs");
+    const fullPath = path.join(directory, filePath);
+    try {
+      const fd = fs.openSync(fullPath, "r");
+      buffer = Buffer.alloc(MAX_BYTES);
+      const bytesRead = fs.readSync(fd, buffer, 0, MAX_BYTES, 0);
+      fs.closeSync(fd);
+      buffer = buffer.subarray(0, bytesRead);
+    } catch {
+      return true;
+    }
+  }
+  return !buffer.includes(0);
+});
+
 ipcMain.handle("merge", async (event, directory, branch, strategy) => {
   const args = ["merge"];
   if (strategy === "squash") args.push("--squash");

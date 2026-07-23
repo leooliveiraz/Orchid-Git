@@ -6,9 +6,27 @@ import CloseIcon from "@mui/icons-material/Close";
 
 const IMAGE_EXTENSIONS = new Set([".png", ".jpg", ".jpeg", ".gif", ".bmp", ".webp", ".svg", ".ico"]);
 
+const TEXT_EXTENSIONS = new Set([
+  ".txt", ".md", ".markdown",
+  ".js", ".jsx", ".mjs", ".cjs", ".ts", ".tsx", ".vue", ".svelte", ".astro",
+  ".py", ".java", ".c", ".cpp", ".cxx", ".cc", ".h", ".hpp", ".hxx", ".cs", ".rb", ".php",
+  ".go", ".rs", ".swift", ".kt", ".scala", ".pl", ".pm", ".lua", ".hs", ".r",
+  ".html", ".htm", ".xhtml", ".css", ".scss", ".less", ".sass", ".styl",
+  ".json", ".xml", ".yaml", ".yml", ".toml", ".ini", ".cfg", ".conf",
+  ".sh", ".bash", ".zsh", ".bat", ".cmd", ".ps1", ".psm1",
+  ".sql", ".gradle", ".properties", ".env",
+  ".gitignore", ".gitattributes", ".editorconfig",
+  ".tex", ".bib", ".rst", ".adoc",
+]);
+
 function isImageFile(name) {
   const ext = name?.substring(name.lastIndexOf(".")).toLowerCase();
   return IMAGE_EXTENSIONS.has(ext);
+}
+
+function isTextFile(name) {
+  const ext = name?.substring(name.lastIndexOf(".")).toLowerCase();
+  return TEXT_EXTENSIONS.has(ext);
 }
 
 function mimeType(name) {
@@ -140,6 +158,7 @@ export default function DiffViewer({ fileName, diffText, onClose, directory, sta
 
   const imageFilePath = filePath || fileName;
   const isImage = isImageFile(imageFilePath);
+  const isText = isTextFile(imageFilePath);
 
   useEffect(() => {
     if (!isImage || !directory || !window.api) return;
@@ -189,7 +208,7 @@ export default function DiffViewer({ fileName, diffText, onClose, directory, sta
         <Typography component="div" variant="body2" sx={{ fontFamily: "monospace", flex: 1, fontWeight: 600 }}>
           {fileName}
         </Typography>
-        {!isImage && (
+        {!isImage && isText && (
           <ToggleButtonGroup size="small" value={viewType} exclusive onChange={(e, v) => v && setViewType(v)} sx={{ mr: 1 }}>
             <ToggleButton value="unified" sx={{ fontSize: "0.65rem", py: 0.25 }}>Unified</ToggleButton>
             <ToggleButton value="split" sx={{ fontSize: "0.65rem", py: 0.25 }}>Split</ToggleButton>
@@ -227,7 +246,12 @@ export default function DiffViewer({ fileName, diffText, onClose, directory, sta
           </Box>
         ) : (
           <>
-            {!hasContent && (
+            {!hasContent && !isText && (
+              <Typography variant="body2" sx={{ color: "text.secondary", textAlign: "center", py: 3 }}>
+                Binary file
+              </Typography>
+            )}
+            {!hasContent && isText && (
               <Typography variant="body2" sx={{ color: "text.secondary", textAlign: "center", py: 3 }}>
                 No changes
               </Typography>

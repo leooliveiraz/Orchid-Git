@@ -9,9 +9,27 @@ import FileHistoryDialog from "./FileHistoryDialog.jsx";
 
 const IMAGE_EXTENSIONS = new Set([".png", ".jpg", ".jpeg", ".gif", ".bmp", ".webp", ".svg", ".ico"]);
 
+const TEXT_EXTENSIONS = new Set([
+  ".txt", ".md", ".markdown",
+  ".js", ".jsx", ".mjs", ".cjs", ".ts", ".tsx", ".vue", ".svelte", ".astro",
+  ".py", ".java", ".c", ".cpp", ".cxx", ".cc", ".h", ".hpp", ".hxx", ".cs", ".rb", ".php",
+  ".go", ".rs", ".swift", ".kt", ".scala", ".pl", ".pm", ".lua", ".hs", ".r",
+  ".html", ".htm", ".xhtml", ".css", ".scss", ".less", ".sass", ".styl",
+  ".json", ".xml", ".yaml", ".yml", ".toml", ".ini", ".cfg", ".conf",
+  ".sh", ".bash", ".zsh", ".bat", ".cmd", ".ps1", ".psm1",
+  ".sql", ".gradle", ".properties", ".env",
+  ".gitignore", ".gitattributes", ".editorconfig",
+  ".tex", ".bib", ".rst", ".adoc",
+]);
+
 function isImageFile(name) {
   const ext = name?.substring(name.lastIndexOf(".")).toLowerCase();
   return IMAGE_EXTENSIONS.has(ext);
+}
+
+function isTextFile(name) {
+  const ext = name?.substring(name.lastIndexOf(".")).toLowerCase();
+  return TEXT_EXTENSIONS.has(ext);
 }
 
 function mimeType(name) {
@@ -40,8 +58,11 @@ export default function FileViewDialog({ directory, fileName, commitHash, onClos
   const [diffFetched, setDiffFetched] = useState(false);
   const [historyDialog, setHistoryDialog] = useState(false);
   const [gitDiffLines, setGitDiffLines] = useState([]);
+  const [fileInfo, setFileInfo] = useState(null);
 
   const isImage = isImageFile(fileName);
+  const isText = isTextFile(fileName);
+  const isSupported = isImage || isText;
 
   useEffect(() => {
     if (commitHash || !window.api) return;
@@ -67,7 +88,12 @@ export default function FileViewDialog({ directory, fileName, commitHash, onClos
   useEffect(() => {
     if (!directory || !window.api) return;
     setLoading(true);
-    if (isImage) {
+    if (!isSupported) {
+      window.api.getFileHistory(directory, fileName)
+        .then(history => { setFileInfo(history?.[0] || null); })
+        .catch(() => {})
+        .finally(() => setLoading(false));
+    } else if (isImage) {
       (commitHash
         ? window.api.getFileAtCommitBase64(directory, commitHash, fileName)
         : window.api.getFileContentBase64(directory, fileName)
@@ -85,7 +111,7 @@ export default function FileViewDialog({ directory, fileName, commitHash, onClos
         setLoading(false);
       }).catch(() => setLoading(false));
     }
-  }, [directory, fileName, commitHash, isImage]);
+  }, [directory, fileName, commitHash, isImage, isSupported]);
 
   useEffect(() => {
     if (tab !== "diff" || commitHash || !window.api) return;
@@ -128,8 +154,8 @@ export default function FileViewDialog({ directory, fileName, commitHash, onClos
         </Typography>
         <ToggleButtonGroup size="small" value={tab} exclusive onChange={(e, v) => v && setTab(v)}>
           <ToggleButton value="view" sx={{ fontSize: "0.7rem" }}>View</ToggleButton>
-          {!commitHash && <ToggleButton value="edit" sx={{ fontSize: "0.7rem" }}>Edit</ToggleButton>}
-          {!commitHash && <ToggleButton value="diff" sx={{ fontSize: "0.7rem" }}>Diff</ToggleButton>}
+          {!commitHash && isText && <ToggleButton value="edit" sx={{ fontSize: "0.7rem" }}>Edit</ToggleButton>}
+          {!commitHash && isSupported && <ToggleButton value="diff" sx={{ fontSize: "0.7rem" }}>Diff</ToggleButton>}
           <ToggleButton value="history" sx={{ fontSize: "0.7rem" }} onClick={() => setHistoryDialog(true)}>History</ToggleButton>
         </ToggleButtonGroup>
         <IconButton size="small" onClick={onClose} aria-label="close">
@@ -148,12 +174,31 @@ export default function FileViewDialog({ directory, fileName, commitHash, onClos
                 style={{ maxWidth: "100%", maxHeight: "65vh", objectFit: "contain", borderRadius: 4 }}
               />
             </Box>
-          ) : (
+          ) : isText ? (
             <CodeEditor value={content} filename={fileName} readOnly height="65vh" highlightLines={highlightLines} />
+          ) : (
+            <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", py: 6, gap: 1 }}>
+              <Typography variant="body1" sx={{ color: "text.secondary", fontWeight: 600 }}>
+                Cannot open this file format
+              </Typography>
+              <Typography variant="caption" sx={{ color: "text.disabled" }}>
+                Only text and image files can be viewed
+              </Typography>
+              {fileInfo && (
+                <Box sx={{ mt: 2, textAlign: "center" }}>
+                  <Typography variant="caption" sx={{ color: "text.secondary", display: "block" }}>
+                    Last modified by <strong>{fileInfo.author}</strong>
+                  </Typography>
+                  <Typography variant="caption" sx={{ color: "text.disabled", display: "block" }}>
+                    {fileInfo.date} — {fileInfo.message}
+                  </Typography>
+                </Box>
+              )}
+            </Box>
           )
         )}
 
-        {!loading && tab === "edit" && !isImage && (
+        {!loading && tab === "edit" && isText && (
           <>
             <CodeEditor value={content} onChange={v => { setContent(v); setDirty(v !== originalContent); }} filename={fileName} readOnly={false} height="55vh" highlightLines={highlightLines} />
             <Box sx={{ display: "flex", justifyContent: "flex-end", mt: 1, gap: 1 }}>
