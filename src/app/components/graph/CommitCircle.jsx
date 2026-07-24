@@ -14,6 +14,7 @@ export default function CommitCircle({ lane, color }) {
       fill={color}
       stroke="var(--graph-bg, #fff)"
       strokeWidth={STROKE_W}
+      style={{ zIndex: 2 }}
     />
   );
 }
