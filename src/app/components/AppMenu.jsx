@@ -15,6 +15,7 @@ import {
 import RefreshIcon from "@mui/icons-material/Refresh";
 import SettingsIcon from "@mui/icons-material/Settings";
 import MenuIcon from "@mui/icons-material/Menu";
+import MenuOpenIcon from "@mui/icons-material/MenuOpen";
 import Brightness4Icon from "@mui/icons-material/Brightness4";
 import Brightness7Icon from "@mui/icons-material/Brightness7";
 import FolderOpenIcon from "@mui/icons-material/FolderOpen";
@@ -60,7 +61,7 @@ const MODAL_STYLE = {
   width: 400, maxWidth: "90vw", boxShadow: 24, p: 3,
 };
 
-export default function AppMenu({ onToggleMenu }) {
+export default function AppMenu({ menuOpen, onToggleMenu }) {
   const { directory, setDirectory, themeMode, toggleTheme, refresh, setTabSignal, syncWarning, setSyncWarning, repoData, isMerging, isReverting } = useContext(OrchidContext);
   const [showClone, setShowClone] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
@@ -210,7 +211,7 @@ export default function AppMenu({ onToggleMenu }) {
             sx={{ mr: 1 }}
             onClick={onToggleMenu}
           >
-            <MenuIcon />
+            {menuOpen ? <MenuOpenIcon /> : <MenuIcon />}
           </IconButton>
           <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, mr: 1, flexGrow: 1 }}>
             <img src={appIcon} alt="Orchid" width="22" height="22" style={{ borderRadius: 4 }} />

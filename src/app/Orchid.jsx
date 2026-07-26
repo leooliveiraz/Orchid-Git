@@ -295,7 +295,7 @@ export default function Orchid() {
       <CssBaseline />
       <OrchidContext.Provider value={{ directory, setDirectory, themeMode, toggleTheme, repoData, setRepoData, menuOpen, setMenuOpen, refresh, refreshKey, recentDirs, notRepo, setNotRepo, removeRecentDir, recentSort, setRecentSort: handleSetRecentSort, tabSignal, setTabSignal, syncWarning, setSyncWarning, isMerging, setIsMerging, isReverting, setIsReverting, rebaseEditRequest, setRebaseEditRequest, scrollToCommitHash, setScrollToCommitHash, viewCommit, setViewCommit, dateFormat, setDateFormat, isLoading, setIsLoading }}>
         <Box sx={{ height: "100vh", display: "flex", flexDirection: "column", position: "relative" }}>
-          <AppMenu onToggleMenu={() => setMenuOpen(prev => !prev)} />
+          <AppMenu menuOpen={menuOpen} onToggleMenu={() => setMenuOpen(prev => !prev)} />
           {isLoading && <LinearProgress sx={{ position: "absolute", top: 0, left: 0, right: 0, zIndex: 2000 }} />}
           <Box sx={{ display: "flex", flex: 1, overflow: "hidden" }}>
             <LeftMenu open={menuOpen} />
