@@ -260,6 +260,13 @@ export default function AppMenu({ menuOpen, onToggleMenu }) {
               </IconButton>
             </Tooltip>
           )}
+          {directory && (
+            <Tooltip title="Create Pull Request">
+              <IconButton color="inherit" onClick={() => { if (isMerging) { setSyncError("Resolva o merge antes de continuar"); return; } if (isReverting) { setSyncError("Resolva o revert antes de continuar"); return; } setShowCreatePR(true); }} sx={{ mr: 0.5 }}>
+                <OpenInNewIcon />
+              </IconButton>
+            </Tooltip>
+          )}
           {directory && repoData && (repoData.ahead > 0 || repoData.behind > 0) && (
             <Tooltip title={`${repoData.ahead} ahead, ${repoData.behind} behind`}>
               <Chip id="ahead-behind-chip"
@@ -296,13 +303,6 @@ export default function AppMenu({ menuOpen, onToggleMenu }) {
             <Tooltip title="Commit">
               <IconButton color="inherit" onClick={handleOpenCommit} sx={{ mr: 0.5 }}>
                 <TaskAltIcon />
-              </IconButton>
-            </Tooltip>
-          )}
-          {directory && (
-            <Tooltip title="Create Pull Request">
-              <IconButton color="inherit" onClick={() => { if (isMerging) { setSyncError("Resolva o merge antes de continuar"); return; } if (isReverting) { setSyncError("Resolva o revert antes de continuar"); return; } setShowCreatePR(true); }} sx={{ mr: 0.5 }}>
-                <OpenInNewIcon />
               </IconButton>
             </Tooltip>
           )}

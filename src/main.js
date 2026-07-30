@@ -879,12 +879,18 @@ function stashFilesFromCommit(directory, commitHash) {
 }
 
 ipcMain.handle("get-commit-files", (event, directory, commitHash) => {
-  const statusOutput = runGit(["diff-tree", "--no-commit-id", "-r", "--name-status", commitHash], directory);
-  const numstatOutput = runGit(["diff-tree", "--no-commit-id", "-r", "--numstat", commitHash], directory);
+  let statusOutput = runGit(["diff-tree", "--no-commit-id", "-r", "-c", "--name-status", commitHash], directory);
+  let numstatOutput = runGit(["diff-tree", "--no-commit-id", "-r", "-c", "--numstat", commitHash], directory);
   let statusLines = statusOutput.trim().split("\n").filter(Boolean);
-  const numstatLines = numstatOutput.trim().split("\n").filter(Boolean);
+  let numstatLines = numstatOutput.trim().split("\n").filter(Boolean);
   if (statusLines.length === 0 && numstatLines.length === 0) {
-    return stashFilesFromCommit(directory, commitHash);
+    statusOutput = runGit(["diff-tree", "--no-commit-id", "-r", "--name-status", commitHash], directory);
+    numstatOutput = runGit(["diff-tree", "--no-commit-id", "-r", "--numstat", commitHash], directory);
+    statusLines = statusOutput.trim().split("\n").filter(Boolean);
+    numstatLines = numstatOutput.trim().split("\n").filter(Boolean);
+    if (statusLines.length === 0 && numstatLines.length === 0) {
+      return stashFilesFromCommit(directory, commitHash);
+    }
   }
   const numstatMap = {};
   numstatLines.forEach(line => {
@@ -913,7 +919,10 @@ ipcMain.handle("get-stash-file-diff", (event, directory, commitHash, filePath) =
 });
 
 ipcMain.handle("get-commit-file-diff", (event, directory, commitHash, filePath) => {
-  const output = runGit(["diff-tree", "--no-commit-id", "-r", "-p", commitHash, "--", filePath], directory);
+  let output = runGit(["diff-tree", "--no-commit-id", "-r", "-c", "-p", commitHash, "--", filePath], directory);
+  if (!output.trim()) {
+    output = runGit(["diff-tree", "--no-commit-id", "-r", "-p", commitHash, "--", filePath], directory);
+  }
   if (output.trim()) return output;
   try {
     const stashList = runGit(["stash", "list", "--format=%gd||%gs"], directory).trim().split("\n").filter(Boolean);
@@ -984,7 +993,11 @@ ipcMain.handle("get-diff", (event, directory, filePath) => {
 });
 
 ipcMain.handle("get-diff-commit", (event, directory, commitHash, filePath) => {
-  return runGit(["diff", commitHash, "--", filePath], directory);
+  let output = runGit(["diff-tree", "--no-commit-id", "-r", "-c", "-p", commitHash, "--", filePath], directory);
+  if (!output.trim()) {
+    output = runGit(["diff-tree", "--no-commit-id", "-r", "-p", commitHash, "--", filePath], directory);
+  }
+  return output;
 });
 
 ipcMain.handle("get-diff-lines", (event, directory, filePath) => {
