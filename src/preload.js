@@ -92,6 +92,7 @@ contextBridge.exposeInMainWorld("api", {
   writeLastDirectory: (dirPath) => ipcRenderer.invoke("write-last-directory", dirPath),
   saveRepoLog: (content) => ipcRenderer.invoke("save-repo-log", content),
   createPR: (directory, options) => ipcRenderer.invoke("create-pr", directory, options),
+  openInExplorer: (directory) => ipcRenderer.invoke("open-in-explorer", directory),
   // Send Methods
   testSend: (args) => ipcRenderer.send("test-send", args),
   openDevTools: (args) => ipcRenderer.send("open-dev-tools", args),

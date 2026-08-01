@@ -8,10 +8,11 @@ import FileExplorer from "./FileExplorer.jsx";
 import SuccessSnackbar from "./SuccessSnackbar.jsx";
 import CommitSearch from "./CommitSearch.jsx";
 import CloudIcon from "@mui/icons-material/Cloud";
+import FolderOpenIcon from "@mui/icons-material/FolderOpen";
 import { LANE_COLORS } from "./graph/constants.js";
 import {
   Typography, Box, Tabs, Tab, FormControlLabel, Checkbox,
-  TextField, Paper,
+  TextField, Paper, IconButton, Tooltip,
   Menu, MenuItem, ListItemIcon, ListItemText, Chip, Divider, Alert, Badge,
 } from "@mui/material";
 import { OrchidContext } from "../OrchidContext.jsx";
@@ -362,6 +363,15 @@ export default function Repository({ repositoryDirectory }) {
       <Box sx={{ mb: 2, borderBottom: "1px solid", borderColor: "divider", pb: 1.5 }}>
         <Typography variant="h6" sx={{ fontWeight: 400, letterSpacing: "-0.02em", color: "text.primary", lineHeight: 1.3 }}>
           {repositoryDirectory.split(/[/\\]/).pop()}
+          <Tooltip title="Abrir pasta no explorador de arquivos">
+            <IconButton
+              size="small"
+              onClick={() => window.api?.openInExplorer?.(repositoryDirectory)}
+              sx={{ ml: 1, verticalAlign: "middle", color: "text.secondary", "&:hover": { color: "text.primary" } }}
+            >
+              <FolderOpenIcon sx={{ fontSize: 18 }} />
+            </IconButton>
+          </Tooltip>
           {repoData?.currentBranch && (
             <Box component="span" sx={{ ml: 1, fontSize: "0.75rem", color: "success.main", fontWeight: 600, verticalAlign: "middle" }}>
               {repoData.currentBranch}

@@ -1076,6 +1076,10 @@ ipcMain.handle("save-repo-log", (event, content) => {
   try { fs.writeFileSync(target, content, "utf8"); } catch { }
 });
 
+ipcMain.handle("open-in-explorer", async (event, directory) => {
+  await shell.openPath(directory);
+});
+
 ipcMain.handle("create-pr", async (event, directory, options = {}) => {
   const { headBranch, baseBranch, title } = options;
 

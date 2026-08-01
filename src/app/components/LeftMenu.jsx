@@ -16,6 +16,7 @@ import ArrowRightIcon from "@mui/icons-material/ArrowRight";
 import FiberManualRecordIcon from "@mui/icons-material/FiberManualRecord";
 import RadioButtonUncheckedIcon from "@mui/icons-material/RadioButtonUnchecked";
 import SearchIcon from "@mui/icons-material/Search";
+import FolderOpenIcon from "@mui/icons-material/FolderOpen";
 import Tooltip from "@mui/material/Tooltip";
 import { OrchidContext } from "../OrchidContext.jsx";
 import MergeDialog from "./MergeDialog.jsx";
@@ -96,22 +97,35 @@ function Section({ title, count, children, expanded, onToggle, onAdd, onMerge, o
   );
 }
 
-function Item({ label, active, badge, onDoubleClick, onClick, onDelete, onContextMenu, sx: sxProp }) {
+function Item({ label, active, badge, onDoubleClick, onClick, onDelete, onOpen, onContextMenu, sx: sxProp }) {
   return (
     <ListItem
       dense
       onClick={onClick}
       onDoubleClick={onDoubleClick}
       onContextMenu={onContextMenu}
-      secondaryAction={onDelete ? (
-        <Box component="span" onClick={(e) => { e.stopPropagation(); onDelete(); }}
-          sx={{ display: "flex", lineHeight: 1, cursor: "pointer", color: "text.disabled", "&:hover": { color: "error.main" }, mr: 0.5 }}
-        >
-          <DeleteIcon sx={{ fontSize: 16 }} />
+      secondaryAction={(onDelete || onOpen) ? (
+        <Box sx={{ display: "flex", alignItems: "center", gap: 0.25 }}>
+          {onOpen && (
+            <Tooltip title="Abrir pasta no explorador de arquivos" arrow>
+              <Box component="span" onClick={(e) => { e.stopPropagation(); onOpen(); }}
+                sx={{ display: "flex", lineHeight: 1, cursor: "pointer", color: "text.disabled", "&:hover": { color: "text.primary" } }}
+              >
+                <FolderOpenIcon sx={{ fontSize: 16 }} />
+              </Box>
+            </Tooltip>
+          )}
+          {onDelete ? (
+            <Box component="span" onClick={(e) => { e.stopPropagation(); onDelete(); }}
+              sx={{ display: "flex", lineHeight: 1, cursor: "pointer", color: "text.disabled", "&:hover": { color: "error.main" }, mr: 0.5 }}
+            >
+              <DeleteIcon sx={{ fontSize: 16 }} />
+            </Box>
+          ) : null}
         </Box>
       ) : null}
       sx={{
-        cursor: "pointer", py: 0.25, pr: onDelete ? 6 : 2,
+        cursor: "pointer", py: 0.25, pr: (onDelete || onOpen) ? 6 : 2,
         "&:hover": { bgcolor: "action.hover", borderRadius: 1 },
         ...(active ? { fontWeight: 700 } : {}),
         ...(sxProp || {}),
@@ -734,6 +748,7 @@ export default function LeftMenu({ open }) {
                         if (skipRecentConfirm) { setDirectory(dir); }
                         else { setPendingRecentDir(dir); }
                       }}
+                      onOpen={() => window.api?.openInExplorer?.(dir)}
                       onDelete={() => confirmRemoveRecent(dir)}
                     />
                   ))}

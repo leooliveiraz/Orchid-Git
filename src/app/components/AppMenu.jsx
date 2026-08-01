@@ -35,6 +35,7 @@ import AssignmentTurnedInIcon from '@mui/icons-material/AssignmentTurnedIn';
 import WatchLaterIcon from '@mui/icons-material/WatchLater';
 import ClearIcon from "@mui/icons-material/Clear";
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
+import LaunchIcon from "@mui/icons-material/Launch";
 import React, { useContext, useState, useEffect } from "react";
 import appIcon from "../../assets/icon.png";
 import pkg from "../../../package.json";
@@ -220,6 +221,13 @@ export default function AppMenu({ menuOpen, onToggleMenu }) {
             </Typography>
             <Chip label={`v${pkg.version}`} size="small" variant="outlined"
               sx={{ fontSize: "0.6rem", height: 18, color: "rgba(255,255,255,0.5)", borderColor: "rgba(255,255,255,0.2)" }} />
+            {directory && (
+              <Tooltip title="Open directory in file explorer">
+                <IconButton size="small" color="inherit" onClick={() => window.api.openInExplorer(directory)} sx={{ ml: 0.5, opacity: 0.7, "&:hover": { opacity: 1 } }}>
+                  <LaunchIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+            )}
           </Box>
 
           <Tooltip title="Open repository">
