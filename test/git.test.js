@@ -33,10 +33,23 @@ describe("parseStatusOutput", () => {
 
   test("parses both staged and unstaged (MM)", () => {
     const result = parseStatusOutput("MM file.txt");
-    expect(result).toHaveLength(1);
-    expect(result[0].type).toBe("M");
-    expect(result[0].staged).toBe(true);
-    expect(result[0].path).toBe("file.txt");
+    expect(result).toHaveLength(2);
+    expect(result[0]).toEqual({ type: "M", path: "file.txt", staged: true });
+    expect(result[1]).toEqual({ type: "M", path: "file.txt", staged: false });
+  });
+
+  test("parses staged added with unstaged changes (AM)", () => {
+    expect(parseStatusOutput("AM file.txt")).toEqual([
+      { type: "A", path: "file.txt", staged: true },
+      { type: "M", path: "file.txt", staged: false },
+    ]);
+  });
+
+  test("parses renamed with unstaged changes (RM)", () => {
+    expect(parseStatusOutput("RM old.js -> new.js")).toEqual([
+      { type: "R", path: "new.js", staged: true },
+      { type: "M", path: "new.js", staged: false },
+    ]);
   });
 
   test("parses renamed", () => {

@@ -1,7 +1,7 @@
 function parseStatusOutput(output) {
   if (!output || !output.trim()) return [];
-  return output.split("\n").filter(Boolean).map(line => {
-    if (line.length < 3) return null;
+  return output.split("\n").filter(Boolean).flatMap(line => {
+    if (line.length < 3) return [];
     const status = line.substring(0, 2);
     const x = line[0];
     const y = line[1];
@@ -9,23 +9,31 @@ function parseStatusOutput(output) {
     const conflicted = x === "U" || y === "U" || (x === "A" && y === "A") || (x === "D" && y === "D");
 
     if (conflicted) {
-      return { type: status, path, staged: false, conflicted: true };
+      return [{ type: status, path, staged: false, conflicted: true }];
     }
-    if (x === "R" && y === " ") {
+
+    const isRename = x === "R";
+    if (isRename) {
       const [, newPath] = path.split(" -> ");
-      return { type: "R", path: newPath, staged: true };
+      path = newPath || path;
     }
-    if (x !== " " && x !== "?") {
-      return { type: x, path, staged: true };
-    }
-    if (y !== " " && y !== "?") {
-      return { type: y, path, staged: false };
-    }
+
+    const hasStaged = x !== " " && x !== "?";
+    const hasUnstaged = y !== " " && y !== "?";
+
     if (x === "?" && y === "?") {
-      return { type: "??", path, staged: false };
+      return [{ type: "??", path, staged: false }];
     }
-    return null;
-  }).filter(Boolean);
+
+    const entries = [];
+    if (hasStaged) {
+      entries.push({ type: isRename ? "R" : x, path, staged: true });
+    }
+    if (hasUnstaged) {
+      entries.push({ type: y, path, staged: false });
+    }
+    return entries;
+  });
 }
 
 function parseStashList(output) {
