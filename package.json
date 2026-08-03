@@ -1,7 +1,7 @@
 {
   "name": "orchid-git",
   "productName": "Orchid Git",
-  "version": "0.9.2",
+  "version": "0.9.3",
   "description": "Orchid Git - A desktop Git client with graph visualization, conflict resolution, and interactive rebase",
   "main": ".webpack/main",
   "scripts": {

@@ -11,6 +11,19 @@ import { OrchidContext } from "../OrchidContext.jsx";
 import CloneDialog from "./CloneDialog.jsx";
 import InitRepoDialog from "./InitRepoDialog.jsx";
 
+function abbreviatePath(dir, maxLength = 42) {
+  if (!dir || dir.length <= maxLength) return dir;
+  const sep = dir.includes("\\") ? "\\" : "/";
+  const parts = dir.split(/[/\\]/).filter(Boolean);
+  let result = parts[parts.length - 1];
+  for (let i = parts.length - 2; i >= 0; i--) {
+    const candidate = `${parts[i]}${sep}${result}`;
+    if (candidate.length + 4 > maxLength) break;
+    result = candidate;
+  }
+  return `...${sep}${result}`;
+}
+
 export default function NoDirectory() {
   const { setDirectory, recentDirs, removeRecentDir, recentSort, setRecentSort } = useContext(OrchidContext);
   const [showClone, setShowClone] = useState(false);
@@ -92,8 +105,8 @@ export default function NoDirectory() {
                       }}
                     >
                       <FolderIcon sx={{ fontSize: 16, color: "text.secondary" }} />
-                      <Typography variant="body2" sx={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                        {dir}
+                      <Typography variant="body2" sx={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={dir}>
+                        {abbreviatePath(dir)}
                       </Typography>
                       <IconButton size="small" onClick={(e) => { e.stopPropagation(); setConfirmRemove(dir); }}
                         sx={{ color: "text.disabled", "&:hover": { color: "error.main" } }}
