@@ -36,6 +36,8 @@ import WatchLaterIcon from '@mui/icons-material/WatchLater';
 import ClearIcon from "@mui/icons-material/Clear";
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import LaunchIcon from "@mui/icons-material/Launch";
+import SystemUpdateAltIcon from "@mui/icons-material/SystemUpdateAlt";
+import Badge from "@mui/material/Badge";
 import React, { useContext, useState, useEffect } from "react";
 import appIcon from "../../assets/icon.png";
 import pkg from "../../../package.json";
@@ -50,6 +52,7 @@ import RebaseDialog from "./RebaseDialog.jsx";
 import InitRepoDialog from "./InitRepoDialog.jsx";
 import SuccessSnackbar from "./SuccessSnackbar.jsx";
 import CreatePRDialog from "./CreatePRDialog.jsx";
+import UpdateDialog from "./UpdateDialog.jsx";
 
 const OVERLAY_STYLE = {
   position: "fixed", inset: 0, bgcolor: "rgba(0,0,0,0.4)",
@@ -73,6 +76,8 @@ export default function AppMenu({ menuOpen, onToggleMenu }) {
   const [showRebase, setShowRebase] = useState(false);
   const [showInit, setShowInit] = useState(false);
   const [showCommit, setShowCommit] = useState(false);
+  const [showUpdate, setShowUpdate] = useState(false);
+  const [updateAvailable, setUpdateAvailable] = useState(false);
   const [commitStaged, setCommitStaged] = useState([]);
   const [showStashPush, setShowStashPush] = useState(false);
   const [stashMessage, setStashMessage] = useState("");
@@ -89,6 +94,12 @@ export default function AppMenu({ menuOpen, onToggleMenu }) {
     return () => window.removeEventListener("force-push-setting-changed", handler);
   }, []);
   const [showForceConfirm, setShowForceConfirm] = useState(false);
+
+  useEffect(() => {
+    if (!window.api?.onUpdateAvailable) return;
+    const unsub = window.api.onUpdateAvailable(() => setUpdateAvailable(true));
+    return unsub;
+  }, []);
 
   function selectDirectory() {
     window.api.selectDirectory("").then((data) => {
@@ -221,6 +232,13 @@ export default function AppMenu({ menuOpen, onToggleMenu }) {
             </Typography>
             <Chip label={`v${pkg.version}`} size="small" variant="outlined"
               sx={{ fontSize: "0.6rem", height: 18, color: "rgba(255,255,255,0.5)", borderColor: "rgba(255,255,255,0.2)" }} />
+            <Tooltip title={updateAvailable ? "Update available" : "Check for updates"}>
+              <IconButton size="small" color="inherit" onClick={() => setShowUpdate(true)} sx={{ ml: 0.25, opacity: 0.8, "&:hover": { opacity: 1 } }}>
+                <Badge color="error" variant="dot" invisible={!updateAvailable}>
+                  <SystemUpdateAltIcon fontSize="small" />
+                </Badge>
+              </IconButton>
+            </Tooltip>
             {directory && (
               <Tooltip title="Open directory in file explorer">
                 <IconButton size="small" color="inherit" onClick={() => window.api.openInExplorer(directory)} sx={{ ml: 0.5, opacity: 0.7, "&:hover": { opacity: 1 } }}>
@@ -366,6 +384,7 @@ export default function AppMenu({ menuOpen, onToggleMenu }) {
       </AppBar>
       {showClone && <CloneDialog onClose={() => setShowClone(false)} />}
       {showSettings && <SettingsDialog onClose={() => setShowSettings(false)} />}
+      {showUpdate && <UpdateDialog onClose={() => { setShowUpdate(false); setUpdateAvailable(false); }} />}
       {showNewBranch && <CreateBranchDialog onClose={() => setShowNewBranch(false)} />}
       {showMerge && <MergeDialog onClose={() => setShowMerge(false)} />}
       {showCherryPick && <CherryPickDialog onClose={() => setShowCherryPick(false)} />}

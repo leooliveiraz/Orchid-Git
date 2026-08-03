@@ -103,6 +103,18 @@ const createWindow = () => {
     mainWindow.show();
   });
 
+  mainWindow.webContents.once("did-finish-load", () => {
+    setTimeout(async () => {
+      try {
+        const { checkForUpdates } = require("./updater");
+        const info = await checkForUpdates();
+        if (info.hasUpdate) {
+          mainWindow.webContents.send("update-available", info);
+        }
+      } catch (e) { /* ignore network/API failures on startup */ }
+    }, 4000);
+  });
+
   // Open the DevTools only in development mode.
   if (!app.isPackaged) {
     // mainWindow.webContents.openDevTools();
@@ -1078,6 +1090,27 @@ ipcMain.handle("save-repo-log", (event, content) => {
 
 ipcMain.handle("open-in-explorer", async (event, directory) => {
   await shell.openPath(directory);
+});
+
+ipcMain.handle("check-for-updates", async () => {
+  const { checkForUpdates } = require("./updater");
+  try {
+    return await checkForUpdates();
+  } catch (e) {
+    return { hasUpdate: false, error: e.message || String(e), currentVersion: app.getVersion() };
+  }
+});
+
+ipcMain.handle("download-update", async (event, assetUrl, assetName) => {
+  const { downloadUpdate } = require("./updater");
+  return await downloadUpdate(assetUrl, assetName, (received, total) => {
+    event.sender.send("update-download-progress", { received, total });
+  });
+});
+
+ipcMain.handle("install-update", async (event, assetPath) => {
+  const { installUpdate } = require("./updater");
+  return await installUpdate(assetPath);
 });
 
 ipcMain.handle("create-pr", async (event, directory, options = {}) => {

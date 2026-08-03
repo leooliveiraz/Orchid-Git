@@ -9,6 +9,7 @@
     "package": "electron-forge package",
     "generate:assets": "node scripts/generate-installer-gif.js",
     "make": "node scripts/generate-installer-gif.js && electron-forge make",
+    "publish:release": "node scripts/publish-release.js",
     "publish": "electron-forge publish",
     "lint": "echo \"No linting configured\"",
     "test": "jest",

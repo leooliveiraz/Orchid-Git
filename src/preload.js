@@ -93,6 +93,9 @@ contextBridge.exposeInMainWorld("api", {
   saveRepoLog: (content) => ipcRenderer.invoke("save-repo-log", content),
   createPR: (directory, options) => ipcRenderer.invoke("create-pr", directory, options),
   openInExplorer: (directory) => ipcRenderer.invoke("open-in-explorer", directory),
+  checkForUpdates: () => ipcRenderer.invoke("check-for-updates"),
+  downloadUpdate: (assetUrl, assetName) => ipcRenderer.invoke("download-update", assetUrl, assetName),
+  installUpdate: (assetPath) => ipcRenderer.invoke("install-update", assetPath),
   // Send Methods
   testSend: (args) => ipcRenderer.send("test-send", args),
   openDevTools: (args) => ipcRenderer.send("open-dev-tools", args),
@@ -108,4 +111,14 @@ contextBridge.exposeInMainWorld("api", {
     return () => ipcRenderer.removeListener("rebase-edit-request", handler);
   },
   sendRebaseEditResponse: (data) => ipcRenderer.invoke("rebase-edit-response", data),
+  onUpdateAvailable: (callback) => {
+    const handler = (event, data) => callback(data);
+    ipcRenderer.on("update-available", handler);
+    return () => ipcRenderer.removeListener("update-available", handler);
+  },
+  onUpdateProgress: (callback) => {
+    const handler = (event, data) => callback(data);
+    ipcRenderer.on("update-download-progress", handler);
+    return () => ipcRenderer.removeListener("update-download-progress", handler);
+  },
 });
