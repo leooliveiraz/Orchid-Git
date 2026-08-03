@@ -11,6 +11,8 @@ import {
   Snackbar,
   CircularProgress,
   Chip,
+  FormControlLabel,
+  Checkbox,
 } from "@mui/material";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import SettingsIcon from "@mui/icons-material/Settings";
@@ -87,6 +89,7 @@ export default function AppMenu({ menuOpen, onToggleMenu }) {
   const [syncError, setSyncError] = useState(null);
   const [syncSuccess, setSyncSuccess] = useState(null);
   const [forcePushEnabled, setForcePushEnabled] = useState(() => localStorage.getItem("orchid-force-push-enabled") === "true");
+  const [pushTags, setPushTags] = useState(true);
 
   useEffect(() => {
     const handler = (e) => setForcePushEnabled(e.detail);
@@ -116,7 +119,7 @@ export default function AppMenu({ menuOpen, onToggleMenu }) {
     setSyncLoading(true);
     setSyncError(null);
     try {
-      await window.api.push(directory);
+      await window.api.push(directory, pushTags);
       setSyncSuccess("Pushed successfully");
       setSyncAction(null);
       refresh();
@@ -134,7 +137,7 @@ export default function AppMenu({ menuOpen, onToggleMenu }) {
     setSyncLoading(true);
     setSyncError(null);
     try {
-      await window.api.pushForce(directory);
+      await window.api.pushForce(directory, pushTags);
       setSyncSuccess("Force pushed successfully");
       setSyncAction(null);
       refresh();
@@ -435,6 +438,11 @@ export default function AppMenu({ menuOpen, onToggleMenu }) {
                     ? `Push ${repoData.ahead} commit(s) to the remote repository?`
                     : "Push commits to the remote repository?"}
                 </Typography>
+                <FormControlLabel
+                  control={<Checkbox size="small" checked={pushTags} onChange={e => setPushTags(e.target.checked)} />}
+                  label={<Typography variant="body2">Push new tags</Typography>}
+                  sx={{ mb: 2 }}
+                />
                 {repoData?.behind > 0 && (
                   <Alert severity="warning" sx={{ mb: 2 }}>
                     The remote has {repoData.behind} commit(s) that are not in your local branch. Consider pulling first.

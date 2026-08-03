@@ -1042,21 +1042,23 @@ ipcMain.handle("set-user-config", (event, directory, name, email) => {
   return "ok";
 });
 
-ipcMain.handle("push", async (event, directory) => {
+ipcMain.handle("push", async (event, directory, pushTags = true) => {
+  const args = pushTags ? ["push", "--follow-tags"] : ["push"];
   try {
-    return await runGitAsync(["push"], directory);
+    return await runGitAsync(args, directory);
   } catch (e) {
     const msg = e.message || "";
     if (msg.includes("has no upstream")) {
       const branch = runGit(["rev-parse", "--abbrev-ref", "HEAD"], directory).trim();
-      return await runGitAsync(["push", "--set-upstream", "origin", branch], directory);
+      return await runGitAsync([...args, "--set-upstream", "origin", branch], directory);
     }
     throw e;
   }
 });
 
-ipcMain.handle("push-force", async (event, directory) => {
-  return await runGitAsync(["push", "--force-with-lease"], directory);
+ipcMain.handle("push-force", async (event, directory, pushTags = true) => {
+  const args = pushTags ? ["push", "--force-with-lease", "--follow-tags"] : ["push", "--force-with-lease"];
+  return await runGitAsync(args, directory);
 });
 
 ipcMain.handle("pull", async (event, directory) => {

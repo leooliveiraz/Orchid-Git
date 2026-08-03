@@ -63,7 +63,7 @@ test("calls api.push on confirm", async () => {
   const btns = screen.getAllByText("Push");
   fireEvent.click(btns[btns.length - 1]);
   await waitFor(() => {
-    expect(window.api.push).toHaveBeenCalledWith("/test/repo");
+    expect(window.api.push).toHaveBeenCalledWith("/test/repo", true);
   });
 });
 
