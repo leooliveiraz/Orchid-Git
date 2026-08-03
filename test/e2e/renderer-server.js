@@ -8,6 +8,7 @@ const path = require("path");
 
 const ROOT = path.resolve(__dirname, "../..");
 const RENDERER_DIR = path.resolve(ROOT, ".webpack", "renderer", "main_window");
+const RENDERER_PORT = 7654;
 
 const MIME = {
   ".html": "text/html; charset=utf-8",
@@ -63,14 +64,14 @@ function startRendererServer() {
       });
     });
 
-    server.listen(3000, () => {
-      console.log(`Renderer server running on http://localhost:3000`);
+    server.listen(RENDERER_PORT, () => {
+      console.log(`Renderer server running on http://localhost:${RENDERER_PORT}`);
       resolve(server);
     });
 
     server.on("error", (e) => {
       if (e.code === "EADDRINUSE") {
-        console.log("Port 3000 already in use, reusing");
+        console.log(`Port ${RENDERER_PORT} already in use, reusing`);
         resolve(null);
       } else {
         reject(e);

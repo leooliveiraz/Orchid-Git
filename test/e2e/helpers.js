@@ -8,7 +8,7 @@ const TEST_REPO = path.join(ROOT, "test", "test-fixture-repo");
 let serverProcess = null;
 
 /**
- * Ensure the renderer static server is running on port 3000.
+ * Ensure the renderer static server is running on port 7654.
  */
 async function ensureServer() {
   if (!serverProcess) {
