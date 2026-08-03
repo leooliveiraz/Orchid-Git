@@ -131,6 +131,19 @@ const STATUS_COLORS = {
   "??": "#6a737d", "!!": "#6a737d",
 };
 
+function abbreviatePath(path, maxLength = 42) {
+  if (!path || path.length <= maxLength) return path;
+  const sep = path.includes("\\") ? "\\" : "/";
+  const parts = path.split(/[/\\]/).filter(Boolean);
+  let result = parts[parts.length - 1];
+  for (let i = parts.length - 2; i >= 0; i--) {
+    const candidate = `${parts[i]}${sep}${result}`;
+    if (candidate.length + 4 > maxLength) break;
+    result = candidate;
+  }
+  return `...${sep}${result}`;
+}
+
 function StatusFile({ file, onStage, onUnstage, onViewDiff, onViewBlame, onViewHistory, onViewFile, onDiscard, onDiscardHunks, onContextMenu, depth = 0 }) {
   return (
     <ListItem
@@ -176,12 +189,13 @@ function StatusFile({ file, onStage, onUnstage, onViewDiff, onViewBlame, onViewH
         />
       </ListItemIcon>
       <ListItemText
-        primary={depth > 0 ? file.path.split('/').pop() : file.path}
+        primary={depth > 0 ? file.path.split('/').pop() : abbreviatePath(file.path)}
         primaryTypographyProps={{
           variant: "body2", noWrap: true,
           sx: { fontSize: "0.8125rem", cursor: "pointer", "&:hover": { textDecoration: "underline" } },
           onClick: (e) => { e.stopPropagation(); onViewDiff(file); },
         }}
+        title={file.path}
       />
     </ListItem>
   );
