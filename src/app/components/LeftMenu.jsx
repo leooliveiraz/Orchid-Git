@@ -125,7 +125,7 @@ function Item({ label, active, badge, onDoubleClick, onClick, onDelete, onOpen, 
         </Box>
       ) : null}
       sx={{
-        cursor: "pointer", py: 0.25, pr: (onDelete || onOpen) ? 6 : 2,
+        cursor: "pointer", py: 0.25, pr: (onDelete || onOpen) ? 10.5 : 2,
         "&:hover": { bgcolor: "action.hover", borderRadius: 1 },
         ...(active ? { fontWeight: 700 } : {}),
         ...(sxProp || {}),
