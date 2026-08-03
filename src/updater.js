@@ -89,6 +89,7 @@ function downloadFile(url, destPath, onProgress) {
       const file = fs.createWriteStream(destPath);
       response.on("data", (chunk) => {
         received += chunk.length;
+        file.write(chunk);
         onProgress && onProgress(received, total);
       });
       response.on("end", () => file.end());
@@ -101,6 +102,12 @@ function downloadFile(url, destPath, onProgress) {
 }
 
 function installUpdate(assetPath) {
+  try {
+    const stat = fs.statSync(assetPath);
+    if (stat.size === 0) throw new Error("Downloaded file is empty. The download may have failed.");
+  } catch (e) {
+    throw e;
+  }
   if (process.platform === "win32") {
     const proc = childProcess.spawn(assetPath, [], { detached: true, stdio: "ignore" });
     proc.unref();
