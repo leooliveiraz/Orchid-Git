@@ -1,7 +1,7 @@
 const fs = require("node:fs");
 const path = require("node:path");
 
-const REPO = "leooliveiraz/orchid-git-packages";
+const REPO = "leooliveiraz/orchid-page";
 const VERSION = require("../package.json").version;
 const TAG = `v${VERSION}`;
 const TOKEN = process.env.GITHUB_TOKEN;

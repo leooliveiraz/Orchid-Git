@@ -4,7 +4,7 @@ const path = require("node:path");
 const os = require("node:os");
 const childProcess = require("node:child_process");
 
-const UPDATE_REPO = "leooliveiraz/orchid-git-packages";
+const UPDATE_REPO = "leooliveiraz/orchid-page";
 const RELEASES_API_URL = `https://api.github.com/repos/${UPDATE_REPO}/releases/latest`;
 
 function parseVersion(v) {
