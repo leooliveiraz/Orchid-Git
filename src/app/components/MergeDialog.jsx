@@ -48,7 +48,7 @@ export default function MergeDialog({ onClose, defaultBranch }) {
   };
 
   return (
-    <Dialog open onClose={onClose} maxWidth="sm" fullWidth>
+    <Dialog id="merge-dialog" open onClose={onClose} maxWidth="sm" fullWidth>
       <DialogTitle>Merge branch</DialogTitle>
       <DialogContent>
         <Typography variant="body2" sx={{ mb: 2, color: "text.secondary" }}>

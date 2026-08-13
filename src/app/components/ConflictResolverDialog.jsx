@@ -5,6 +5,46 @@ import {
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 
+function EditableText({ text, onInput, style }) {
+  const ref = useCallback((el) => {
+    if (el && document.activeElement !== el && el.textContent !== text) el.textContent = text;
+  }, [text]);
+
+  return (
+    <div
+      ref={ref}
+      contentEditable
+      suppressContentEditableWarning
+      style={{
+        flex: 1,
+        fontFamily: "monospace",
+        fontSize: "13px",
+        lineHeight: 1.5,
+        whiteSpace: "pre",
+        outline: "none",
+        minHeight: "1.5em",
+        ...style,
+      }}
+      onInput={e => onInput(e.currentTarget.textContent || "")}
+      onKeyDown={e => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          document.execCommand("insertLineBreak");
+          onInput(e.currentTarget.textContent || "");
+        }
+      }}
+      onPaste={e => {
+        e.preventDefault();
+        const text = e.clipboardData.getData("text/plain");
+        if (text) {
+          document.execCommand("insertText", false, text.replace(/\r\n/g, "\n"));
+        }
+        onInput(e.currentTarget.textContent || "");
+      }}
+    />
+  );
+}
+
 export default function ConflictResolverDialog({ directory, conflictedFiles, onClose, onRefresh, onCommit }) {
   const [fileIndex, setFileIndex] = useState(0);
   const [segments, setSegments] = useState([]);
@@ -278,11 +318,14 @@ export default function ConflictResolverDialog({ directory, conflictedFiles, onC
     });
   }, []);
 
+  const lastScrolledBlockRef = useRef(null);
+
   useEffect(() => {
     if (conflictIndices.length === 0) return;
     const targetIdx = conflictIndices[Math.min(blockIndex, conflictIndices.length - 1)];
     const seg = segments[targetIdx];
-    if (seg?.type === "conflict" && cardRefs.current[seg.id]) {
+    if (seg?.type === "conflict" && seg.id !== lastScrolledBlockRef.current && cardRefs.current[seg.id]) {
+      lastScrolledBlockRef.current = seg.id;
       cardRefs.current[seg.id].scrollIntoView({ behavior: "smooth", block: "center" });
     }
   }, [blockIndex, conflictIndices, segments]);
@@ -409,22 +452,10 @@ export default function ConflictResolverDialog({ directory, conflictedFiles, onC
           ))}
         </Box>
         <div style={{ flex: 1, background: seg._choice === "ours" ? "rgba(33,150,243,0.08)" : seg._choice === "theirs" ? "rgba(76,175,80,0.08)" : seg._choice === "both" ? "rgba(255,152,0,0.08)" : "transparent", borderRadius: 2, padding: "0 4px" }}>
-          <div
-            contentEditable
-            suppressContentEditableWarning
-            style={{
-              flex: 1,
-              fontFamily: "monospace",
-              fontSize: "13px",
-              lineHeight: 1.5,
-              whiteSpace: "pre",
-              outline: "none",
-              minHeight: "1.5em",
-            }}
-            onInput={e => handleNormalEdit(idx, e.currentTarget.textContent || "")}
-          >
-            {seg.content}
-          </div>
+          <EditableText
+            text={seg.content}
+            onInput={newContent => handleNormalEdit(idx, newContent)}
+          />
         </div>
       </Box>
     );
@@ -581,49 +612,27 @@ export default function ConflictResolverDialog({ directory, conflictedFiles, onC
         <Typography variant="caption" sx={{ color: "primary.main", fontWeight: 600, display: "block", mb: 0.25 }}>
           OURS{oursBranch ? ` (${oursBranch})` : ""}
         </Typography>
-        <div
-          contentEditable
-          suppressContentEditableWarning
-          style={{
-            fontFamily: "monospace",
-            fontSize: "13px",
-            lineHeight: 1.5,
-            whiteSpace: "pre",
-            outline: "none",
-            minHeight: "1.5em",
-          }}
-          onInput={e => handleOursEdit(idx, e.currentTarget.textContent || "")}
-        >
-          {seg.ours}
-        </div>
+        <EditableText
+          text={seg.ours}
+          onInput={text => handleOursEdit(idx, text)}
+        />
       </Box>
       <Divider />
       <Box sx={{ bgcolor: "rgba(76,175,80,0.08)", px: 1.5, py: 0.5 }}>
         <Typography variant="caption" sx={{ color: "success.main", fontWeight: 600, display: "block", mb: 0.25 }}>
           THEIRS{theirsBranch ? ` (${theirsBranch})` : ""}
         </Typography>
-        <div
-          contentEditable
-          suppressContentEditableWarning
-          style={{
-            fontFamily: "monospace",
-            fontSize: "13px",
-            lineHeight: 1.5,
-            whiteSpace: "pre",
-            outline: "none",
-            minHeight: "1.5em",
-          }}
-          onInput={e => handleTheirsEdit(idx, e.currentTarget.textContent || "")}
-        >
-          {seg.theirs}
-        </div>
+        <EditableText
+          text={seg.theirs}
+          onInput={text => handleTheirsEdit(idx, text)}
+        />
       </Box>
     </Box>
   );
   };
 
   return (
-    <Dialog open onClose={onClose} maxWidth="xl" fullWidth>
+    <Dialog id="conflict-resolver-dialog" open onClose={onClose} maxWidth="xl" fullWidth>
       <DialogTitle sx={{ display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap" }}>
         <TextField select size="small" value={fileIndex}
           onChange={e => setFileIndex(Number(e.target.value))}
