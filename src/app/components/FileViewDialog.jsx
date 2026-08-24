@@ -42,8 +42,8 @@ function mimeType(name) {
   return map[ext] || "image/png";
 }
 
-export default function FileViewDialog({ directory, fileName, commitHash, onClose, staged }) {
-  const [tab, setTab] = useState("view");
+export default function FileViewDialog({ directory, fileName, commitHash, onClose, staged, initialTab = "view" }) {
+  const [tab, setTab] = useState(initialTab);
   const [content, setContent] = useState("");
   const [originalContent, setOriginalContent] = useState("");
   const [imageBase64, setImageBase64] = useState(null);
@@ -134,12 +134,15 @@ export default function FileViewDialog({ directory, fileName, commitHash, onClos
         setDiffLoading(false);
         setDiffFetched(true);
       });
-    } else if (isText === true && !diffContent) {
-      window.api.getDiff(directory, fileName)
-        .then(d => setDiffContent(d || "No changes"))
-        .catch(() => setDiffContent("No changes"));
+    } else if (isText === true && !diffContent && !diffLoading) {
+      setDiffLoading(true);
+      (staged
+        ? window.api.getStagedDiff(directory, fileName)
+        : window.api.getDiff(directory, fileName)
+      ).then(d => { setDiffContent(d || "No changes"); setDiffLoading(false); })
+        .catch(() => { setDiffContent("No changes"); setDiffLoading(false); });
     }
-  }, [tab, directory, fileName, commitHash, diffContent, isImage, diffFetched, diffLoading]);
+  }, [tab, directory, fileName, commitHash, diffContent, isImage, isText, diffFetched, diffLoading, staged]);
 
   const handleSave = async () => {
     if (!window.api) return;
@@ -240,7 +243,11 @@ export default function FileViewDialog({ directory, fileName, commitHash, onClos
           </Box>
         )}
 
-        {tab === "diff" && !isImage && diffContent && (
+        {tab === "diff" && !isImage && diffLoading && (
+          <Typography sx={{ color: "text.secondary", textAlign: "center", py: 4 }}>Loading diff...</Typography>
+        )}
+
+        {tab === "diff" && !isImage && !diffLoading && diffContent && (
           /@@/.test(diffContent) ? (
             <Box sx={{ fontFamily: "monospace", fontSize: "13px", lineHeight: 1.5 }}>
               {(() => {

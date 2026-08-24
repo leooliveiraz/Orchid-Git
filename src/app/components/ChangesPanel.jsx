@@ -339,7 +339,14 @@ export default function ChangesPanel({ directory }) {
   };
 
   const handleViewFile = async (file) => {
-    setFileViewer({ fileName: file.path, staged: file.staged });
+    let initialTab = "view";
+    try {
+      if (window.api?.getFileHistory) {
+        const history = await window.api.getFileHistory(directory, file.path);
+        if (history && history.length > 0) initialTab = "diff";
+      }
+    } catch (e) { /* keep view */ }
+    setFileViewer({ fileName: file.path, staged: file.staged, initialTab });
   };
 
   const handleCommitClose = (didCommit) => {
@@ -624,6 +631,7 @@ export default function ChangesPanel({ directory }) {
           directory={directory}
           fileName={fileViewer.fileName}
           staged={fileViewer.staged}
+          initialTab={fileViewer.initialTab}
           onClose={() => setFileViewer(null)}
         />
       )}
