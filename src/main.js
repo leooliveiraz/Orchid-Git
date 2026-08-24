@@ -833,7 +833,7 @@ ipcMain.handle("get-merge-conflicted-files", (event, directory) => {
 });
 
 ipcMain.handle("get-merge-diff", (event, directory, filePath) => {
-  return runGit(["diff", "HEAD...MERGE_HEAD", "--", filePath], directory);
+  return runGit(["diff", "HEAD~1", "--", filePath], directory);
 });
 
 ipcMain.handle("get-stash-files-from-commit", (event, directory, commitHash) => {
@@ -1003,7 +1003,7 @@ ipcMain.handle("commit", (event, directory, message) => {
 });
 
 ipcMain.handle("get-diff", (event, directory, filePath) => {
-  return runGit(["diff", "--", filePath], directory);
+  return runGit(["diff", "HEAD~1", "--", filePath], directory);
 });
 
 ipcMain.handle("get-diff-commit", (event, directory, commitHash, filePath) => {
@@ -1014,16 +1014,21 @@ ipcMain.handle("get-diff-commit", (event, directory, commitHash, filePath) => {
   return output;
 });
 
-ipcMain.handle("get-diff-lines", (event, directory, filePath) => {
+ipcMain.handle("get-diff-lines", (event, directory, filePath, staged) => {
   try {
-    const out = runGit(["diff", "-U0", "--", filePath], directory);
-    const lines = [];
-    for (const m of out.matchAll(/^@@ -\d+(?:,\d+)? \+(\d+)(?:,(\d+))? @@/gm)) {
-      const start = parseInt(m[1], 10);
-      const count = m[2] !== undefined ? parseInt(m[2], 10) : 1;
-      for (let i = 0; i < count; i++) lines.push(start + i);
+    const commands = staged
+      ? [["diff", "--cached", "-U0", "--", filePath], ["diff", "-U0", "--", filePath]]
+      : [["diff", "-U0", "--", filePath]];
+    const lines = new Set();
+    for (const args of commands) {
+      const out = runGit(args, directory);
+      for (const m of out.matchAll(/^@@ -\d+(?:,\d+)? \+(\d+)(?:,(\d+))? @@/gm)) {
+        const start = parseInt(m[1], 10);
+        const count = m[2] !== undefined ? parseInt(m[2], 10) : 1;
+        for (let i = 0; i < count; i++) lines.add(start + i);
+      }
     }
-    return lines;
+    return [...lines];
   } catch (e) { return []; }
 });
 

@@ -193,7 +193,7 @@ function StatusFile({ file, onStage, onUnstage, onViewDiff, onViewBlame, onViewH
         primaryTypographyProps={{
           variant: "body2", noWrap: true,
           sx: { fontSize: "0.8125rem", cursor: "pointer", "&:hover": { textDecoration: "underline" } },
-          onClick: (e) => { e.stopPropagation(); onViewDiff(file); },
+          onClick: (e) => { e.stopPropagation(); onViewFile(file); },
         }}
         title={file.path}
       />
@@ -339,7 +339,7 @@ export default function ChangesPanel({ directory }) {
   };
 
   const handleViewFile = async (file) => {
-    setFileViewer({ fileName: file.path });
+    setFileViewer({ fileName: file.path, staged: file.staged });
   };
 
   const handleCommitClose = (didCommit) => {
@@ -623,6 +623,7 @@ export default function ChangesPanel({ directory }) {
         <FileViewDialog
           directory={directory}
           fileName={fileViewer.fileName}
+          staged={fileViewer.staged}
           onClose={() => setFileViewer(null)}
         />
       )}

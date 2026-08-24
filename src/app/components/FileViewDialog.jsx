@@ -42,7 +42,7 @@ function mimeType(name) {
   return map[ext] || "image/png";
 }
 
-export default function FileViewDialog({ directory, fileName, commitHash, onClose }) {
+export default function FileViewDialog({ directory, fileName, commitHash, onClose, staged }) {
   const [tab, setTab] = useState("view");
   const [content, setContent] = useState("");
   const [originalContent, setOriginalContent] = useState("");
@@ -66,10 +66,10 @@ export default function FileViewDialog({ directory, fileName, commitHash, onClos
 
   useEffect(() => {
     if (commitHash || !window.api) return;
-    window.api.getDiffLines(directory, fileName)
+    window.api.getDiffLines(directory, fileName, staged)
       .then(lines => setGitDiffLines(lines || []))
       .catch(() => { });
-  }, [directory, fileName, commitHash]);
+  }, [directory, fileName, commitHash, staged]);
 
   const highlightLines = useMemo(() => {
     if (isImage || isText !== true) return [];
