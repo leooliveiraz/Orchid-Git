@@ -8,8 +8,40 @@ const ipcMain = require("electron").ipcMain;
 const childProcess = require("child_process");
 const PLATFORM = process.platform;
 
+const LOG_DIR = path.join(process.cwd(), "logs");
+const LOG_FILE = "git.log";
+const LOG_MAX_SIZE = 5 * 1024 * 1024;
+const LOG_MAX_FILES = 5;
+const LOG_TO_FILE = false;
+
+function rotateLogs() {
+  try {
+    fs.mkdirSync(LOG_DIR, { recursive: true });
+    const current = path.join(LOG_DIR, LOG_FILE);
+    if (fs.existsSync(current) && fs.statSync(current).size >= LOG_MAX_SIZE) {
+      const oldest = path.join(LOG_DIR, `git.${LOG_MAX_FILES}.log`);
+      if (fs.existsSync(oldest)) fs.unlinkSync(oldest);
+      for (let i = LOG_MAX_FILES - 1; i >= 1; i--) {
+        const from = path.join(LOG_DIR, `git.${i}.log`);
+        if (fs.existsSync(from)) fs.renameSync(from, path.join(LOG_DIR, `git.${i + 1}.log`));
+      }
+      fs.renameSync(current, path.join(LOG_DIR, "git.1.log"));
+    }
+  } catch (e) { /* ignore */ }
+}
+
+function logGitCommand(args, cwd) {
+  const line = `[${new Date().toISOString()}] git ${args.join(" ")} | cwd: ${cwd}`;
+  console.log(line);
+  if (!LOG_TO_FILE) return;
+  try {
+    rotateLogs();
+    fs.appendFileSync(path.join(LOG_DIR, LOG_FILE), line + "\n", "utf8");
+  } catch (e) { /* ignore */ }
+}
+
 function runGit(args, cwd) {
-  console.log("[git]", args.join(" "), "| cwd:", cwd);
+  logGitCommand(args, cwd);
   const result = childProcess.spawnSync("git", args, { cwd, encoding: "utf8" });
   if (result.error) throw result.error;
   if (result.status === 1 && result.stdout.toLowerCase().indexOf("conflict" > -1)) throw new Error(result.stderr || `git merge failed: merge conflict`);
@@ -18,7 +50,7 @@ function runGit(args, cwd) {
 }
 
 function runGitAsync(args, cwd) {
-  console.log("[git async]", args.join(" "), "| cwd:", cwd);
+  logGitCommand(args, cwd);
   return new Promise((resolve, reject) => {
     const proc = childProcess.spawn("git", args, { cwd, encoding: "utf8" });
     let stdout = "", stderr = "";
