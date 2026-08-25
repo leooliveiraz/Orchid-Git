@@ -203,6 +203,9 @@ export default function LeftMenu({ open }) {
   const [newTagName, setNewTagName] = useState("");
   const [creatingTag, setCreatingTag] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(null);
+  const [renameBranchName, setRenameBranchName] = useState(null);
+  const [renameNewName, setRenameNewName] = useState("");
+  const [renaming, setRenaming] = useState(false);
   const [showNewStash, setShowNewStash] = useState(false);
   const [stashMessage, setStashMessage] = useState("");
   const [creatingStash, setCreatingStash] = useState(false);
@@ -609,6 +612,35 @@ export default function LeftMenu({ open }) {
     }
   }, [directory, refresh, isMerging, isReverting]);
 
+  const handleContextRename = useCallback(() => {
+    const branch = branchContext?.branch;
+    setBranchContext(null);
+    if (branch) {
+      setRenameBranchName(branch);
+    }
+  }, [branchContext]);
+
+  const handleRenameBranch = async () => {
+    if (!renameBranchName || !directory || !window.api) return;
+    const oldName = renameBranchName;
+    const newName = renameNewName.trim();
+    if (!newName || newName === oldName) return;
+    setRenaming(true);
+    setMessage(null);
+    try {
+      await window.api.renameBranch(directory, oldName, newName);
+      setMessageType("success");
+      setMessage(`Branch renamed: ${oldName} → ${newName}`);
+      setRenameBranchName(null);
+      setRenameNewName("");
+      refresh();
+    } catch (e) {
+      setMessageType("error");
+      setMessage(e.message || String(e));
+    }
+    setRenaming(false);
+  };
+
   const confirmDeleteBranch = useCallback((branch) => {
     if (isMerging) { setMessageType("error"); setMessage("Resolva o merge antes de continuar"); return; }
     if (isReverting) { setMessageType("error"); setMessage("Resolva o revert antes de continuar"); return; }
@@ -835,6 +867,32 @@ export default function LeftMenu({ open }) {
         )}
       </Drawer>
 
+      <Dialog open={!!renameBranchName} onClose={() => setRenameBranchName(null)} maxWidth="xs" fullWidth>
+        <DialogTitle>Rename branch</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" sx={{ mb: 1, color: "text.secondary" }}>
+            Rename <strong>{renameBranchName}</strong> to:
+          </Typography>
+          <TextField
+            autoFocus
+            fullWidth
+            label="New branch name"
+            placeholder="e.g. feature/renamed-feature"
+            value={renameNewName}
+            onChange={e => setRenameNewName(e.target.value)}
+            disabled={renaming}
+            onKeyDown={e => { if (e.key === "Enter") handleRenameBranch(); }}
+            sx={{ mt: 1 }}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setRenameBranchName(null)} disabled={renaming}>Cancel</Button>
+          <Button variant="contained" onClick={handleRenameBranch} disabled={!renameNewName.trim() || renameNewName.trim() === renameBranchName || renaming}>
+            {renaming ? "Renaming..." : "Rename"}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
       <Dialog open={showNewBranch} onClose={() => setShowNewBranch(false)} maxWidth="xs" fullWidth>
         <DialogTitle>Create branch</DialogTitle>
         <DialogContent>
@@ -912,6 +970,9 @@ export default function LeftMenu({ open }) {
       >
         <MenuItem onClick={handleContextCheckout} dense>
           <ListItemText primary="Checkout" primaryTypographyProps={{ variant: "body2" }} />
+        </MenuItem>
+        <MenuItem onClick={handleContextRename} dense>
+          <ListItemText primary="Rename" primaryTypographyProps={{ variant: "body2" }} />
         </MenuItem>
         <MenuItem onClick={handleContextMerge} dense>
           <ListItemText primary="Merge into current branch" primaryTypographyProps={{ variant: "body2" }} />

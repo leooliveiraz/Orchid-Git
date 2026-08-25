@@ -306,6 +306,10 @@ ipcMain.handle("create-branch", (event, directory, branchName) => {
   return runGit(["checkout", "-b", branchName], directory);
 });
 
+ipcMain.handle("rename-branch", (event, directory, oldName, newName) => {
+  return runGit(["branch", "-m", oldName, newName], directory);
+});
+
 ipcMain.handle("init-repo", (event, directory) => {
   const fs = require("fs");
   if (!fs.existsSync(directory)) fs.mkdirSync(directory, { recursive: true });
@@ -581,7 +585,7 @@ ipcMain.handle("execute-rebase", async (event, directory, targetBranch, todoList
   console.log("[rebase] GIT_EDITOR:", editorCmd);
 
   const result = await new Promise((resolve, reject) => {
-    const proc = childProcess.spawn("git", ["rebase", "-i", targetBranch], {
+    const proc = childProcess.spawn("git", ["rebase", "-i", "--empty=drop", targetBranch], {
       cwd: directory,
       encoding: "utf8",
       env: { ...process.env, GIT_SEQUENCE_EDITOR: seqCmd, GIT_EDITOR: editorCmd },

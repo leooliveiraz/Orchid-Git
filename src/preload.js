@@ -24,6 +24,7 @@ contextBridge.exposeInMainWorld("api", {
   resetCommit: (directory, commitHash, resetMode) => ipcRenderer.invoke("reset-commit", directory, commitHash, resetMode),
   isGitRepo: (directory) => ipcRenderer.invoke("is-git-repo", directory),
   createBranch: (directory, branchName) => ipcRenderer.invoke("create-branch", directory, branchName),
+  renameBranch: (directory, oldName, newName) => ipcRenderer.invoke("rename-branch", directory, oldName, newName),
   initRepo: (directory) => ipcRenderer.invoke("init-repo", directory),
   createTag: (directory, tagName) => ipcRenderer.invoke("create-tag", directory, tagName),
   merge: (directory, branch, strategy) => ipcRenderer.invoke("merge", directory, branch, strategy),
