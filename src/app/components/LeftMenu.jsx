@@ -206,12 +206,16 @@ export default function LeftMenu({ open }) {
   const [renameBranchName, setRenameBranchName] = useState(null);
   const [renameNewName, setRenameNewName] = useState("");
   const [renaming, setRenaming] = useState(false);
+  const [renameRemoteBranchName, setRenameRemoteBranchName] = useState(null);
+  const [renameRemoteNewName, setRenameRemoteNewName] = useState("");
+  const [renamingRemote, setRenamingRemote] = useState(false);
   const [showNewStash, setShowNewStash] = useState(false);
   const [stashMessage, setStashMessage] = useState("");
   const [creatingStash, setCreatingStash] = useState(false);
   const [showMerge, setShowMerge] = useState(false);
   const [mergeBranch, setMergeBranch] = useState(null);
   const [branchContext, setBranchContext] = useState(null);
+  const [remoteBranchContext, setRemoteBranchContext] = useState(null);
   const [stashContext, setStashContext] = useState(null);
   const [pendingRecentDir, setPendingRecentDir] = useState(null);
   const [skipRecentConfirm, setSkipRecentConfirm] = useState(() => localStorage.getItem("orchid-skip-repo-switch") === "true");
@@ -465,6 +469,11 @@ export default function LeftMenu({ open }) {
     setBranchContext({ left: e.clientX, top: e.clientY, branch });
   }, []);
 
+  const handleRemoteBranchContext = useCallback((e, branch) => {
+    e.preventDefault();
+    setRemoteBranchContext({ left: e.clientX, top: e.clientY, branch });
+  }, []);
+
   const handleStashContext = useCallback((e, stashId) => {
     e.preventDefault();
     setStashContext({ left: e.clientX, top: e.clientY, stashId });
@@ -619,6 +628,35 @@ export default function LeftMenu({ open }) {
       setRenameBranchName(branch);
     }
   }, [branchContext]);
+
+  const handleContextRenameRemote = useCallback(() => {
+    const branch = remoteBranchContext?.branch;
+    setRemoteBranchContext(null);
+    if (branch) {
+      setRenameRemoteBranchName(branch);
+    }
+  }, [remoteBranchContext]);
+
+  const handleRenameRemoteBranch = async () => {
+    if (!renameRemoteBranchName || !directory || !window.api) return;
+    const oldName = renameRemoteBranchName;
+    const newName = renameRemoteNewName.trim();
+    if (!newName || newName === oldName.split("/").slice(1).join("/")) return;
+    setRenamingRemote(true);
+    setMessage(null);
+    try {
+      await window.api.renameRemoteBranch(directory, oldName, newName);
+      setMessageType("success");
+      setMessage(`Remote branch renamed: ${oldName} → ${newName}`);
+      setRenameRemoteBranchName(null);
+      setRenameRemoteNewName("");
+      refresh();
+    } catch (e) {
+      setMessageType("error");
+      setMessage(e.message || String(e));
+    }
+    setRenamingRemote(false);
+  };
 
   const handleRenameBranch = async () => {
     if (!renameBranchName || !directory || !window.api) return;
@@ -839,11 +877,11 @@ export default function LeftMenu({ open }) {
             <Section title="Remote" count={repoData.remoteBranches?.length ?? 0} expanded={expandedSections.remote === true} onToggle={handleToggle("remote")} filter={filters.remote} onFilterChange={setFilter("remote")} viewMode={remoteView} onViewModeChange={setRemoteView}>
               {remoteView === "tree" ? (
                 renderTreeItems(buildTree(filteredRemote), 0, (b, d) => (
-                  <Item key={b} label={b.split('/').pop()} onClick={() => handleRemoteBranchClick(b)} onDoubleClick={() => handleRemoteBranchDblClick(b)} onDelete={() => confirmDeleteRemoteBranch(b)} sx={d > 0 ? { pl: 2 + d * 2 } : undefined} />
+                  <Item key={b} label={b.split('/').pop()} onClick={() => handleRemoteBranchClick(b)} onDoubleClick={() => handleRemoteBranchDblClick(b)} onContextMenu={(e) => handleRemoteBranchContext(e, b)} onDelete={() => confirmDeleteRemoteBranch(b)} sx={d > 0 ? { pl: 2 + d * 2 } : undefined} />
                 ), remoteExpandedFolders, toggleRemoteFolder)
               ) : (
                 filteredRemote.map(b => (
-                  <Item key={b} label={b} onClick={() => handleRemoteBranchClick(b)} onDoubleClick={() => handleRemoteBranchDblClick(b)} onDelete={() => confirmDeleteRemoteBranch(b)} />
+                  <Item key={b} label={b} onClick={() => handleRemoteBranchClick(b)} onDoubleClick={() => handleRemoteBranchDblClick(b)} onContextMenu={(e) => handleRemoteBranchContext(e, b)} onDelete={() => confirmDeleteRemoteBranch(b)} />
                 ))
               )}
             </Section>
@@ -866,6 +904,32 @@ export default function LeftMenu({ open }) {
           </Typography>
         )}
       </Drawer>
+
+      <Dialog open={!!renameRemoteBranchName} onClose={() => setRenameRemoteBranchName(null)} maxWidth="xs" fullWidth>
+        <DialogTitle>Rename remote branch</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" sx={{ mb: 1, color: "text.secondary" }}>
+            Rename <strong>{renameRemoteBranchName}</strong> to:
+          </Typography>
+          <TextField
+            autoFocus
+            fullWidth
+            label="New branch name"
+            placeholder="e.g. feature/renamed-feature"
+            defaultValue={renameRemoteBranchName ? renameRemoteBranchName.split("/").slice(1).join("/") : ""}
+            onChange={e => setRenameRemoteNewName(e.target.value)}
+            disabled={renamingRemote}
+            onKeyDown={e => { if (e.key === "Enter") handleRenameRemoteBranch(); }}
+            sx={{ mt: 1 }}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setRenameRemoteBranchName(null)} disabled={renamingRemote}>Cancel</Button>
+          <Button variant="contained" onClick={handleRenameRemoteBranch} disabled={!renameRemoteNewName.trim() || renamingRemote}>
+            {renamingRemote ? "Renaming..." : "Rename"}
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       <Dialog open={!!renameBranchName} onClose={() => setRenameBranchName(null)} maxWidth="xs" fullWidth>
         <DialogTitle>Rename branch</DialogTitle>
@@ -976,6 +1040,20 @@ export default function LeftMenu({ open }) {
         </MenuItem>
         <MenuItem onClick={handleContextMerge} dense>
           <ListItemText primary="Merge into current branch" primaryTypographyProps={{ variant: "body2" }} />
+        </MenuItem>
+      </Menu>
+
+      <Menu
+        open={!!remoteBranchContext}
+        onClose={() => setRemoteBranchContext(null)}
+        anchorReference="anchorPosition"
+        anchorPosition={remoteBranchContext ? { left: remoteBranchContext.left, top: remoteBranchContext.top } : undefined}
+      >
+        <MenuItem onClick={handleContextRenameRemote} dense>
+          <ListItemText primary="Rename remote branch" primaryTypographyProps={{ variant: "body2" }} />
+        </MenuItem>
+        <MenuItem onClick={() => { const r = remoteBranchContext?.branch; setRemoteBranchContext(null); if (r) confirmDeleteRemoteBranch(r); }} dense>
+          <ListItemText primary="Delete" primaryTypographyProps={{ variant: "body2" }} />
         </MenuItem>
       </Menu>
 

@@ -662,6 +662,15 @@ ipcMain.handle("delete-remote-branch", async (event, directory, remoteName) => {
   return await runGitAsync(["push", "origin", "--delete", branch], directory);
 });
 
+ipcMain.handle("rename-remote-branch", async (event, directory, oldName, newName) => {
+  const parts = oldName.split("/");
+  const remote = parts[0] || "origin";
+  const oldBranch = parts.slice(1).join("/");
+  await runGitAsync(["push", remote, `${remote}/${oldBranch}:refs/heads/${newName}`], directory);
+  await runGitAsync(["push", remote, "--delete", oldBranch], directory);
+  return "ok";
+});
+
 ipcMain.handle("get-origin-url", (event, directory) => {
   try { return runGit(["remote", "get-url", "origin"], directory).trim(); }
   catch (e) { return ""; }

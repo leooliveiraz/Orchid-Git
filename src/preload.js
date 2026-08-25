@@ -55,6 +55,7 @@ contextBridge.exposeInMainWorld("api", {
   deleteBranch: (directory, branchName) => ipcRenderer.invoke("delete-branch", directory, branchName),
   deleteTag: (directory, tagName) => ipcRenderer.invoke("delete-tag", directory, tagName),
   deleteRemoteBranch: (directory, remoteName) => ipcRenderer.invoke("delete-remote-branch", directory, remoteName),
+  renameRemoteBranch: (directory, oldName, newName) => ipcRenderer.invoke("rename-remote-branch", directory, oldName, newName),
   getOriginUrl: (directory) => ipcRenderer.invoke("get-origin-url", directory),
   setOriginUrl: (directory, url) => ipcRenderer.invoke("set-origin-url", directory, url),
   getStatus: (directory) => ipcRenderer.invoke("get-status", directory),
