@@ -64,6 +64,11 @@ export default function RebaseDialog({ onClose }) {
 
   const handleRebase = async () => {
     if (!target || !directory || !window.api) return;
+    const first = commits.find(c => c.action !== "drop");
+    if (first && (first.action === "squash" || first.action === "fixup")) {
+      setError(`Cannot start a rebase with '${first.action}': there must be a previous commit to squash into. Change the first action to 'pick' or 'reword'.`);
+      return;
+    }
     setRebasing(true);
     setError(null);
     setSuccess(null);

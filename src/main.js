@@ -9,6 +9,7 @@ const childProcess = require("child_process");
 const PLATFORM = process.platform;
 
 function runGit(args, cwd) {
+  console.log("[git]", args.join(" "), "| cwd:", cwd);
   const result = childProcess.spawnSync("git", args, { cwd, encoding: "utf8" });
   if (result.error) throw result.error;
   if (result.status === 1 && result.stdout.toLowerCase().indexOf("conflict" > -1)) throw new Error(result.stderr || `git merge failed: merge conflict`);
@@ -17,6 +18,7 @@ function runGit(args, cwd) {
 }
 
 function runGitAsync(args, cwd) {
+  console.log("[git async]", args.join(" "), "| cwd:", cwd);
   return new Promise((resolve, reject) => {
     const proc = childProcess.spawn("git", args, { cwd, encoding: "utf8" });
     let stdout = "", stderr = "";
@@ -535,6 +537,19 @@ ipcMain.handle("execute-rebase", async (event, directory, targetBranch, todoList
     console.log("[rebase] Aborting existing rebase before starting new one");
     const abortResult = childProcess.spawnSync("git", ["rebase", "--abort"], { cwd: directory, encoding: "utf8" });
     console.log("[rebase] Abort result:", abortResult.status, abortResult.stderr);
+  }
+
+  const squashLike = new Set(["squash", "fixup"]);
+  let hasPickable = false;
+  for (const item of todoList) {
+    if (item.action === "drop") continue;
+    if (squashLike.has(item.action)) {
+      if (!hasPickable) {
+        throw new Error(`Cannot start a rebase with '${item.action}': there must be a previous commit to squash into. Change the first action to 'pick' or 'reword'.`);
+      }
+    } else {
+      hasPickable = true;
+    }
   }
 
   const todoContent = todoList.map(item => `${item.action} ${item.hash} ${item.message}`).join("\n") + "\n";
