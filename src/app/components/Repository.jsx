@@ -363,7 +363,7 @@ export default function Repository({ repositoryDirectory }) {
       <Box sx={{ mb: 2, borderBottom: "1px solid", borderColor: "divider", pb: 1.5 }}>
         <Typography variant="h6" sx={{ fontWeight: 400, letterSpacing: "-0.02em", color: "text.primary", lineHeight: 1.3 }}>
           {repositoryDirectory.split(/[/\\]/).pop()}
-          <Tooltip title="Abrir pasta no explorador de arquivos">
+          <Tooltip title="Open folder in File Explorer">
             <IconButton
               size="small"
               onClick={() => window.api?.openInExplorer?.(repositoryDirectory)}

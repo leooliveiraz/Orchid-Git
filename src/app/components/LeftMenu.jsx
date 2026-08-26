@@ -107,7 +107,7 @@ function Item({ label, active, badge, onDoubleClick, onClick, onDelete, onOpen, 
       secondaryAction={(onDelete || onOpen) ? (
         <Box sx={{ display: "flex", alignItems: "center", gap: 0.25 }}>
           {onOpen && (
-            <Tooltip title="Abrir pasta no explorador de arquivos" arrow>
+            <Tooltip title="Open folder in File Explorer" arrow>
               <Box component="span" onClick={(e) => { e.stopPropagation(); onOpen(); }}
                 sx={{ display: "flex", lineHeight: 1, cursor: "pointer", color: "text.disabled", "&:hover": { color: "text.primary" } }}
               >
