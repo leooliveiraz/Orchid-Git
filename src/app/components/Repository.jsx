@@ -1,4 +1,5 @@
 ﻿import React, { useEffect, useState, useContext } from "react";
+import { OrchidContext } from "../OrchidContext.jsx";
 import "./Repository.css";
 import CommitTable, { formatDate } from "./CommitTable.jsx";
 import ChangesPanel from "./ChangesPanel.jsx";
@@ -12,6 +13,7 @@ import FolderOpenIcon from "@mui/icons-material/FolderOpen";
 import LocalCafeIcon from "@mui/icons-material/LocalCafe";
 import { LANE_COLORS } from "./graph/constants.js";
 import PrismRingButton from "./PrismRingButton.jsx";
+import PixDonationDialog from "./PixDonationDialog.jsx";
 import {
   Typography, Box, Tabs, Tab, FormControlLabel, Checkbox,
   TextField, Paper, IconButton, Tooltip,
@@ -19,7 +21,20 @@ import {
 } from "@mui/material";
 
 const COFFEE_URL = "https://buymeacoffee.com/orchidgit";
-import { OrchidContext } from "../OrchidContext.jsx";
+const PIX_KEY = "b13ccfa8-b2b7-4bbd-94d3-e0c25ca2a76a";
+const PIX_NAME = "Leonardo Rocha";
+const PIX_CITY = "Jacareí";
+
+function BrazilFlagIcon() {
+  return (
+    <svg viewBox="0 0 20 14" width="1.4em" height="1em" aria-hidden="true" style={{ display: "block" }}>
+      <rect width="20" height="14" rx="1" fill="#009C3B" />
+      <polygon points="10,1.8 16.8,7 10,12.2 3.2,7" fill="#FFDF00" />
+      <circle cx="10" cy="7" r="3.2" fill="#002776" />
+      <path d="M 7.53 7.8 A 2.6 2.6 0 0 0 12.47 7.8" fill="none" stroke="#FFFFFF" strokeWidth="1.1" strokeLinecap="round" />
+    </svg>
+  );
+}
 
 export default function Repository({ repositoryDirectory }) {
   const { repoData, refreshKey, setNotRepo, tabSignal, setTabSignal, refresh, isMerging, isReverting, scrollToCommitHash, setScrollToCommitHash, viewCommit, setViewCommit, dateFormat } = useContext(OrchidContext);
@@ -38,6 +53,7 @@ export default function Repository({ repositoryDirectory }) {
   const [success, setSuccess] = useState(null);
   const [error, setError] = useState(null);
   const [hasChanges, setHasChanges] = useState(false);
+  const [pixOpen, setPixOpen] = useState(false);
 
   useEffect(() => {
     if (tabSignal) {
@@ -366,7 +382,7 @@ export default function Repository({ repositoryDirectory }) {
 
   return (
     <Box sx={{ p: 2, height: "100%", display: "flex", flexDirection: "column", overflow: "hidden" }} id="repository">
-      <Box sx={{ mb: 2, borderBottom: "1px solid", borderColor: "divider", pb: 1.5, display: "flex", alignItems: "center", gap: 2 }}>
+      <Box sx={{ mb: 2, borderBottom: "1px solid", borderColor: "divider", pb: 1.5, display: "flex", alignItems: "center", gap: 2, flexWrap: "wrap" }}>
         <Box sx={{ flex: 1, minWidth: 0 }}>
           <Typography variant="h6" sx={{ fontWeight: 400, letterSpacing: "-0.02em", color: "text.primary", lineHeight: 1.3 }}>
             {repositoryDirectory.split(/[/\\]/).pop()}
@@ -389,7 +405,24 @@ export default function Repository({ repositoryDirectory }) {
             {repositoryDirectory}
           </Typography>
         </Box>
-        <Box sx={{ flexShrink: 0 }}>
+        <Box sx={{ flexShrink: 0, display: "flex", alignItems: "center", gap: 1.5 }}>
+          <PrismRingButton
+            label="Donate with PIX"
+            addIcon
+            icon={{
+              type: "element",
+              element: <BrazilFlagIcon />,
+              size: 16,
+              color: "#FFFFFF",
+              hoverColor: "#32BCAD",
+              padding: "0 6px 0 0",
+            }}
+            onClick={() => setPixOpen(true)}
+            speed={60}
+            hoverScale={105}
+            padding="10px 20px"
+            font={{ fontSize: 13, fontWeight: 600, lineHeight: "1.5em", letterSpacing: "0.01em", fontFamily: "inherit" }}
+          />
           <PrismRingButton
             label="Buy me a coffee!"
             addIcon
@@ -573,6 +606,7 @@ export default function Repository({ repositoryDirectory }) {
       </Menu>
       {error && <Alert severity="error" sx={{ position: "fixed", bottom: 60, left: "50%", transform: "translateX(-50%)", zIndex: 2000 }} onClose={() => setError(null)}>{error}</Alert>}
       <SuccessSnackbar message={success} onClose={() => setSuccess(null)} />
+      {pixOpen && <PixDonationDialog onClose={() => setPixOpen(false)} pixKey={PIX_KEY} name={PIX_NAME} city={PIX_CITY} />}
     </Box>
   );
 }
