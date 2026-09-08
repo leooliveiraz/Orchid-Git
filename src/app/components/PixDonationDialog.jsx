@@ -3,6 +3,7 @@ import { Dialog, DialogTitle, DialogContent, IconButton, Typography, Box, Button
 import CloseIcon from "@mui/icons-material/Close";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import CheckIcon from "@mui/icons-material/Check";
+import QRCodeScannerIcon from "@mui/icons-material/QRCodeScanner";
 import QRCode from "react-qr-code";
 import { createPixPayload } from "../utils/pix.js";
 
@@ -60,12 +61,28 @@ export default function PixDonationDialog({ onClose, pixKey, name, city }) {
         </IconButton>
       </DialogTitle>
       <DialogContent sx={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 1.5 }}>
+        <Box
+          sx={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 0.75,
+            px: 1.25,
+            py: 0.5,
+            borderRadius: 999,
+            border: "1px solid",
+            borderColor: theme => `${theme.palette.success.main}55`,
+            bgcolor: theme => `${theme.palette.success.main}1A`,
+            color: "success.main",
+            fontWeight: 600,
+            fontSize: "0.8125rem",
+          }}
+        >
+          <QRCodeScannerIcon sx={{ fontSize: 16 }} />
+          Scan with your payment app
+        </Box>
         <Box sx={{ p: 2, bgcolor: "#FFFFFF", borderRadius: 2 }}>
           {payload && <QRCode value={payload} size={200} level="M" fgColor="#000000" />}
         </Box>
-        <Typography variant="body2" color="text.secondary" align="center">
-          Scan the QR code with your banking app
-        </Typography>
         <Button
           fullWidth
           variant="contained"
