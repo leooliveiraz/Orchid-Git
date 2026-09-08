@@ -322,6 +322,11 @@ ipcMain.handle("cherry-pick", async (event, { directory, commitHashes }) => {
 });
 
 ipcMain.handle("revert-commit", async (event, directory, commitHash) => {
+  const parents = runGit(["rev-list", "--parents", "-n", "1", commitHash], directory)
+    .trim().split(/\s+/).slice(1).filter(Boolean);
+  if (parents.length > 1) {
+    return await runGitAsync(["revert", "--no-edit", "-m", "1", commitHash], directory);
+  }
   return await runGitAsync(["revert", "--no-edit", commitHash], directory);
 });
 
@@ -835,12 +840,18 @@ ipcMain.handle("resolve-conflict-blocks", (event, directory, filePath, resolutio
 });
 
 ipcMain.handle("continue-merge", (event, directory) => {
-  const mergeMsg = require("path").join(directory, ".git", "MERGE_MSG");
-  const rebaseDir = require("path").join(directory, ".git", "rebase-merge");
-  const isMerge = require("fs").existsSync(mergeMsg);
-  const isRebase = require("fs").existsSync(rebaseDir);
+  const fs = require("fs");
+  const path = require("path");
+  const mergeMsg = path.join(directory, ".git", "MERGE_MSG");
+  const rebaseDir = path.join(directory, ".git", "rebase-merge");
+  const isMerge = fs.existsSync(mergeMsg);
+  const isRebase = fs.existsSync(rebaseDir);
+  const isRevert = fs.existsSync(path.join(directory, ".git", "REVERT_HEAD"));
+  const isCherryPick = fs.existsSync(path.join(directory, ".git", "CHERRY_PICK_HEAD"));
   if (isMerge) return runGit(["commit", "--no-edit"], directory);
   if (isRebase) return runGit(["rebase", "--continue"], directory);
+  if (isRevert) return runGit(["revert", "--continue"], directory);
+  if (isCherryPick) return runGit(["cherry-pick", "--continue"], directory);
   return null;
 });
 
@@ -1159,6 +1170,10 @@ ipcMain.handle("save-repo-log", (event, content) => {
 
 ipcMain.handle("open-in-explorer", async (event, directory) => {
   await shell.openPath(directory);
+});
+
+ipcMain.handle("open-external", async (event, url) => {
+  await shell.openExternal(url);
 });
 
 ipcMain.handle("check-for-updates", async () => {

@@ -95,6 +95,7 @@ contextBridge.exposeInMainWorld("api", {
   saveRepoLog: (content) => ipcRenderer.invoke("save-repo-log", content),
   createPR: (directory, options) => ipcRenderer.invoke("create-pr", directory, options),
   openInExplorer: (directory) => ipcRenderer.invoke("open-in-explorer", directory),
+  openExternal: (url) => ipcRenderer.invoke("open-external", url),
   checkForUpdates: () => ipcRenderer.invoke("check-for-updates"),
   downloadUpdate: (assetUrl, assetName) => ipcRenderer.invoke("download-update", assetUrl, assetName),
   installUpdate: (assetPath) => ipcRenderer.invoke("install-update", assetPath),

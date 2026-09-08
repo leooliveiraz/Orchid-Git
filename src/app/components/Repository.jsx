@@ -9,12 +9,16 @@ import SuccessSnackbar from "./SuccessSnackbar.jsx";
 import CommitSearch from "./CommitSearch.jsx";
 import CloudIcon from "@mui/icons-material/Cloud";
 import FolderOpenIcon from "@mui/icons-material/FolderOpen";
+import LocalCafeIcon from "@mui/icons-material/LocalCafe";
 import { LANE_COLORS } from "./graph/constants.js";
+import PrismRingButton from "./PrismRingButton.jsx";
 import {
   Typography, Box, Tabs, Tab, FormControlLabel, Checkbox,
   TextField, Paper, IconButton, Tooltip,
   Menu, MenuItem, ListItemIcon, ListItemText, Chip, Divider, Alert, Badge,
 } from "@mui/material";
+
+const COFFEE_URL = "https://buymeacoffee.com/orchidgit";
 import { OrchidContext } from "../OrchidContext.jsx";
 
 export default function Repository({ repositoryDirectory }) {
@@ -338,6 +342,8 @@ export default function Repository({ repositoryDirectory }) {
       setTabSignal("graph");
     } catch (e) {
       setError(e.message || String(e));
+      refresh();
+      setTabSignal("changes");
     }
   };
 
@@ -360,27 +366,48 @@ export default function Repository({ repositoryDirectory }) {
 
   return (
     <Box sx={{ p: 2, height: "100%", display: "flex", flexDirection: "column", overflow: "hidden" }} id="repository">
-      <Box sx={{ mb: 2, borderBottom: "1px solid", borderColor: "divider", pb: 1.5 }}>
-        <Typography variant="h6" sx={{ fontWeight: 400, letterSpacing: "-0.02em", color: "text.primary", lineHeight: 1.3 }}>
-          {repositoryDirectory.split(/[/\\]/).pop()}
-          <Tooltip title="Open folder in File Explorer">
-            <IconButton
-              size="small"
-              onClick={() => window.api?.openInExplorer?.(repositoryDirectory)}
-              sx={{ ml: 1, verticalAlign: "middle", color: "text.secondary", "&:hover": { color: "text.primary" } }}
-            >
-              <FolderOpenIcon sx={{ fontSize: 18 }} />
-            </IconButton>
-          </Tooltip>
-          {repoData?.currentBranch && (
-            <Box component="span" sx={{ ml: 1, fontSize: "0.75rem", color: "success.main", fontWeight: 600, verticalAlign: "middle" }}>
-              {repoData.currentBranch}
-            </Box>
-          )}
-        </Typography>
-        <Typography variant="caption" sx={{ color: "text.secondary", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "block", mt: 0.25 }}>
-          {repositoryDirectory}
-        </Typography>
+      <Box sx={{ mb: 2, borderBottom: "1px solid", borderColor: "divider", pb: 1.5, display: "flex", alignItems: "center", gap: 2 }}>
+        <Box sx={{ flex: 1, minWidth: 0 }}>
+          <Typography variant="h6" sx={{ fontWeight: 400, letterSpacing: "-0.02em", color: "text.primary", lineHeight: 1.3 }}>
+            {repositoryDirectory.split(/[/\\]/).pop()}
+            <Tooltip title="Open folder in File Explorer">
+              <IconButton
+                size="small"
+                onClick={() => window.api?.openInExplorer?.(repositoryDirectory)}
+                sx={{ ml: 1, verticalAlign: "middle", color: "text.secondary", "&:hover": { color: "text.primary" } }}
+              >
+                <FolderOpenIcon sx={{ fontSize: 18 }} />
+              </IconButton>
+            </Tooltip>
+            {repoData?.currentBranch && (
+              <Box component="span" sx={{ ml: 1, fontSize: "0.75rem", color: "success.main", fontWeight: 600, verticalAlign: "middle" }}>
+                {repoData.currentBranch}
+              </Box>
+            )}
+          </Typography>
+          <Typography variant="caption" sx={{ color: "text.secondary", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "block", mt: 0.25 }}>
+            {repositoryDirectory}
+          </Typography>
+        </Box>
+        <Box sx={{ flexShrink: 0 }}>
+          <PrismRingButton
+            label="Buy me a coffee!"
+            addIcon
+            icon={{
+              type: "element",
+              element: <LocalCafeIcon fontSize="inherit" />,
+              size: 16,
+              color: "#FFFFFF",
+              hoverColor: "#FFD666",
+              padding: "0 6px 0 0",
+            }}
+            onClick={() => window.api?.openExternal?.(COFFEE_URL)}
+            speed={60}
+            hoverScale={105}
+            padding="10px 20px"
+            font={{ fontSize: 13, fontWeight: 600, lineHeight: "1.5em", letterSpacing: "0.01em", fontFamily: "inherit" }}
+          />
+        </Box>
       </Box>
 
       <Tabs value={tab} onChange={(e, v) => setTab(v)} sx={{ mb: 1 }}>
