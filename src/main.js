@@ -205,7 +205,9 @@ ipcMain.on("test-send", function (event, arg) {
 });
 
 ipcMain.on("open-dev-tools", function (event, arg) {
-  win.webContents.openDevTools();
+  if (!app.isPackaged) {
+    mainWindow.webContents.openDevTools();
+  }
 });
 
 // setInterval(() => {
