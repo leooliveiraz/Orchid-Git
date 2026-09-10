@@ -520,9 +520,9 @@ export default function AppMenu({ menuOpen, onToggleMenu }) {
 
       {syncError && (
         <Box sx={OVERLAY_STYLE}>
-          <Box sx={MODAL_STYLE}>
+          <Box sx={{ ...MODAL_STYLE, width: "fit-content", minWidth: 300, maxWidth: "min(90vw, 560px)" }}>
             <Typography variant="h6" sx={{ mb: 1, color: "error.main" }}>Error</Typography>
-            <Typography variant="body2" sx={{ mb: 2 }}>{syncError}</Typography>
+            <Typography variant="body2" sx={{ mb: 2, whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>{syncError}</Typography>
             <Box sx={{ display: "flex", justifyContent: "flex-end" }}>
               <Button onClick={() => setSyncError(null)}>Close</Button>
             </Box>
