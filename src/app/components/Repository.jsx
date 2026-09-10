@@ -25,6 +25,20 @@ const PIX_KEY = "b13ccfa8-b2b7-4bbd-94d3-e0c25ca2a76a";
 const PIX_NAME = "Leonardo Rocha";
 const PIX_CITY = "Jacareí";
 
+const PIX_BUTTON_COLORS_LIGHT = {
+  fill: "#FFFFFF",
+  hoverFill: "#EAF7F5",
+  textColor: "#111111",
+  hoverTextColor: "#0F7C6C",
+};
+
+const COFFEE_BUTTON_COLORS_LIGHT = {
+  fill: "#FFFFFF",
+  hoverFill: "#FFF6DE",
+  textColor: "#111111",
+  hoverTextColor: "#8A5A00",
+};
+
 function BrazilFlagIcon() {
   return (
     <svg viewBox="0 0 20 14" width="1.4em" height="1em" aria-hidden="true" style={{ display: "block" }}>
@@ -37,7 +51,7 @@ function BrazilFlagIcon() {
 }
 
 export default function Repository({ repositoryDirectory }) {
-  const { repoData, refreshKey, setNotRepo, tabSignal, setTabSignal, refresh, isMerging, isReverting, scrollToCommitHash, setScrollToCommitHash, viewCommit, setViewCommit, dateFormat } = useContext(OrchidContext);
+  const { repoData, refreshKey, setNotRepo, tabSignal, setTabSignal, refresh, isMerging, isReverting, scrollToCommitHash, setScrollToCommitHash, viewCommit, setViewCommit, dateFormat, themeMode } = useContext(OrchidContext);
   const [commitList, setCommitList] = useState([]);
   const [filteredCommitList, setFilteredCommitList] = useState([]);
   const [tab, setTab] = useState("graph");
@@ -380,6 +394,8 @@ export default function Repository({ repositoryDirectory }) {
     M: "#e6a817", A: "#28a745", D: "#d73a49", R: "#6f42c1",
   };
 
+  const isLightTheme = themeMode === "light";
+
   return (
     <Box sx={{ p: 2, height: "100%", display: "flex", flexDirection: "column", overflow: "hidden" }} id="repository">
       <Box sx={{ mb: 2, borderBottom: "1px solid", borderColor: "divider", pb: 1.5, display: "flex", alignItems: "center", gap: 2, flexWrap: "wrap" }}>
@@ -409,11 +425,12 @@ export default function Repository({ repositoryDirectory }) {
           <PrismRingButton
             label="Donate with PIX"
             addIcon
+            colors={isLightTheme ? PIX_BUTTON_COLORS_LIGHT : undefined}
             icon={{
               type: "element",
               element: <BrazilFlagIcon />,
               size: 16,
-              color: "#FFFFFF",
+              color: isLightTheme ? "#111111" : "#FFFFFF",
               hoverColor: "#32BCAD",
               padding: "0 6px 0 0",
             }}
@@ -426,12 +443,13 @@ export default function Repository({ repositoryDirectory }) {
           <PrismRingButton
             label="Buy me a coffee!"
             addIcon
+            colors={isLightTheme ? COFFEE_BUTTON_COLORS_LIGHT : undefined}
             icon={{
               type: "element",
               element: <LocalCafeIcon fontSize="inherit" />,
               size: 16,
-              color: "#FFFFFF",
-              hoverColor: "#FFD666",
+              color: isLightTheme ? "#111111" : "#FFFFFF",
+              hoverColor: isLightTheme ? "#8A5A00" : "#FFD666",
               padding: "0 6px 0 0",
             }}
             onClick={() => window.api?.openExternal?.(COFFEE_URL)}

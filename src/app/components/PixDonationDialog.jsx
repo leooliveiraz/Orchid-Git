@@ -89,7 +89,11 @@ export default function PixDonationDialog({ onClose, pixKey, name, city }) {
           disabled={!payload}
           onClick={() => copyText(payload, "code")}
           startIcon={copied === "code" ? <CheckIcon /> : <ContentCopyIcon />}
-          sx={{ bgcolor: PIX_GREEN, "&:hover": { bgcolor: "#27a191" }, "&.Mui-disabled": { bgcolor: "#4f6e69" } }}
+          sx={{
+            bgcolor: PIX_GREEN,
+            "&:hover": { bgcolor: "#27a191" },
+            "&.Mui-disabled": { bgcolor: theme => (theme.palette.mode === "light" ? "#A9D6D0" : "#4f6e69") },
+          }}
         >
           {copied === "code" ? "Copied!" : "Copy PIX code"}
         </Button>
