@@ -12,6 +12,7 @@ export default function MainArea() {
       {!directory && <NoDirectory />}
       {directory && notRepo === true && <NotRepoWarning />}
       {directory && notRepo === false && <Repository repositoryDirectory={directory} />}
+      {directory && notRepo === null && <div style={{ flex: 1 }} />}
       <Footer />
     </div>
   );
