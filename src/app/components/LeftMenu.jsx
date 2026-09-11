@@ -187,7 +187,7 @@ function buildTree(items) {
 }
 
 export default function LeftMenu({ open }) {
-  const { directory, repoData, refresh, recentDirs, setDirectory, removeRecentDir, recentSort, setRecentSort, isMerging, isReverting, setScrollToCommitHash, setViewCommit, setIsLoading } = useContext(OrchidContext);
+  const { directory, repoData, refresh, recentDirs, setDirectory, removeRecentDir, recentSort, setRecentSort, isMerging, isReverting, setScrollToCommitHash, setViewCommit, setIsLoading, isLoading } = useContext(OrchidContext);
   const branchStatusMap = useMemo(() => {
     if (!repoData?.branchesStatus) return {};
     const map = {};
@@ -900,7 +900,7 @@ export default function LeftMenu({ open }) {
           </>
         ) : (
           <Typography variant="body2" sx={{ color: "text.secondary", textAlign: "center", py: 4, px: 2 }}>
-            Select a directory to view branches
+            {directory && isLoading ? "Loading repository..." : "Select a directory to view branches"}
           </Typography>
         )}
       </Drawer>

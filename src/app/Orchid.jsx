@@ -141,6 +141,10 @@ export default function Orchid() {
   }, [themeMode]);
 
   useEffect(() => {
+    setRepoData(null);
+  }, [directory]);
+
+  useEffect(() => {
     if (directory) {
       setIsLoading(true);
       setRepoCheck({ dir: directory, notRepo: null });
