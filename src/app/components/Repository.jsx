@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState, useContext } from "react";
+﻿import React, { useEffect, useRef, useState, useContext } from "react";
 import { OrchidContext } from "../OrchidContext.jsx";
 import "./Repository.css";
 import CommitTable, { formatDate } from "./CommitTable.jsx";
@@ -69,6 +69,11 @@ export default function Repository({ repositoryDirectory }) {
   const [hasChanges, setHasChanges] = useState(false);
   const [pixOpen, setPixOpen] = useState(false);
 
+  const repositoryDirectoryRef = useRef(repositoryDirectory);
+  useEffect(() => {
+    repositoryDirectoryRef.current = repositoryDirectory;
+  }, [repositoryDirectory]);
+
   useEffect(() => {
     if (tabSignal) {
       setTab(tabSignal);
@@ -91,14 +96,18 @@ export default function Repository({ repositoryDirectory }) {
     if (!viewCommit || commitList.length === 0 || !window.api) return;
     const commit = commitList.find(c => viewCommit.hash.startsWith(c.hash));
     if (commit) {
+      let cancelled = false;
       (async () => {
         try {
           const files = await window.api.getCommitFiles(repositoryDirectory, commit.hash);
+          if (cancelled) return;
           setSelectedCommit(commit);
           setCommitFiles(files || []);
           setMenuAnchor({ left: viewCommit.left, top: viewCommit.top });
         } catch (e) { }
       })();
+      setViewCommit(null);
+      return () => { cancelled = true; };
     }
     setViewCommit(null);
   }, [viewCommit, commitList]);
@@ -128,10 +137,12 @@ export default function Repository({ repositoryDirectory }) {
 
   useEffect(() => {
     if (window.api) {
+      let cancelled = false;
       setCommitList([]);
       window.api
         .getRepositoryCommits(repositoryDirectory, useTopoOrder, allBranches, commitLimit)
         .then((result) => {
+          if (cancelled) return;
           const commits = configureCommitList(result);
 
           window.api?.saveRepoLog?.(result).catch(() => { });
@@ -151,6 +162,7 @@ export default function Repository({ repositoryDirectory }) {
             if (target) {
               window.api.getCommitFiles(repositoryDirectory, target.hash)
                 .then(files => {
+                  if (cancelled) return;
                   setSelectedCommit(target);
                   setCommitFiles(files || []);
                 })
@@ -158,8 +170,9 @@ export default function Repository({ repositoryDirectory }) {
             }
           }
         }).catch(er => {
-          er.message.includes("not a git repository") && setNotRepo(true)
+          if (!cancelled && er.message.includes("not a git repository")) setNotRepo(true);
         });
+      return () => { cancelled = true; };
     }
   }, [repositoryDirectory, useTopoOrder, allBranches, commitLimit, refreshKey]);
 
@@ -310,8 +323,10 @@ export default function Repository({ repositoryDirectory }) {
 
   const handleCommitClick = async (commit, event) => {
     if (!window.api) return;
+    const dir = repositoryDirectory;
     try {
-      const files = await window.api.getCommitFiles(repositoryDirectory, commit.hash);
+      const files = await window.api.getCommitFiles(dir, commit.hash);
+      if (dir !== repositoryDirectoryRef.current) return;
       setSelectedCommit(commit);
       setCommitFiles(files || []);
       setMenuAnchor({ left: event.clientX, top: event.clientY });
@@ -323,8 +338,10 @@ export default function Repository({ repositoryDirectory }) {
   const handleCommitFileClick = async (file) => {
     setMenuAnchor(null);
     if (!window.api) return;
+    const dir = repositoryDirectory;
     try {
-      const diff = await window.api.getCommitFileDiff(repositoryDirectory, selectedCommit.hash, file.path);
+      const diff = await window.api.getCommitFileDiff(dir, selectedCommit.hash, file.path);
+      if (dir !== repositoryDirectoryRef.current) return;
       if (diff && diff.trim()) {
         setCommitFileDiff({ fileName: `${file.path} (${selectedCommit.hash})`, diffText: diff, commitHash: selectedCommit.hash, originalPath: file.path });
       }

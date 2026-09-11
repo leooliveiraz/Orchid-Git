@@ -69,7 +69,7 @@ export default function Orchid() {
   const [menuOpen, setMenuOpen] = useState(true);
   const [repoData, setRepoData] = useState(null);
   const [refreshKey, setRefreshKey] = useState(0);
-  const [notRepo, setNotRepo] = useState(null);
+  const [repoCheck, setRepoCheck] = useState({ dir: null, notRepo: null });
   const [recentDirs, setRecentDirs] = useState(() => {
     try { return JSON.parse(localStorage.getItem("orchid-recent-dirs") || "[]"); }
     catch { return []; }
@@ -98,6 +98,12 @@ export default function Orchid() {
   }, []);
 
   const refresh = useCallback(() => setRefreshKey(k => k + 1), []);
+
+  const notRepo = repoCheck.dir === directory ? repoCheck.notRepo : null;
+
+  const setNotRepo = useCallback((value) => {
+    setRepoCheck({ dir: directory, notRepo: value });
+  }, [directory]);
 
   const addRecentDir = useCallback((dir) => {
     if (!dir) return;
@@ -137,15 +143,19 @@ export default function Orchid() {
   useEffect(() => {
     if (directory) {
       setIsLoading(true);
-      setNotRepo(null);
+      setRepoCheck({ dir: directory, notRepo: null });
+      let cancelled = false;
       (async () => {
         const isRepo = window.api ? await window.api.isGitRepo(directory).catch(() => false) : false;
-        if (!isRepo) { setNotRepo(true); setIsLoading(false); return; }
-        setNotRepo(false);
+        if (cancelled) return;
+        if (!isRepo) { setRepoCheck({ dir: directory, notRepo: true }); setIsLoading(false); return; }
+        setRepoCheck({ dir: directory, notRepo: false });
         const data = await fetchRepoData(directory);
+        if (cancelled) return;
         if (data) setRepoData(data);
         setIsLoading(false);
       })();
+      return () => { cancelled = true; };
     }
   }, [directory, refreshKey]);
 

@@ -241,37 +241,42 @@ ipcMain.handle("get-repository-commits", async (event, directory, topoOrder, all
   return await runGitAsync(args, directory);
 });
 
-ipcMain.handle("get-branches", (event, directory) => {
-  return runGit(["branch", "--list", "--format=%(refname:short)"], directory).trim().split("\n").filter(Boolean);
+ipcMain.handle("get-branches", async (event, directory) => {
+  const output = await runGitAsync(["branch", "--list", "--format=%(refname:short)"], directory);
+  return output.trim().split("\n").filter(Boolean);
 });
 
-ipcMain.handle("get-remote-branches", (event, directory) => {
-  return runGit(["branch", "-r", "--list", "--format=%(refname:short)"], directory).trim().split("\n").filter(Boolean);
+ipcMain.handle("get-remote-branches", async (event, directory) => {
+  const output = await runGitAsync(["branch", "-r", "--list", "--format=%(refname:short)"], directory);
+  return output.trim().split("\n").filter(Boolean);
 });
 
-ipcMain.handle("get-tags", (event, directory) => {
-  return runGit(["tag", "--list", "--format=%(refname:short)"], directory).trim().split("\n").filter(Boolean);
+ipcMain.handle("get-tags", async (event, directory) => {
+  const output = await runGitAsync(["tag", "--list", "--format=%(refname:short)"], directory);
+  return output.trim().split("\n").filter(Boolean);
 });
 
-ipcMain.handle("get-stash-list", (event, directory) => {
-  return runGit(["stash", "list", "--format=%gd||%gs"], directory).trim().split("\n").filter(Boolean).map(line => {
+ipcMain.handle("get-stash-list", async (event, directory) => {
+  const output = await runGitAsync(["stash", "list", "--format=%gd||%gs"], directory);
+  return output.trim().split("\n").filter(Boolean).map(line => {
     const [id, ...msg] = line.split("||");
     return { id, message: msg.join("||") };
   });
 });
 
-ipcMain.handle("get-current-branch", (event, directory) => {
+ipcMain.handle("get-current-branch", async (event, directory) => {
   try {
-    return runGit(["rev-parse", "--abbrev-ref", "HEAD"], directory).trim();
+    const output = await runGitAsync(["rev-parse", "--abbrev-ref", "HEAD"], directory);
+    return output.trim();
   } catch {
     return "";
   }
 });
 
-ipcMain.handle("get-ahead-behind", (event, directory) => {
+ipcMain.handle("get-ahead-behind", async (event, directory) => {
   let ahead = 0, behind = 0;
   try {
-    const out = runGit(["rev-list", "--left-right", "--count", "HEAD...@{upstream}"], directory);
+    const out = await runGitAsync(["rev-list", "--left-right", "--count", "HEAD...@{upstream}"], directory);
     const parts = out.trim().split("\t");
     ahead = parseInt(parts[0], 10) || 0;
     behind = parseInt(parts[1], 10) || 0;
@@ -279,9 +284,9 @@ ipcMain.handle("get-ahead-behind", (event, directory) => {
   return { ahead, behind };
 });
 
-ipcMain.handle("get-branches-ahead-behind", (event, directory) => {
+ipcMain.handle("get-branches-ahead-behind", async (event, directory) => {
   try {
-    const output = runGit(["for-each-ref", "--format=%(refname:short)|%(upstream:track)", "refs/heads"], directory);
+    const output = await runGitAsync(["for-each-ref", "--format=%(refname:short)|%(upstream:track)", "refs/heads"], directory);
     return output.trim().split("\n").filter(Boolean).map(line => {
       const [name, track] = line.split("|");
       let ahead = 0, behind = 0;
@@ -332,9 +337,9 @@ ipcMain.handle("revert-commit", async (event, directory, commitHash) => {
   return await runGitAsync(["revert", "--no-edit", commitHash], directory);
 });
 
-ipcMain.handle("is-git-repo", (event, directory) => {
+ipcMain.handle("is-git-repo", async (event, directory) => {
   try {
-    runGit(["rev-parse", "--git-dir"], directory);
+    await runGitAsync(["rev-parse", "--git-dir"], directory);
     return true;
   } catch {
     return false;
@@ -724,9 +729,9 @@ ipcMain.handle("set-origin-url", (event, directory, url) => {
   return "ok";
 });
 
-ipcMain.handle("get-status", (event, directory) => {
+ipcMain.handle("get-status", async (event, directory) => {
   const { parseStatusOutput } = require("./git");
-  const output = runGit(["status", "--porcelain", "-u"], directory);
+  const output = await runGitAsync(["status", "--porcelain", "-u"], directory);
   return parseStatusOutput(output);
 });
 
@@ -936,38 +941,28 @@ ipcMain.handle("get-stash-files-from-commit", (event, directory, commitHash) => 
   });
 });
 
-function stashFilesFromCommit(directory, commitHash) {
+async function stashFilesFromCommit(directory, commitHash) {
   try {
-    const stashList = runGit(["stash", "list", "--format=%gd||%gs"], directory).trim().split("\n").filter(Boolean);
+    const stashOutput = await runGitAsync(["stash", "list", "--format=%gd||%gs"], directory);
+    const stashList = stashOutput.trim().split("\n").filter(Boolean);
     for (const entry of stashList) {
       const [id] = entry.split("||");
-      const hash = runGit(["rev-parse", id], directory).trim();
+      const hash = (await runGitAsync(["rev-parse", id], directory)).trim();
       if (hash.startsWith(commitHash)) {
-        const ss = runGit(["stash", "show", "--name-status", id], directory);
-        const ns = runGit(["stash", "show", "--numstat", id], directory);
-        const statusLines = ss.trim().split("\n").filter(Boolean);
-        const numstatLines = ns.trim().split("\n").filter(Boolean);
-        const numstatMap = {};
-        numstatLines.forEach(line => {
-          const [added, deleted, ...pathParts] = line.split("\t");
-          const path = pathParts.join("\t");
-          numstatMap[path] = { added: parseInt(added) || 0, deleted: parseInt(deleted) || 0 };
-        });
-        return statusLines.map(line => {
-          const [status, ...pathParts] = line.split("\t");
-          const path = pathParts.join("\t");
-          const counts = numstatMap[path] || { added: 0, deleted: 0 };
-          return { status, path, added: counts.added, deleted: counts.deleted };
-        });
+        const [ss, ns] = await Promise.all([
+          runGitAsync(["stash", "show", "--name-status", id], directory),
+          runGitAsync(["stash", "show", "--numstat", id], directory),
+        ]);
+        return parseNameStatus(ss, ns);
       }
     }
   } catch (e) { }
   return [];
 }
 
-function getCommitParents(directory, commitHash) {
-  return runGit(["rev-list", "--parents", "-n", "1", commitHash], directory)
-    .trim().split(/\s+/).slice(1).filter(Boolean);
+async function getCommitParents(directory, commitHash) {
+  const output = await runGitAsync(["rev-list", "--parents", "-n", "1", commitHash], directory);
+  return output.trim().split(/\s+/).slice(1).filter(Boolean);
 }
 
 function parseNameStatus(statusOutput, numstatOutput) {
@@ -987,31 +982,37 @@ function parseNameStatus(statusOutput, numstatOutput) {
   });
 }
 
-ipcMain.handle("get-commit-files", (event, directory, commitHash) => {
-  const parents = getCommitParents(directory, commitHash);
+ipcMain.handle("get-commit-files", async (event, directory, commitHash) => {
+  const parents = await getCommitParents(directory, commitHash);
   if (parents.length === 0) {
-    return parseNameStatus(
-      runGit(["diff-tree", "--no-commit-id", "-r", "--root", "--name-status", commitHash], directory),
-      runGit(["diff-tree", "--no-commit-id", "-r", "--root", "--numstat", commitHash], directory)
-    );
+    const [statusOutput, numstatOutput] = await Promise.all([
+      runGitAsync(["diff-tree", "--no-commit-id", "-r", "--root", "--name-status", commitHash], directory),
+      runGitAsync(["diff-tree", "--no-commit-id", "-r", "--root", "--numstat", commitHash], directory),
+    ]);
+    return parseNameStatus(statusOutput, numstatOutput);
   }
   if (parents.length > 1) {
-    return parseNameStatus(
-      runGit(["diff-tree", "--no-commit-id", "-r", "--name-status", parents[0], commitHash], directory),
-      runGit(["diff-tree", "--no-commit-id", "-r", "--numstat", parents[0], commitHash], directory)
-    );
+    const [statusOutput, numstatOutput] = await Promise.all([
+      runGitAsync(["diff-tree", "--no-commit-id", "-r", "--name-status", parents[0], commitHash], directory),
+      runGitAsync(["diff-tree", "--no-commit-id", "-r", "--numstat", parents[0], commitHash], directory),
+    ]);
+    return parseNameStatus(statusOutput, numstatOutput);
   }
-  let statusOutput = runGit(["diff-tree", "--no-commit-id", "-r", "-c", "--name-status", commitHash], directory);
-  let numstatOutput = runGit(["diff-tree", "--no-commit-id", "-r", "-c", "--numstat", commitHash], directory);
+  let [statusOutput, numstatOutput] = await Promise.all([
+    runGitAsync(["diff-tree", "--no-commit-id", "-r", "-c", "--name-status", commitHash], directory),
+    runGitAsync(["diff-tree", "--no-commit-id", "-r", "-c", "--numstat", commitHash], directory),
+  ]);
   let statusLines = statusOutput.trim().split("\n").filter(Boolean);
   let numstatLines = numstatOutput.trim().split("\n").filter(Boolean);
   if (statusLines.length === 0 && numstatLines.length === 0) {
-    statusOutput = runGit(["diff-tree", "--no-commit-id", "-r", "--name-status", commitHash], directory);
-    numstatOutput = runGit(["diff-tree", "--no-commit-id", "-r", "--numstat", commitHash], directory);
+    [statusOutput, numstatOutput] = await Promise.all([
+      runGitAsync(["diff-tree", "--no-commit-id", "-r", "--name-status", commitHash], directory),
+      runGitAsync(["diff-tree", "--no-commit-id", "-r", "--numstat", commitHash], directory),
+    ]);
     statusLines = statusOutput.trim().split("\n").filter(Boolean);
     numstatLines = numstatOutput.trim().split("\n").filter(Boolean);
     if (statusLines.length === 0 && numstatLines.length === 0) {
-      return stashFilesFromCommit(directory, commitHash);
+      return await stashFilesFromCommit(directory, commitHash);
     }
   }
   return parseNameStatus(statusOutput, numstatOutput);
@@ -1029,27 +1030,28 @@ ipcMain.handle("get-stash-file-diff", (event, directory, commitHash, filePath) =
   return runGit(["diff", `${stashId}^`, stashId, "--", filePath], directory);
 });
 
-ipcMain.handle("get-commit-file-diff", (event, directory, commitHash, filePath) => {
-  const parents = getCommitParents(directory, commitHash);
+ipcMain.handle("get-commit-file-diff", async (event, directory, commitHash, filePath) => {
+  const parents = await getCommitParents(directory, commitHash);
   let output;
   if (parents.length > 1) {
-    output = runGit(["diff", parents[0], commitHash, "--", filePath], directory);
+    output = await runGitAsync(["diff", parents[0], commitHash, "--", filePath], directory);
   } else if (parents.length === 0) {
-    output = runGit(["diff-tree", "--no-commit-id", "-r", "--root", "-p", commitHash, "--", filePath], directory);
+    output = await runGitAsync(["diff-tree", "--no-commit-id", "-r", "--root", "-p", commitHash, "--", filePath], directory);
   } else {
-    output = runGit(["diff-tree", "--no-commit-id", "-r", "-c", "-p", commitHash, "--", filePath], directory);
+    output = await runGitAsync(["diff-tree", "--no-commit-id", "-r", "-c", "-p", commitHash, "--", filePath], directory);
     if (!output.trim()) {
-      output = runGit(["diff-tree", "--no-commit-id", "-r", "-p", commitHash, "--", filePath], directory);
+      output = await runGitAsync(["diff-tree", "--no-commit-id", "-r", "-p", commitHash, "--", filePath], directory);
     }
   }
   if (output.trim()) return output;
   try {
-    const stashList = runGit(["stash", "list", "--format=%gd||%gs"], directory).trim().split("\n").filter(Boolean);
+    const stashOutput = await runGitAsync(["stash", "list", "--format=%gd||%gs"], directory);
+    const stashList = stashOutput.trim().split("\n").filter(Boolean);
     for (const entry of stashList) {
       const [id] = entry.split("||");
-      const hash = runGit(["rev-parse", id], directory).trim();
+      const hash = (await runGitAsync(["rev-parse", id], directory)).trim();
       if (hash.startsWith(commitHash)) {
-        return runGit(["diff", `${id}^`, id, "--", filePath], directory);
+        return await runGitAsync(["diff", `${id}^`, id, "--", filePath], directory);
       }
     }
   } catch (e) { }
@@ -1111,17 +1113,17 @@ ipcMain.handle("get-diff", (event, directory, filePath) => {
   return runGit(["diff", "HEAD~1", "--", filePath], directory);
 });
 
-ipcMain.handle("get-diff-commit", (event, directory, commitHash, filePath) => {
-  const parents = getCommitParents(directory, commitHash);
+ipcMain.handle("get-diff-commit", async (event, directory, commitHash, filePath) => {
+  const parents = await getCommitParents(directory, commitHash);
   if (parents.length > 1) {
-    return runGit(["diff", parents[0], commitHash, "--", filePath], directory);
+    return await runGitAsync(["diff", parents[0], commitHash, "--", filePath], directory);
   }
   if (parents.length === 0) {
-    return runGit(["diff-tree", "--no-commit-id", "-r", "--root", "-p", commitHash, "--", filePath], directory);
+    return await runGitAsync(["diff-tree", "--no-commit-id", "-r", "--root", "-p", commitHash, "--", filePath], directory);
   }
-  let output = runGit(["diff-tree", "--no-commit-id", "-r", "-c", "-p", commitHash, "--", filePath], directory);
+  let output = await runGitAsync(["diff-tree", "--no-commit-id", "-r", "-c", "-p", commitHash, "--", filePath], directory);
   if (!output.trim()) {
-    output = runGit(["diff-tree", "--no-commit-id", "-r", "-p", commitHash, "--", filePath], directory);
+    output = await runGitAsync(["diff-tree", "--no-commit-id", "-r", "-p", commitHash, "--", filePath], directory);
   }
   return output;
 });
