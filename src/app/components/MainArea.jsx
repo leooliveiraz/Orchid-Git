@@ -1,6 +1,7 @@
 import React, { useContext } from "react";
 import NoDirectory from "./NoDirectory.jsx";
 import NotRepoWarning from "./NotRepoWarning.jsx";
+import Footer from "./Footer.jsx";
 import { OrchidContext } from "../OrchidContext.jsx";
 import Repository from "./Repository.jsx";
 
@@ -11,6 +12,7 @@ export default function MainArea() {
       {!directory && <NoDirectory />}
       {directory && notRepo === true && <NotRepoWarning />}
       {directory && notRepo === false && <Repository repositoryDirectory={directory} />}
+      <Footer />
     </div>
   );
 }

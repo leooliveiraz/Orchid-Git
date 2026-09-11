@@ -397,7 +397,7 @@ export default function Repository({ repositoryDirectory }) {
   const isLightTheme = themeMode === "light";
 
   return (
-    <Box sx={{ p: 2, height: "100%", display: "flex", flexDirection: "column", overflow: "hidden" }} id="repository">
+    <Box sx={{ p: 2, flex: 1, minHeight: 0, display: "flex", flexDirection: "column", overflow: "hidden" }} id="repository">
       <Box sx={{ mb: 2, borderBottom: "1px solid", borderColor: "divider", pb: 1.5, display: "flex", alignItems: "center", gap: 2, flexWrap: "wrap" }}>
         <Box sx={{ flex: 1, minWidth: 0 }}>
           <Typography variant="h6" sx={{ fontWeight: 400, letterSpacing: "-0.02em", color: "text.primary", lineHeight: 1.3 }}>
