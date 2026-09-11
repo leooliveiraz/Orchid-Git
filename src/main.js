@@ -965,7 +965,42 @@ function stashFilesFromCommit(directory, commitHash) {
   return [];
 }
 
+function getCommitParents(directory, commitHash) {
+  return runGit(["rev-list", "--parents", "-n", "1", commitHash], directory)
+    .trim().split(/\s+/).slice(1).filter(Boolean);
+}
+
+function parseNameStatus(statusOutput, numstatOutput) {
+  const statusLines = statusOutput.trim().split("\n").filter(Boolean);
+  const numstatLines = numstatOutput.trim().split("\n").filter(Boolean);
+  const numstatMap = {};
+  numstatLines.forEach(line => {
+    const [added, deleted, ...pathParts] = line.split("\t");
+    const path = pathParts.join("\t");
+    numstatMap[path] = { added: parseInt(added) || 0, deleted: parseInt(deleted) || 0 };
+  });
+  return statusLines.map(line => {
+    const [status, ...pathParts] = line.split("\t");
+    const path = pathParts.join("\t");
+    const counts = numstatMap[path] || { added: 0, deleted: 0 };
+    return { status, path, added: counts.added, deleted: counts.deleted };
+  });
+}
+
 ipcMain.handle("get-commit-files", (event, directory, commitHash) => {
+  const parents = getCommitParents(directory, commitHash);
+  if (parents.length === 0) {
+    return parseNameStatus(
+      runGit(["diff-tree", "--no-commit-id", "-r", "--root", "--name-status", commitHash], directory),
+      runGit(["diff-tree", "--no-commit-id", "-r", "--root", "--numstat", commitHash], directory)
+    );
+  }
+  if (parents.length > 1) {
+    return parseNameStatus(
+      runGit(["diff-tree", "--no-commit-id", "-r", "--name-status", parents[0], commitHash], directory),
+      runGit(["diff-tree", "--no-commit-id", "-r", "--numstat", parents[0], commitHash], directory)
+    );
+  }
   let statusOutput = runGit(["diff-tree", "--no-commit-id", "-r", "-c", "--name-status", commitHash], directory);
   let numstatOutput = runGit(["diff-tree", "--no-commit-id", "-r", "-c", "--numstat", commitHash], directory);
   let statusLines = statusOutput.trim().split("\n").filter(Boolean);
@@ -979,18 +1014,7 @@ ipcMain.handle("get-commit-files", (event, directory, commitHash) => {
       return stashFilesFromCommit(directory, commitHash);
     }
   }
-  const numstatMap = {};
-  numstatLines.forEach(line => {
-    const [added, deleted, ...pathParts] = line.split("\t");
-    const path = pathParts.join("\t");
-    numstatMap[path] = { added: parseInt(added) || 0, deleted: parseInt(deleted) || 0 };
-  });
-  return statusLines.map(line => {
-    const [status, ...pathParts] = line.split("\t");
-    const path = pathParts.join("\t");
-    const counts = numstatMap[path] || { added: 0, deleted: 0 };
-    return { status, path, added: counts.added, deleted: counts.deleted };
-  });
+  return parseNameStatus(statusOutput, numstatOutput);
 });
 
 ipcMain.handle("get-stash-file-diff", (event, directory, commitHash, filePath) => {
@@ -1006,9 +1030,17 @@ ipcMain.handle("get-stash-file-diff", (event, directory, commitHash, filePath) =
 });
 
 ipcMain.handle("get-commit-file-diff", (event, directory, commitHash, filePath) => {
-  let output = runGit(["diff-tree", "--no-commit-id", "-r", "-c", "-p", commitHash, "--", filePath], directory);
-  if (!output.trim()) {
-    output = runGit(["diff-tree", "--no-commit-id", "-r", "-p", commitHash, "--", filePath], directory);
+  const parents = getCommitParents(directory, commitHash);
+  let output;
+  if (parents.length > 1) {
+    output = runGit(["diff", parents[0], commitHash, "--", filePath], directory);
+  } else if (parents.length === 0) {
+    output = runGit(["diff-tree", "--no-commit-id", "-r", "--root", "-p", commitHash, "--", filePath], directory);
+  } else {
+    output = runGit(["diff-tree", "--no-commit-id", "-r", "-c", "-p", commitHash, "--", filePath], directory);
+    if (!output.trim()) {
+      output = runGit(["diff-tree", "--no-commit-id", "-r", "-p", commitHash, "--", filePath], directory);
+    }
   }
   if (output.trim()) return output;
   try {
@@ -1080,6 +1112,13 @@ ipcMain.handle("get-diff", (event, directory, filePath) => {
 });
 
 ipcMain.handle("get-diff-commit", (event, directory, commitHash, filePath) => {
+  const parents = getCommitParents(directory, commitHash);
+  if (parents.length > 1) {
+    return runGit(["diff", parents[0], commitHash, "--", filePath], directory);
+  }
+  if (parents.length === 0) {
+    return runGit(["diff-tree", "--no-commit-id", "-r", "--root", "-p", commitHash, "--", filePath], directory);
+  }
   let output = runGit(["diff-tree", "--no-commit-id", "-r", "-c", "-p", commitHash, "--", filePath], directory);
   if (!output.trim()) {
     output = runGit(["diff-tree", "--no-commit-id", "-r", "-p", commitHash, "--", filePath], directory);
