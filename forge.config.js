@@ -6,6 +6,7 @@ module.exports = {
     asar: true,
     icon: "./src/assets/icon",
     extraResource: ["./src/assets/icon.png"],
+    ...(process.platform === "linux" ? { executableName: "orchid-git" } : {}),
   },
   rebuildConfig: {},
   makers: [
