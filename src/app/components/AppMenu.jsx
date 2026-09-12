@@ -242,13 +242,6 @@ export default function AppMenu({ menuOpen, onToggleMenu }) {
                 </Badge>
               </IconButton>
             </Tooltip>
-            {directory && (
-              <Tooltip title="Open directory in file explorer">
-                <IconButton size="small" color="inherit" onClick={() => window.api.openInExplorer(directory)} sx={{ ml: 0.5, opacity: 0.7, "&:hover": { opacity: 1 } }}>
-                  <LaunchIcon fontSize="small" />
-                </IconButton>
-              </Tooltip>
-            )}
           </Box>
 
           <Tooltip title="Open repository">

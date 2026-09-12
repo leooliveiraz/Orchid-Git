@@ -49,7 +49,8 @@ function runGit(args, cwd) {
   return result.stdout;
 }
 
-function runGitAsync(args, cwd) {
+function runGitAsync(args, cwd, options = {}) {
+  const { raw = false } = options;
   logGitCommand(args, cwd);
   return new Promise((resolve, reject) => {
     const proc = childProcess.spawn("git", args, { cwd, encoding: "utf8" });
@@ -57,7 +58,7 @@ function runGitAsync(args, cwd) {
     proc.stdout.on("data", d => stdout += d);
     proc.stderr.on("data", d => stderr += d);
     proc.on("close", code => {
-      if (code === 0) resolve(stdout.trim());
+      if (code === 0) resolve(raw ? stdout : stdout.trim());
       else reject(new Error(stderr.trim() || `git command failed: ${args.join(" ")}`));
     });
     proc.on("error", reject);
@@ -731,7 +732,7 @@ ipcMain.handle("set-origin-url", (event, directory, url) => {
 
 ipcMain.handle("get-status", async (event, directory) => {
   const { parseStatusOutput } = require("./git");
-  const output = await runGitAsync(["status", "--porcelain", "-u"], directory);
+  const output = await runGitAsync(["status", "--porcelain", "-u"], directory, { raw: true });
   return parseStatusOutput(output);
 });
 
