@@ -71,8 +71,8 @@ li{margin:8px 0}strong{color:#000}
 <p>The Software stores preferences exclusively on your local machine using <code>localStorage</code>: last opened directory, recent directories, theme preference, author merge list, sort preferences, and repo switch confirmation. This data never leaves your machine.</p>
 <h2>Git Operations</h2>
 <p>When you perform Git operations (push, pull, fetch, clone), the Software executes commands via the system <code>git</code> CLI. These connect directly to the remotes you configure. The Software does not intercept, log, or transmit these communications.</p>
-<h2>Source Code</h2>
-<p>The Software is open source. Anyone can inspect the source code to verify that no data collection takes place.</p>
+<h2>Availability</h2>
+<p>The Software is free to use. It is not open source, and it does not collect any personal data.</p>
 <h2>Risks</h2>
 <ul>
 <li><strong>Local file access</strong> — Reads/writes files in your Git repositories.</li>
@@ -81,7 +81,7 @@ li{margin:8px 0}strong{color:#000}
 <li><strong>Third-party dependencies</strong> — Built on npm; upstream vulnerabilities are possible.</li>
 <li><strong>localStorage</strong> — Preferences not encrypted; readable by other apps.</li>
 <li><strong>Remote Git servers</strong> — Code and metadata transmitted on push/pull/fetch.</li>
-<li><strong>No warranty</strong> — Provided "as is" under MIT license.</li>
+<li><strong>No warranty</strong> — Provided "as is".</li>
 </ul>
 <h2>Changes</h2>
 <p>The "Last updated" date is updated when this policy changes.</p>
@@ -105,8 +105,8 @@ li{margin:8px 0}strong{color:#000}
 <p>Prefer\u00eancias armazenadas exclusivamente via <code>localStorage</code>: \u00faltimo diret\u00f3rio, recentes, tema, lista de autores, ordena\u00e7\u00e3o e confirma\u00e7\u00e3o de troca. Nunca saem da sua m\u00e1quina.</p>
 <h2>Opera\u00e7\u00f5es Git</h2>
 <p>Ao fazer push/pull/fetch/clone, o Software executa comandos git via CLI. Conecta-se diretamente aos remotos configurados. N\u00e3o intercepta, registra ou transmite estas comunica\u00e7\u00f5es.</p>
-<h2>C\u00f3digo Fonte</h2>
-<p>Open source. Qualquer pessoa pode inspecionar o c\u00f3digo para verificar que n\u00e3o h\u00e1 coleta de dados.</p>
+<h2>Disponibilidade</h2>
+<p>O Software \u00e9 gratuito para uso. N\u00e3o \u00e9 open source e n\u00e3o coleta nenhum dado pessoal.</p>
 <h2>Riscos</h2>
 <ul>
 <li><strong>Acesso local</strong> — L\u00ea/escreve arquivos nos reposit\u00f3rios Git.</li>
@@ -115,7 +115,7 @@ li{margin:8px 0}strong{color:#000}
 <li><strong>Depend\u00eancias</strong> — Pacotes npm; vulnerabilidades poss\u00edveis.</li>
 <li><strong>localStorage</strong> — Prefer\u00eancias n\u00e3o criptografadas.</li>
 <li><strong>Servidores remotos</strong> — C\u00f3digo e metadados transmitidos.</li>
-<li><strong>Sem garantia</strong> — "Como est\u00e1" sob licen\u00e7a MIT.</li>
+<li><strong>Sem garantia</strong> — Fornecido "como est\u00e1".</li>
 </ul>
 <h2>Altera\u00e7\u00f5es</h2>
 <p>A data de "\u00daltima atualiza\u00e7\u00e3o" \u00e9 atualizada quando esta pol\u00edtica muda.</p>

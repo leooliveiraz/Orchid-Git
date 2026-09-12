@@ -151,4 +151,4 @@ OrchidGit is a fully local desktop application. It:
 
 ## License
 
-MIT
+Orchid Git is free to use. It is not open source.

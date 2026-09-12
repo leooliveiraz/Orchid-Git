@@ -37,9 +37,9 @@ Esses dados nunca saem da sua máquina. Você pode limpá-los a qualquer momento
 
 Ao realizar operações Git (push, pull, fetch, clone), o Software executa comandos via o CLI do `git` instalado no sistema em seu nome. Essas operações conectam-se diretamente aos remotos Git que você configurou. O Software não intercepta, registra ou transmite essas comunicações além do que o próprio comando `git` realiza.
 
-## Código Fonte
+## Disponibilidade
 
-O Software é open source. Qualquer pessoa pode inspecionar o código fonte no repositório do projeto para verificar que nenhuma coleta de dados ocorre.
+O Software é gratuito para uso. Não é open source e não coleta nenhum dado pessoal.
 
 ## Riscos
 
@@ -51,7 +51,7 @@ Embora o Software não colete dados, o uso envolve riscos inerentes a ferramenta
 - **Dependências de terceiros** — O Software é construído sobre pacotes open-source (npm). Embora as dependências sejam atualizadas regularmente, vulnerabilidades em pacotes upstream podem representar risco.
 - **Persistência do localStorage** — Preferências armazenadas no `localStorage` não são criptografadas e podem ser lidas por outros aplicativos executando na mesma máquina.
 - **Servidores Git remotos** — Ao fazer push, pull ou fetch, seu código e metadados de commit (nome do autor, e-mail) são transmitidos para os servidores remotos configurados. Isso é uma propriedade inerente do Git.
-- **Sem garantia** — O Software é fornecido "como está", sem garantia de qualquer tipo. Consulte a licença MIT para detalhes.
+- **Sem garantia** — O Software é fornecido "como está", sem garantia de qualquer tipo.
 
 ## Alterações nesta Política
 

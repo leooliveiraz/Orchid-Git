@@ -37,9 +37,9 @@ This data never leaves your machine. You can clear it at any time by:
 
 When you perform Git operations (push, pull, fetch, clone), the Software executes commands via the system-installed `git` CLI on your behalf. These operations connect directly to the Git remotes you have configured. The Software does not intercept, log, or transmit these communications beyond what the `git` command itself performs.
 
-## Source Code
+## Availability
 
-The Software is open source. Anyone can inspect the source code at the project's repository to verify that no data collection takes place.
+The Software is free to use. It is not open source, and it does not collect any personal data.
 
 ## Risks
 
@@ -51,7 +51,7 @@ While the Software does not collect data, using it involves inherent risks commo
 - **Third-party dependencies** — The Software is built on open-source packages (npm). While dependencies are regularly updated, vulnerabilities in upstream packages could pose a risk.
 - **Local storage persistence** — Preferences stored in `localStorage` are not encrypted and could be read by other applications running on the same machine.
 - **Remote Git servers** — When you push, pull, or fetch, your code and commit metadata (author name, email) are transmitted to the configured remote servers. This is an inherent property of Git.
-- **No warranty** — The Software is provided "as is" without warranty of any kind. See the MIT license for details.
+- **No warranty** — The Software is provided "as is" without warranty of any kind.
 
 ## Changes to This Policy
 
