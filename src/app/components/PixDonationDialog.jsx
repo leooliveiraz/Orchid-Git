@@ -3,7 +3,7 @@ import { Dialog, DialogTitle, DialogContent, IconButton, Typography, Box, Button
 import CloseIcon from "@mui/icons-material/Close";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 import CheckIcon from "@mui/icons-material/Check";
-import QRCodeScannerIcon from "@mui/icons-material/QRCodeScanner";
+import QRCodeScannerIcon from "@mui/icons-material/QrCodeScanner";
 import QRCode from "react-qr-code";
 import { createPixPayload } from "../utils/pix.js";
 
