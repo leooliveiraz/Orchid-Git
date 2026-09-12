@@ -73,7 +73,7 @@ contextBridge.exposeInMainWorld("api", {
   pull: (directory) => ipcRenderer.invoke("pull", directory),
   fetch: (directory) => ipcRenderer.invoke("fetch", directory),
   getUserConfig: (directory) => ipcRenderer.invoke("get-user-config", directory),
-  setUserConfig: (directory, name, email) => ipcRenderer.invoke("set-user-config", directory, name, email),
+  setUserConfig: (directory, scope, name, email) => ipcRenderer.invoke("set-user-config", directory, scope, name, email),
   clone: (url, destPath) => ipcRenderer.invoke("clone", url, destPath),
   getRepoMetrics: (directory) => ipcRenderer.invoke("get-repo-metrics", directory),
   getRepoMetricsExtra: (directory) => ipcRenderer.invoke("get-repo-metrics-extra", directory),

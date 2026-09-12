@@ -373,7 +373,7 @@ test("Metrics tab renders content", async () => {
 // ──────────────────────────────────────────────
 test("Settings button opens dialog", async () => {
   await openRepo(page, TEST_REPO);
-  const settingsBtn = page.locator('[aria-label="Repository settings"], [title="Repository settings"]');
+  const settingsBtn = page.locator('[aria-label="Settings"], [title="Settings"], [aria-label="Repository settings"], [title="Repository settings"]');
   if (await settingsBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
     await settingsBtn.click();
     await page.waitForTimeout(1000);

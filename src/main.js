@@ -1150,16 +1150,39 @@ ipcMain.handle("get-staged-diff", (event, directory, filePath) => {
   return runGit(["diff", "--cached", "--", filePath], directory);
 });
 
-ipcMain.handle("get-user-config", (event, directory) => {
-  let name = "", email = "";
-  try { name = runGit(["config", "user.name"], directory).trim(); } catch { }
-  try { email = runGit(["config", "user.email"], directory).trim(); } catch { }
-  return { name, email };
+async function readGitConfig(directory, args) {
+  try { return (await runGitAsync(["config", ...args], directory)).trim(); } catch { return ""; }
+}
+
+ipcMain.handle("get-user-config", async (event, directory) => {
+  const cwd = directory || os.homedir();
+  const [localName, localEmail, globalName, globalEmail] = await Promise.all([
+    directory ? readGitConfig(directory, ["--local", "user.name"]) : "",
+    directory ? readGitConfig(directory, ["--local", "user.email"]) : "",
+    readGitConfig(cwd, ["--global", "user.name"]),
+    readGitConfig(cwd, ["--global", "user.email"]),
+  ]);
+  return {
+    local: { name: localName, email: localEmail },
+    global: { name: globalName, email: globalEmail },
+    effective: { name: localName || globalName, email: localEmail || globalEmail },
+  };
 });
 
-ipcMain.handle("set-user-config", (event, directory, name, email) => {
-  runGit(["config", "user.name", name], directory);
-  runGit(["config", "user.email", email], directory);
+async function setGitConfigValue(directory, scopeFlag, key, value) {
+  const trimmed = (value || "").trim();
+  if (trimmed) {
+    await runGitAsync(["config", scopeFlag, key, trimmed], directory);
+  } else {
+    try { await runGitAsync(["config", scopeFlag, "--unset", key], directory); } catch { }
+  }
+}
+
+ipcMain.handle("set-user-config", async (event, directory, scope, name, email) => {
+  const cwd = scope === "global" ? (directory || os.homedir()) : directory;
+  const scopeFlag = scope === "global" ? "--global" : "--local";
+  await setGitConfigValue(cwd, scopeFlag, "user.name", name);
+  await setGitConfigValue(cwd, scopeFlag, "user.email", email);
   return "ok";
 });
 

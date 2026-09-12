@@ -89,7 +89,7 @@ export default function AppMenu({ menuOpen, onToggleMenu }) {
   const [syncError, setSyncError] = useState(null);
   const [syncSuccess, setSyncSuccess] = useState(null);
   const [forcePushEnabled, setForcePushEnabled] = useState(() => localStorage.getItem("orchid-force-push-enabled") === "true");
-  const [pushTags, setPushTags] = useState(true);
+  const [pushTags, setPushTags] = useState(() => localStorage.getItem("orchid-push-tags") !== "false");
 
   useEffect(() => {
     const handler = (e) => setForcePushEnabled(e.detail);
@@ -370,7 +370,7 @@ export default function AppMenu({ menuOpen, onToggleMenu }) {
             </IconButton>
           </Tooltip>
           {directory && (
-            <Tooltip title="Repository settings">
+            <Tooltip title="Settings">
               <IconButton color="inherit" onClick={() => setShowSettings(true)} sx={{ mr: 0.5 }}>
                 <SettingsIcon />
               </IconButton>
@@ -439,7 +439,10 @@ export default function AppMenu({ menuOpen, onToggleMenu }) {
                     : "Push commits to the remote repository?"}
                 </Typography>
                 <FormControlLabel
-                  control={<Checkbox size="small" checked={pushTags} onChange={e => setPushTags(e.target.checked)} />}
+                  control={<Checkbox size="small" checked={pushTags} onChange={e => {
+                    setPushTags(e.target.checked);
+                    localStorage.setItem("orchid-push-tags", e.target.checked ? "true" : "false");
+                  }} />}
                   label={<Typography variant="body2">Push new tags</Typography>}
                   sx={{ mb: 2 }}
                 />

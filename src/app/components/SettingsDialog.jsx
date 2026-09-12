@@ -3,14 +3,17 @@ import {
   Dialog, DialogTitle, DialogContent, DialogActions,
   Button, TextField, Alert, LinearProgress,
   FormControlLabel, Checkbox, Typography, Box, Divider,
-  FormControl, InputLabel, Select, MenuItem,
+  FormControl, InputLabel, Select, MenuItem, Tabs, Tab,
 } from "@mui/material";
 import { OrchidContext } from "../OrchidContext.jsx";
 
 export default function SettingsDialog({ onClose }) {
   const { directory, dateFormat, setDateFormat } = useContext(OrchidContext);
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
+  const [tab, setTab] = useState("repo");
+  const [localName, setLocalName] = useState("");
+  const [localEmail, setLocalEmail] = useState("");
+  const [globalName, setGlobalName] = useState("");
+  const [globalEmail, setGlobalEmail] = useState("");
   const [originUrl, setOriginUrl] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -25,9 +28,11 @@ export default function SettingsDialog({ onClose }) {
     Promise.all([
       window.api.getUserConfig(directory),
       window.api.getOriginUrl(directory),
-    ]).then(([{ name, email }, origin]) => {
-      setName(name || "");
-      setEmail(email || "");
+    ]).then(([config, origin]) => {
+      setLocalName(config.local?.name || "");
+      setLocalEmail(config.local?.email || "");
+      setGlobalName(config.global?.name || "");
+      setGlobalEmail(config.global?.email || "");
       setOriginUrl(origin || "");
       setLoading(false);
     }).catch(() => setLoading(false));
@@ -135,7 +140,8 @@ li{margin:8px 0}strong{color:#000}
     setError(null);
     setSuccess(null);
     try {
-      await window.api.setUserConfig(directory, name, email);
+      await window.api.setUserConfig(directory, "local", localName, localEmail);
+      await window.api.setUserConfig(directory, "global", globalName, globalEmail);
       if (originUrl.trim()) {
         await window.api.setOriginUrl(directory, originUrl.trim());
       }
@@ -148,31 +154,38 @@ li{margin:8px 0}strong{color:#000}
 
   return (
     <Dialog open onClose={onClose} maxWidth="xs" fullWidth>
-      <DialogTitle>Repository Settings</DialogTitle>
+      <DialogTitle>Settings</DialogTitle>
+      <Tabs value={tab} onChange={(e, v) => setTab(v)} sx={{ px: 3, borderBottom: 1, borderColor: "divider" }}>
+        <Tab label="Repository" value="repo" />
+        <Tab label="Global" value="global" />
+      </Tabs>
       {loading && <LinearProgress />}
       <DialogContent>
-        {!loading && (
+        {!loading && tab === "repo" && (
           <>
-            <Typography variant="overline" sx={{ display: "block", color: "text.secondary", mb: 1 }}>User</Typography>
+            <Typography variant="overline" sx={{ display: "block", color: "text.secondary", mb: 1 }}>User (this repository)</Typography>
             <TextField
               autoFocus
               fullWidth
               label="User name"
-              placeholder="git config user.name"
-              value={name}
-              onChange={e => setName(e.target.value)}
+              placeholder={globalName ? `Global: ${globalName}` : "git config --local user.name"}
+              value={localName}
+              onChange={e => setLocalName(e.target.value)}
               disabled={saving}
               sx={{ mb: 2 }}
             />
             <TextField
               fullWidth
               label="User email"
-              placeholder="git config user.email"
-              value={email}
-              onChange={e => setEmail(e.target.value)}
+              placeholder={globalEmail ? `Global: ${globalEmail}` : "git config --local user.email"}
+              value={localEmail}
+              onChange={e => setLocalEmail(e.target.value)}
               disabled={saving}
-              sx={{ mb: 2 }}
+              sx={{ mb: 1 }}
             />
+            <Typography variant="caption" sx={{ color: "text.secondary", display: "block", mb: 2 }}>
+              Leave empty to inherit the global user.
+            </Typography>
 
             <Divider sx={{ my: 2 }} />
             <Typography variant="overline" sx={{ display: "block", color: "text.secondary", mb: 1 }}>Remote</Typography>
@@ -185,6 +198,49 @@ li{margin:8px 0}strong{color:#000}
               disabled={saving}
               sx={{ mb: 2 }}
             />
+          </>
+        )}
+
+        {!loading && tab === "global" && (
+          <>
+            <Typography variant="overline" sx={{ display: "block", color: "text.secondary", mb: 1 }}>User (global)</Typography>
+            <TextField
+              autoFocus
+              fullWidth
+              label="User name"
+              placeholder="git config --global user.name"
+              value={globalName}
+              onChange={e => setGlobalName(e.target.value)}
+              disabled={saving}
+              sx={{ mb: 2 }}
+            />
+            <TextField
+              fullWidth
+              label="User email"
+              placeholder="git config --global user.email"
+              value={globalEmail}
+              onChange={e => setGlobalEmail(e.target.value)}
+              disabled={saving}
+              sx={{ mb: 1 }}
+            />
+            <Typography variant="caption" sx={{ color: "text.secondary", display: "block", mb: 2 }}>
+              Used by new repositories without a local user.
+            </Typography>
+
+            <Divider sx={{ my: 2 }} />
+            <Typography variant="overline" sx={{ display: "block", color: "text.secondary", mb: 1 }}>Display</Typography>
+            <FormControl fullWidth size="small" sx={{ mb: 1 }}>
+              <InputLabel>Date format</InputLabel>
+              <Select value={dateFormat} label="Date format"
+                onChange={e => setDateFormat(e.target.value)}>
+                <MenuItem value="">Default (git native)</MenuItem>
+                <MenuItem value="locale-date">Locale date</MenuItem>
+                <MenuItem value="locale-datetime">Locale date + time</MenuItem>
+                <MenuItem value="locale-full">Locale full</MenuItem>
+                <MenuItem value="relative">Relative (X ago)</MenuItem>
+                <MenuItem value="iso">ISO 8601</MenuItem>
+              </Select>
+            </FormControl>
 
             <Divider sx={{ mt: 2, mb: 1 }} />
             <FormControlLabel
@@ -206,21 +262,6 @@ li{margin:8px 0}strong{color:#000}
               />}
               label={<Typography variant="body2">Enable force push</Typography>}
             />
-
-            <Divider sx={{ mt: 2, mb: 1 }} />
-            <Typography variant="overline" sx={{ display: "block", color: "text.secondary", mb: 1 }}>Display</Typography>
-            <FormControl fullWidth size="small" sx={{ mb: 1 }}>
-              <InputLabel>Date format</InputLabel>
-              <Select value={dateFormat} label="Date format"
-                onChange={e => setDateFormat(e.target.value)}>
-                <MenuItem value="">Default (git native)</MenuItem>
-                <MenuItem value="locale-date">Locale date</MenuItem>
-                <MenuItem value="locale-datetime">Locale date + time</MenuItem>
-                <MenuItem value="locale-full">Locale full</MenuItem>
-                <MenuItem value="relative">Relative (X ago)</MenuItem>
-                <MenuItem value="iso">ISO 8601</MenuItem>
-              </Select>
-            </FormControl>
 
             <Divider sx={{ mt: 2, mb: 1 }} />
             <Typography variant="caption" sx={{ color: "text.secondary", display: "block" }}>
